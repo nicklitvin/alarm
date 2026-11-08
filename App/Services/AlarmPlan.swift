@@ -3,19 +3,21 @@ import Foundation
 /// One system alarm that should exist in AlarmKit.
 struct PlannedAlarm: Equatable {
     enum Kind: Equatable {
-        case weekly(Set<Weekday>)
+        /// Rings every week on this day.
+        case weekly(Weekday)
+        /// Rings once at this exact moment.
         case once(Date)
     }
 
     let item: AlarmItem
     let kind: Kind
 
-    /// Stable description of this system alarm. Any change (time, label, days) yields a new key → new ID.
+    /// Stable description of this system alarm. Any change (time, label, day) yields a new key → new ID.
     var key: String {
         let base = "\(item.id.uuidString)|\(item.hour):\(item.minute)|\(item.title)"
         switch kind {
-        case .weekly(let days):
-            return base + "|weekly|" + days.sorted().map { String($0.rawValue) }.joined(separator: ",")
+        case .weekly(let day):
+            return base + "|weekly|" + String(day.rawValue)
         case .once(let date):
             return base + "|once|" + String(Int(date.timeIntervalSince1970))
         }
@@ -46,14 +48,16 @@ struct PlannedAlarm: Equatable {
 
 /// Works out which system alarms should exist for the user's alarms.
 ///
-/// Dismissing a single ring of a repeating alarm works like this. Say a Mon–Fri 7:00
-/// alarm is dismissed for Tuesday. It becomes a weekly Mon/Wed/Thu/Fri alarm plus
-/// one-off alarms for the next several Tuesdays. Once the dismissed Tuesday has
-/// passed, the next sync (on app open, or any change) folds it back into one Mon–Fri alarm.
+/// Every weekday of a repeating alarm is its own weekly system alarm, so dismissing one
+/// ring only touches that day. AlarmKit can't skip a single occurrence, so the dismissed
+/// day is temporarily swapped for a one-time alarm on the same day next week. Its other
+/// days keep ringing untouched.
+///
+/// The first sync after the dismissed time puts the weekly alarm back. Syncs run when any
+/// of our alarms is stopped (`StopAlarmIntent`), on a background refresh, when the app opens
+/// and on notification actions. The swap is a one-time alarm, so even if nothing ran
+/// sooner, stopping it next week brings the weekly alarm back. Nothing can fall through.
 enum AlarmPlan {
-    /// How many weeks of replacement one-off rings to schedule for a dismissed weekday.
-    static let coverageWeeks = 8
-
     static func make(for alarms: [AlarmItem], now: Date, calendar: Calendar = .current) -> [UUID: PlannedAlarm] {
         var plan: [UUID: PlannedAlarm] = [:]
         func add(_ item: AlarmItem, _ kind: PlannedAlarm.Kind) {
@@ -63,23 +67,31 @@ enum AlarmPlan {
 
         for item in alarms where item.isEnabled {
             if item.isRepeating {
-                if let skipped = item.skippedOccurrence, skipped > now,
-                   let skippedDay = Weekday(date: skipped, calendar: calendar),
-                   item.weekdays.contains(skippedDay) {
-                    let otherDays = item.weekdays.subtracting([skippedDay])
-                    if !otherDays.isEmpty { add(item, .weekly(otherDays)) }
-                    for week in 1...coverageWeeks {
-                        if let date = calendar.date(byAdding: .weekOfYear, value: week, to: skipped) {
-                            add(item, .once(date))
-                        }
+                let skipped = item.skippedOccurrence.flatMap { $0 > now ? $0 : nil }
+                let skippedDay = skipped.flatMap { Weekday(date: $0, calendar: calendar) }
+
+                for day in item.weekdays {
+                    if day == skippedDay, let skipped,
+                       let nextWeek = calendar.date(byAdding: .weekOfYear, value: 1, to: skipped) {
+                        add(item, .once(nextWeek))
+                    } else {
+                        add(item, .weekly(day))
                     }
-                } else {
-                    add(item, .weekly(item.weekdays))
                 }
             } else if let date = item.oneTimeDate, date > now {
                 add(item, .once(date))
             }
         }
         return plan
+    }
+
+    /// When the next background refresh should run to restore a dismissed day's weekly alarm.
+    static func nextRestoreDate(for alarms: [AlarmItem], now: Date) -> Date? {
+        alarms
+            .filter { $0.isEnabled && $0.isRepeating }
+            .compactMap(\.skippedOccurrence)
+            .filter { $0 > now }
+            .min()
+            .map { $0.addingTimeInterval(60) }
     }
 }

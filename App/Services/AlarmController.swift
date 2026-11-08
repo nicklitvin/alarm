@@ -118,8 +118,10 @@ final class AlarmController {
     // MARK: - Housekeeping
 
     /// Clears dismissals that have passed, turns off one-time alarms that already rang,
-    /// and re-syncs everything. Called on launch and whenever the app comes to the foreground.
-    func refresh(now: Date = .now) {
+    /// and re-syncs everything. Called on launch, when the app comes to the foreground,
+    /// when an alarm is stopped and on background refresh.
+    @discardableResult
+    func refresh(now: Date = .now) -> Task<Void, Never> {
         for index in alarms.indices {
             if let skipped = alarms[index].skippedOccurrence, skipped <= now {
                 alarms[index].skippedOccurrence = nil
@@ -130,7 +132,12 @@ final class AlarmController {
                 alarms[index].oneTimeDate = nil
             }
         }
-        commit()
+        return commit()
+    }
+
+    /// `refresh()` that waits until AlarmKit and notifications are fully synced.
+    func reconcile() async {
+        await refresh().value
     }
 
     private func prepared(_ alarm: AlarmItem, now: Date = .now) -> AlarmItem {
@@ -149,6 +156,7 @@ final class AlarmController {
     private func commit() -> Task<Void, Never> {
         AlarmStorage.save(alarms)
         WidgetCenter.shared.reloadTimelines(ofKind: AlarmStorage.widgetKind)
+        BackgroundRefresh.schedule(at: AlarmPlan.nextRestoreDate(for: alarms, now: .now))
 
         let previous = syncTask
         let task = Task { @MainActor in

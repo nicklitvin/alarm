@@ -38,12 +38,18 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 | Storage in the App Group (shared with widget) | `Shared/AlarmStorage.swift` |
 | Which system alarms should exist | `App/Services/AlarmPlan.swift` |
 | Syncs that plan to AlarmKit | `App/Services/AlarmKitScheduler.swift` |
+| Re-syncs when an alarm's Stop is tapped | `App/Services/StopAlarmIntent.swift` |
+| Background refresh after a dismissed ring | `App/Services/BackgroundRefresh.swift` |
 | 1-hour heads-up notifications and the Dismiss action | `App/Services/NotificationScheduler.swift` |
 | App state; every change syncs AlarmKit, notifications and widget | `App/Services/AlarmController.swift` |
 | UI | `App/Views/` |
 | Lock screen widget | `Widget/NextAlarmWidget.swift` |
 
-**Dismissing one ring of a repeating alarm.** AlarmKit can't skip a single occurrence of a repeating alarm. Say you have a Mon–Fri 7:00 alarm and dismiss Friday's ring. The app reschedules it as a weekly Mon–Thu alarm, plus one-off alarms for the following 8 Fridays. Once the dismissed Friday has passed, the next time the app opens it merges these back into a single Mon–Fri alarm.
+**Dismissing one ring of a repeating alarm.** Each weekday of an alarm is its own weekly system alarm. AlarmKit can't skip a single occurrence, so when you dismiss Friday's ring, only Friday is touched: it's swapped for a one-time alarm next Friday, and Mon–Thu are left alone. The weekly Friday alarm comes back the first time any app code runs after the dismissed time:
+
+- iOS gives the app background time, which it requests for 1 minute after the dismissed ring.
+- You tap **Stop** on any of the app's alarms. This includes next Friday's one-time alarm itself, so restoring never depends on opening the app.
+- You open the app or use a notification action.
 
 **Dismissing a one-time alarm** simply turns it off.
 

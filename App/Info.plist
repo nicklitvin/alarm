@@ -6,6 +6,14 @@
 	<string>Alarm needs permission to ring your alarms on time, even when your iPhone is in Silent mode or a Focus.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER).refresh</string>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+	</array>
 	<key>AppGroupIdentifier</key>
 	<string>$(APP_GROUP_ID)</string>
 </dict>

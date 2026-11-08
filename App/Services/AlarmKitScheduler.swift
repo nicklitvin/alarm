@@ -43,7 +43,7 @@ final class AlarmKitScheduler {
         let existingIDs = Set(existing.map(\.id))
         for (id, planned) in plan where !existingIDs.contains(id) {
             do {
-                _ = try await manager.schedule(id: id, configuration: configuration(for: planned))
+                _ = try await manager.schedule(id: id, configuration: configuration(for: planned, id: id))
             } catch {
                 print("AlarmKit schedule failed for \(planned.key): \(error)")
             }
@@ -51,7 +51,7 @@ final class AlarmKitScheduler {
         return true
     }
 
-    private func configuration(for planned: PlannedAlarm) -> AlarmManager.AlarmConfiguration<AlarmPayload> {
+    private func configuration(for planned: PlannedAlarm, id: UUID) -> AlarmManager.AlarmConfiguration<AlarmPayload> {
         let item = planned.item
 
         let alert = AlarmPresentation.Alert(
@@ -68,11 +68,10 @@ final class AlarmKitScheduler {
 
         let schedule: Alarm.Schedule
         switch planned.kind {
-        case .weekly(let days):
-            let weekdays = Weekday.localeOrdered.filter(days.contains).map(\.localeWeekday)
+        case .weekly(let day):
             schedule = .relative(Alarm.Schedule.Relative(
                 time: Alarm.Schedule.Relative.Time(hour: item.hour, minute: item.minute),
-                repeats: .weekly(weekdays)
+                repeats: .weekly([day.localeWeekday])
             ))
         case .once(let date):
             schedule = .fixed(date)
@@ -82,7 +81,7 @@ final class AlarmKitScheduler {
             countdownDuration: nil,
             schedule: schedule,
             attributes: attributes,
-            stopIntent: nil,
+            stopIntent: StopAlarmIntent(alarmID: id),
             secondaryIntent: nil,
             sound: .default
         )

@@ -26,19 +26,34 @@ check(afterSkip == [d(2026, 11, 2, 7, 0), d(2026, 11, 3, 7, 0), d(2026, 11, 4, 7
       "after skip: Mon/Tue/Wed (across DST) → \(afterSkip.map(s))")
 check([a].nextFire(after: now)?.date == d(2026, 11, 2, 7, 0), "widget next fire honors skip")
 
-// Plan while skip active.
-let plan = AlarmPlan.make(for: [a], now: now)
-let weekly = plan.values.compactMap { if case .weekly(let w) = $0.kind { return w } else { return nil } }
-let onces = plan.values.compactMap { if case .once(let dt) = $0.kind { return dt } else { return nil } }.sorted()
-check(weekly == [[.monday, .tuesday, .wednesday, .thursday]], "weekly Mon–Thu while Friday is skipped")
-check(onces.count == AlarmPlan.coverageWeeks, "\(AlarmPlan.coverageWeeks) one-off Fridays")
-check(onces.first == d(2026, 11, 6, 7, 0), "first one-off is next Friday 7:00 local (post-DST) → \(s(onces.first))")
-check(onces.allSatisfy { cal.component(.hour, from: $0) == 7 && Weekday(date: $0) == .friday }, "all one-offs Fri 7:00 local")
+// Plan while skip active: each day is its own weekly alarm; only Friday is swapped for next Friday.
+func kinds(_ plan: [UUID: PlannedAlarm]) -> (weekly: Set<Weekday>, once: [Date]) {
+    var w = Set<Weekday>(), o: [Date] = []
+    for p in plan.values {
+        switch p.kind { case .weekly(let day): w.insert(day); case .once(let dt): o.append(dt) }
+    }
+    return (w, o.sorted())
+}
+let normalPlan = AlarmPlan.make(for: [AlarmItem(id: a.id, hour: 7, minute: 0, label: "Gym", weekdays: Weekday.workdays)], now: now)
+check(normalPlan.count == 5 && kinds(normalPlan).weekly == Weekday.workdays, "no skip: one weekly alarm per day (5)")
 
-// Plan after skip passed → single weekly alarm again.
-let later = d(2026, 10, 30, 7, 1)
-let plan2 = AlarmPlan.make(for: [a], now: later)
-check(plan2.count == 1 && plan2.values.first?.kind == .weekly(Weekday.workdays), "after skipped time passes: back to one Mon–Fri alarm")
+let plan = AlarmPlan.make(for: [a], now: now)
+let k = kinds(plan)
+check(k.weekly == [.monday, .tuesday, .wednesday, .thursday], "skip Friday: Mon–Thu weekly alarms untouched")
+check(k.once == [d(2026, 11, 6, 7, 0)], "skip Friday: single one-off next Friday 7:00 local (post-DST) → \(k.once.map(s))")
+check(Set(plan.keys).subtracting(normalPlan.keys).count == 1, "skip changes exactly one system alarm")
+check(AlarmPlan.nextRestoreDate(for: [a], now: now) == d(2026, 10, 30, 7, 1), "background refresh requested 1 min after the skipped ring")
+
+// Restore path 1: something runs right after the skipped ring (background refresh, app open, other alarm stopped).
+let afterSkippedRing = d(2026, 10, 30, 7, 1)
+check(Set(AlarmPlan.make(for: [a], now: afterSkippedRing).keys) == Set(normalPlan.keys), "after skipped ring passes: back to all 5 weekly alarms (same IDs as before)")
+check(AlarmPlan.nextRestoreDate(for: [a], now: afterSkippedRing) == nil, "no further background refresh needed")
+
+// Restore path 2: nothing ran all week; the one-off rings next Friday and its Stop intent re-syncs.
+let afterReplacementStopped = d(2026, 11, 6, 7, 2)
+check(Set(AlarmPlan.make(for: [a], now: afterReplacementStopped).keys) == Set(normalPlan.keys), "stopping next Friday's one-off restores weekly Friday")
+var restored = a; restored.skippedOccurrence = nil
+check(restored.nextFireDate(after: afterReplacementStopped) == d(2026, 11, 9, 7, 0), "and the alarm carries on Monday as normal")
 
 // Stable IDs.
 check(Set(AlarmPlan.make(for: [a], now: now).keys) == Set(plan.keys), "IDs stable across syncs")
@@ -46,12 +61,11 @@ var renamed = a; renamed.label = "Run"
 check(Set(AlarmPlan.make(for: [renamed], now: now).keys).isDisjoint(with: plan.keys), "rename → new IDs")
 check(plan.keys.allSatisfy { $0.uuidString.dropFirst(14).first == "5" }, "UUID version nibble set")
 
-// Skip only one day of a single-day alarm.
+// Skip the only day of a single-day alarm.
 var sat = AlarmItem(hour: 9, minute: 30, weekdays: [.saturday])
 sat.skippedOccurrence = sat.nextOccurrence(after: now)
 let plan3 = AlarmPlan.make(for: [sat], now: now)
-check(plan3.count == AlarmPlan.coverageWeeks && plan3.values.allSatisfy { if case .once = $0.kind { true } else { false } },
-      "single-day alarm skip → only one-offs")
+check(plan3.count == 1 && plan3.values.first?.kind == .once(d(2026, 11, 7, 9, 30)), "single-day alarm skip → one one-off next week")
 check(sat.nextFireDate(after: now) == d(2026, 11, 7, 9, 30), "Sat alarm next after skip = Nov 7 → \(s(sat.nextFireDate(after: now)))")
 
 // One-time alarm.

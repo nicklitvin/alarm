@@ -20,6 +20,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = self
         NotificationScheduler.registerCategories()
+        BackgroundRefresh.register()
         _ = AlarmController.shared
         return true
     }
