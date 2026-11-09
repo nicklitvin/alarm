@@ -21,7 +21,7 @@ enum NotificationScheduler {
             intentIdentifiers: [],
             options: []
         )
-        UNUserNotificationCenter.current().setNotificationCategories([category])
+        UNUserNotificationCenter.current().setNotificationCategories([category, TodoReminders.category])
     }
 
     static func sync(_ alarms: [AlarmItem], now: Date = .now) async {

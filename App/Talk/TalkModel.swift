@@ -44,6 +44,8 @@ final class TalkModel {
         voice.onUtterance = { [weak self] sentence in
             await self?.handleSpoken(sentence)
         }
+        // Read fresh each time, so a wake word changed by voice applies right away.
+        voice.contextualStrings = { TalkSettings.activeWakeWord.map { [$0] } ?? [] }
     }
 
     // MARK: - Lifecycle
@@ -62,7 +64,6 @@ final class TalkModel {
             voice.stop()
             awaitingFollowUp = false
         } else {
-            voice.contextualStrings = TalkSettings.activeWakeWord.map { [$0] } ?? []
             Task { await voice.start() }
         }
     }
@@ -163,7 +164,13 @@ final class TalkModel {
             return session
         }
         let fresh = LanguageModelSession(
-            tools: [SetTimerTool(), ListTimersTool(), CancelTimersTool()],
+            tools: [
+                ListItemsTool(),
+                CreateAlarmTool(), EditAlarmTool(),
+                CreateTodoTool(), EditTodoTool(),
+                SetTimerTool(), CancelTimersTool(),
+                UpdateSettingsTool(),
+            ],
             instructions: Self.instructions()
         )
         session = fresh
@@ -172,15 +179,19 @@ final class TalkModel {
     }
 
     private static func instructions() -> String {
-        let now = Date().formatted(date: .complete, time: .shortened)
+        let now = Date().formatted(.dateTime.weekday(.wide).month(.wide).day().year().hour().minute())
         return """
-        You are a friendly, quick assistant built into an alarm clock app on the user's iPhone.
-        Reply in one or two short sentences of plain text. Never use markdown, lists or emoji, \
+        You are a friendly, quick assistant inside the user's alarm clock app. You manage their \
+        alarms, to-dos, timers and settings using your tools.
+        Reply in one or two short sentences of plain text with no markdown, lists or emoji, \
         because replies may be read aloud.
-        When the user asks for a timer, call setTimer, converting the length to seconds. \
-        Use listTimers to answer questions about running timers and cancelTimers to stop them. \
-        After using a tool, briefly confirm what you did.
-        You cannot set alarms yourself; if asked, tell the user to use the Alarms tab.
+        Rules:
+        - Wake-up times and "wake me" requests are alarms (createAlarm). "Remind me to..." and tasks \
+        are to-dos (createTodo). Countdowns like "in 10 minutes" for cooking are timers (setTimer).
+        - Alarm hours use the 24-hour clock: 7 PM is 19.
+        - To change or delete something, call editAlarm or editTodo with how the user referred to it. \
+        If it is unclear what exists, call listItems first.
+        - Never invent alarms or to-dos. After a tool runs, briefly confirm what was done.
         The current date and time is \(now).
         """
     }

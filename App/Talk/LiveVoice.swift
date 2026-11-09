@@ -25,7 +25,7 @@ final class LiveVoice: NSObject {
     /// Called with each finished sentence. The handler must end by calling `speak(_:)` or `resumeListening()`.
     @ObservationIgnored var onUtterance: ((String) async -> Void)?
     /// Words to bias recognition toward (e.g. the wake word).
-    @ObservationIgnored var contextualStrings: [String] = []
+    @ObservationIgnored var contextualStrings: () -> [String] = { [] }
 
     /// How long a pause ends a sentence.
     private static let endOfSentenceSilence: Duration = .milliseconds(900)
@@ -134,7 +134,7 @@ final class LiveVoice: NSObject {
         request.shouldReportPartialResults = true
         request.addsPunctuation = true
         request.taskHint = .dictation
-        request.contextualStrings = contextualStrings
+        request.contextualStrings = contextualStrings()
         if recognizer.supportsOnDeviceRecognition {
             request.requiresOnDeviceRecognition = true
         }

@@ -9,7 +9,8 @@ enum AlarmStorage {
         (Bundle.main.object(forInfoDictionaryKey: "AppGroupIdentifier") as? String) ?? "group.com.example.alarm"
     }
 
-    private static var defaults: UserDefaults {
+    /// UserDefaults shared between the app and the widget extension.
+    static var defaults: UserDefaults {
         UserDefaults(suiteName: appGroupIdentifier) ?? .standard
     }
 

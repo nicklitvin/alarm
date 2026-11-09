@@ -10,6 +10,7 @@ struct AlarmApp: App {
             RootView()
                 .environment(AlarmController.shared)
                 .environment(TimerController.shared)
+                .environment(TodoController.shared)
         }
     }
 }
@@ -24,6 +25,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         BackgroundRefresh.register()
         _ = TimerController.shared
         _ = AlarmController.shared
+        _ = TodoController.shared
         return true
     }
 
@@ -35,16 +37,34 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         [.banner, .list, .sound]
     }
 
-    /// Handles "Dismiss Alarm" on the heads-up notification. The app runs in the background for this.
+    /// Handles notification taps and actions. Action buttons run with the app in the background.
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse
     ) async {
-        guard response.actionIdentifier == NotificationScheduler.dismissActionID else { return }
-        let userInfo = response.notification.request.content.userInfo
-        guard let idString = userInfo[NotificationScheduler.alarmIDKey] as? String,
-              let id = UUID(uuidString: idString) else { return }
-        let deliveredAt = response.notification.date
-        await AlarmController.shared.dismissNextRing(of: id, referenceDate: deliveredAt)
+        let content = response.notification.request.content
+        let userInfo = content.userInfo
+
+        switch response.actionIdentifier {
+        case NotificationScheduler.dismissActionID:
+            guard let id = (userInfo[NotificationScheduler.alarmIDKey] as? String).flatMap(UUID.init(uuidString:)) else { return }
+            await AlarmController.shared.dismissNextRing(of: id, referenceDate: response.notification.date)
+
+        case TodoReminders.doneActionID:
+            guard let id = (userInfo[TodoReminders.todoIDKey] as? String).flatMap(UUID.init(uuidString:)) else { return }
+            await TodoController.shared.setDone(true, for: id)
+
+        case TodoReminders.snoozeActionID:
+            guard let id = (userInfo[TodoReminders.todoIDKey] as? String).flatMap(UUID.init(uuidString:)) else { return }
+            await TodoController.shared.snooze(id)
+
+        case UNNotificationDefaultActionIdentifier:
+            await MainActor.run {
+                AppNavigation.shared.tab = content.categoryIdentifier == TodoReminders.categoryID ? .todos : .alarms
+            }
+
+        default:
+            break
+        }
     }
 }

@@ -55,7 +55,53 @@ struct NextAlarmWidgetView: View {
         switch family {
         case .accessoryInline: inline
         case .accessoryCircular: circular
+        case .systemSmall: small
         default: rectangular
+        }
+    }
+
+    // Home screen: big time, day and countdown.
+    @ViewBuilder
+    private var small: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Image(systemName: entry.next == nil ? "alarm" : "alarm.fill")
+                    .font(.headline)
+                    .foregroundStyle(.orange)
+                Spacer()
+                if let next = entry.next {
+                    Text(TimeFormat.dayDescription(for: next.date, relativeTo: entry.date))
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer(minLength: 0)
+            if let next = entry.next {
+                let parts = TimeFormat.parts(for: next.date)
+                HStack(alignment: .firstTextBaseline, spacing: 3) {
+                    Text(parts.time)
+                        .font(.system(size: 40, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                    if let period = parts.period {
+                        Text(period).font(.system(size: 17, weight: .semibold, design: .rounded))
+                    }
+                }
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                Text(next.alarm.title)
+                    .font(.subheadline.weight(.medium))
+                    .lineLimit(1)
+                Text("in \(next.date, style: .relative)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            } else {
+                Text("No Alarms")
+                    .font(.title3.weight(.semibold))
+                Text("Tap to add one")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -142,11 +188,11 @@ struct NextAlarmWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: AlarmStorage.widgetKind, provider: NextAlarmProvider()) { entry in
             NextAlarmWidgetView(entry: entry)
-                .containerBackground(for: .widget) { Color.clear }
+                .widgetBackground()
         }
         .configurationDisplayName("Next Alarm")
         .description("See when your next alarm will go off.")
-        .supportedFamilies([.accessoryRectangular, .accessoryCircular, .accessoryInline])
+        .supportedFamilies([.systemSmall, .accessoryRectangular, .accessoryCircular, .accessoryInline])
     }
 }
 
@@ -154,6 +200,7 @@ struct NextAlarmWidget: Widget {
 struct AlarmWidgetBundle: WidgetBundle {
     var body: some Widget {
         NextAlarmWidget()
+        TodoWidget()
         TimerLiveActivity()
     }
 }

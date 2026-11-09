@@ -208,7 +208,7 @@ private struct EmptyTalkView: View {
     }
 
     private var hint: String {
-        let example = "“set a timer for 10 minutes”"
+        let example = "“wake me up at 7 on weekdays” or “remind me to call mom tomorrow at 6”"
         if wakeWordEnabled, !wakeWord.trimmingCharacters(in: .whitespaces).isEmpty {
             return "Tap the waveform and say “\(wakeWord), …”, or type below. Try \(example)."
         }
