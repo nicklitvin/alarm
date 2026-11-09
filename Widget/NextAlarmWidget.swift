@@ -202,6 +202,8 @@ struct AlarmWidgetBundle: WidgetBundle {
         NextAlarmWidget()
         TodoWidget()
         TimerLiveActivity()
+        AskAssistantControl()
+        LiveTalkControl()
     }
 }
 

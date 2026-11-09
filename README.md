@@ -13,6 +13,10 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 - **Widgets.**
   - **Next Alarm:** home screen (small) and lock screen.
   - **To-Do:** home screen (small, medium, large) and lock screen. Tap a circle to check an item off without opening the app.
+- **Control Center buttons.**
+  - **Ask Assistant:** a prompt drops down from the top of the screen. Type or dictate a request, like "wake me at 7 tomorrow", and the reply appears right there without opening the app.
+  - **Live Talk:** opens the app and starts listening hands-free.
+  - Both also work from Siri ("Ask Alarm"), Spotlight, Shortcuts and the Action button.
 - **Talk tab.** A private assistant that runs entirely on your iPhone using Apple's on-device model:
   - Tap the waveform for hands-free **Live Talk**: it listens, replies out loud and listens again. You can still type at any time.
   - It can manage almost everything in the app:
@@ -45,6 +49,7 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 5. To add widgets:
    - **Home screen:** long-press an empty spot → **Edit** → **Add Widget** → **Alarm**.
    - **Lock screen:** long-press the lock screen → **Customize** → **Lock Screen** → tap the widget area → **Alarm**.
+   - **Control Center:** swipe down from the top-right corner → tap **+** (top left) → **Add a Control** → search "Alarm" → pick **Ask Assistant** and/or **Live Talk**.
 
 ## How it works
 
@@ -67,6 +72,7 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 | To-dos: model, storage, reminders, widget toggle (shared with widget) | `Shared/TodoItem.swift`, `Shared/TodoReminders.swift`, `Shared/TodoIntents.swift` |
 | To-Do tab and suggested times | `App/Todos/` |
 | To-Do widget | `Widget/TodoWidget.swift` |
+| Control Center buttons, Siri and Shortcuts | `Shared/AssistantIntents.swift`, `Widget/AssistantControls.swift`, `App/Talk/AssistantShortcuts.swift` |
 | Lock screen widget | `Widget/NextAlarmWidget.swift` |
 
 **Dismissing one ring of a repeating alarm.** Each weekday of an alarm is its own weekly system alarm. AlarmKit can't skip a single occurrence, so when you dismiss Friday's ring, only Friday is touched: it's swapped for a one-time alarm next Friday, and Mon–Thu are left alone. The weekly Friday alarm comes back the first time any app code runs after the dismissed time:

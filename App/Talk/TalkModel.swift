@@ -59,6 +59,16 @@ final class TalkModel {
 
     var isLive: Bool { voice.phase != .off }
 
+    /// Starts Live Talk (used by the Control Center button). Waits a moment so the app is
+    /// fully in the foreground before the microphone starts.
+    func startLive() {
+        guard !isLive else { return }
+        Task {
+            try? await Task.sleep(for: .milliseconds(500))
+            if !isLive { toggleLive() }
+        }
+    }
+
     func toggleLive() {
         if isLive {
             voice.stop()

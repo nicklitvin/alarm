@@ -26,6 +26,15 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         _ = TimerController.shared
         _ = AlarmController.shared
         _ = TodoController.shared
+
+        // Control Center buttons, Siri and Shortcuts reach the assistant through these.
+        AssistantBridge.ask = { request in
+            await TalkModel.shared.respond(to: request) ?? "Sorry, I couldn't do that."
+        }
+        AssistantBridge.openLiveTalk = {
+            AppNavigation.shared.tab = .talk
+            TalkModel.shared.startLive()
+        }
         return true
     }
 
