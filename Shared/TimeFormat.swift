@@ -40,6 +40,31 @@ enum TimeFormat {
         return calendar.weekdaySymbols[calendar.component(.weekday, from: date) - 1]
     }
 
+    /// Timer display like "4:05" or "1:02:03".
+    static func clock(_ seconds: TimeInterval) -> String {
+        let total = max(0, Int(seconds.rounded(.up)))
+        let h = total / 3600, m = (total % 3600) / 60, s = total % 60
+        return h > 0 ? String(format: "%d:%02d:%02d", h, m, s) : String(format: "%d:%02d", m, s)
+    }
+
+    /// Spoken-style duration like "5 minutes", "1 hour 30 minutes" or "45 seconds".
+    static func durationName(_ seconds: TimeInterval) -> String {
+        let total = max(0, Int(seconds.rounded()))
+        let h = total / 3600, m = (total % 3600) / 60, s = total % 60
+        func unit(_ n: Int, _ name: String) -> String? { n > 0 ? "\(n) \(name)\(n == 1 ? "" : "s")" : nil }
+        let parts = [unit(h, "hour"), unit(m, "minute"), unit(s, "second")].compactMap { $0 }
+        return parts.isEmpty ? "0 seconds" : parts.joined(separator: " ")
+    }
+
+    /// Short preset label like "5 min", "1 hr" or "30 sec".
+    static func compactDuration(_ seconds: TimeInterval) -> String {
+        let total = Int(seconds.rounded())
+        if total >= 3600, total % 3600 == 0 { return "\(total / 3600) hr" }
+        if total >= 60, total % 60 == 0 { return "\(total / 60) min" }
+        if total < 60 { return "\(total) sec" }
+        return clock(seconds)
+    }
+
     /// Compact countdown like "7h 12m" or "42m".
     static func countdown(from now: Date, to date: Date) -> String {
         let total = max(1, Int((date.timeIntervalSince(now) / 60).rounded(.up)))

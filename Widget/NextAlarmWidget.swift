@@ -154,6 +154,7 @@ struct NextAlarmWidget: Widget {
 struct AlarmWidgetBundle: WidgetBundle {
     var body: some Widget {
         NextAlarmWidget()
+        TimerLiveActivity()
     }
 }
 

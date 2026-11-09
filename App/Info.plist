@@ -4,6 +4,10 @@
 <dict>
 	<key>NSAlarmKitUsageDescription</key>
 	<string>Alarm needs permission to ring your alarms on time, even when your iPhone is in Silent mode or a Focus.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Live Talk listens to your voice so you can talk to the assistant hands-free.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Live Talk turns your voice into text on your iPhone so the assistant can understand you.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>

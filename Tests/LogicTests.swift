@@ -94,5 +94,27 @@ check(TimeFormat.countdown(from: now, to: d(2026, 10, 30, 13, 42)) == "7h 12m", 
 let data = try! JSONEncoder().encode([a, once])
 check(try! JSONDecoder().decode([AlarmItem].self, from: data) == [a, once], "Codable round trip")
 
+// Wake word.
+let wake = "Hey Alarm"
+check(WakeWord.strip(wake, from: "Hey alarm, set a timer for 5 minutes") == "set a timer for 5 minutes", "wake word stripped")
+check(WakeWord.strip(wake, from: "Hey, alarm. What time is it?") == "What time is it?", "punctuation between/after wake word, keeps trailing ?")
+check(WakeWord.strip(wake, from: "hey Alarm.") == "", "wake word alone → empty (wait for follow-up)")
+check(WakeWord.strip(wake, from: "Heyalarm what's up") == "what's up", "run-together wake word")
+check(WakeWord.strip(wake, from: "Hey alarms stop the timer") == "stop the timer", "one-letter slip tolerated")
+check(WakeWord.strip(wake, from: "Héy ALARM start") == "start", "case/accents ignored")
+check(WakeWord.strip(wake, from: "Set a timer for 5 minutes") == nil, "no wake word → ignored")
+check(WakeWord.strip(wake, from: "Hey Alan set a timer") == nil, "different name → ignored")
+check(WakeWord.strip(wake, from: "Okay alarm set a timer") == nil, "different greeting → ignored")
+check(WakeWord.strip(wake, from: "I said hey alarm") == nil, "wake word must be at the start")
+check(WakeWord.strip(wake, from: "") == nil, "empty utterance → ignored")
+check(WakeWord.strip("Jarvis", from: "Jervis, timer 10 minutes") == "timer 10 minutes", "single-word wake word w/ slip")
+check(WakeWord.strip("Max", from: "Mix timer") == nil, "short wake words must match exactly")
+check(WakeWord.strip("", from: "anything") == "anything", "empty wake word lets everything through")
+
+// Timer formatting.
+check(TimeFormat.clock(65) == "1:05" && TimeFormat.clock(3723) == "1:02:03" && TimeFormat.clock(0) == "0:00", "clock format")
+check(TimeFormat.durationName(300) == "5 minutes" && TimeFormat.durationName(5400) == "1 hour 30 minutes" && TimeFormat.durationName(61) == "1 minute 1 second", "duration names")
+check(TimeFormat.compactDuration(300) == "5 min" && TimeFormat.compactDuration(3600) == "1 hr" && TimeFormat.compactDuration(30) == "30 sec", "preset labels")
+
 print(failures == 0 ? "\nALL PASSED" : "\n\(failures) FAILED")
 exit(failures == 0 ? 0 : 1)

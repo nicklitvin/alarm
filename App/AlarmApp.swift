@@ -7,8 +7,9 @@ struct AlarmApp: App {
 
     var body: some Scene {
         WindowGroup {
-            AlarmListView()
+            RootView()
                 .environment(AlarmController.shared)
+                .environment(TimerController.shared)
         }
     }
 }
@@ -21,6 +22,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         UNUserNotificationCenter.current().delegate = self
         NotificationScheduler.registerCategories()
         BackgroundRefresh.register()
+        _ = TimerController.shared
         _ = AlarmController.shared
         return true
     }

@@ -3,11 +3,6 @@ import AlarmKit
 import Foundation
 import SwiftUI
 
-/// Metadata attached to every system alarm we schedule.
-struct AlarmPayload: AlarmMetadata {
-    var alarmID: UUID
-}
-
 /// Mirrors the app's alarms into AlarmKit, so they ring like real Clock alarms
 /// (full-screen on the lock screen, through Silent mode and Focus).
 @MainActor
@@ -15,6 +10,12 @@ final class AlarmKitScheduler {
     private let manager = AlarmManager.shared
 
     func requestAuthorization() async -> Bool {
+        await Self.ensureAuthorized()
+    }
+
+    /// Asks for AlarmKit permission if needed. Shared by alarms and timers.
+    static func ensureAuthorized() async -> Bool {
+        let manager = AlarmManager.shared
         switch manager.authorizationState {
         case .authorized:
             return true
@@ -35,8 +36,10 @@ final class AlarmKitScheduler {
         let plan = AlarmPlan.make(for: alarms, now: now)
         let existing = (try? manager.alarms) ?? []
 
-        // Cancel anything no longer wanted, but never interrupt an alarm that is ringing right now.
-        for alarm in existing where plan[alarm.id] == nil && alarm.state != .alerting {
+        // Cancel alarms no longer wanted. Only ever touch ones that are waiting to ring: never one
+        // that is ringing right now, and never a timer (timers are always counting down or paused).
+        let timerIDs = TimerController.shared.timerIDs
+        for alarm in existing where plan[alarm.id] == nil && alarm.state == .scheduled && !timerIDs.contains(alarm.id) {
             do { try manager.cancel(id: alarm.id) } catch { print("AlarmKit cancel failed: \(error)") }
         }
 
@@ -62,7 +65,7 @@ final class AlarmKitScheduler {
         )
         let attributes = AlarmAttributes<AlarmPayload>(
             presentation: AlarmPresentation(alert: alert),
-            metadata: AlarmPayload(alarmID: item.id),
+            metadata: AlarmPayload(alarmID: item.id, label: item.title, isTimer: false),
             tintColor: .orange
         )
 
