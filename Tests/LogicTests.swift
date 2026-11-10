@@ -199,5 +199,42 @@ check(found(AssistantMatching.todo(matching: "milk", in: todosList))?.id == milk
 check(found(AssistantMatching.todo(matching: "the call with mom", in: todosList))?.id == mom.id, "todo word overlap")
 if case .none = AssistantMatching.todo(matching: "laundry", in: todosList) { check(true, "todo none") } else { check(false, "todo none") }
 
+// Versioning.
+check(AppVersion("1.10.0")! > AppVersion("1.9.2")!, "1.10.0 > 1.9.2")
+check(AppVersion("1.5")! == AppVersion("1.5.0")! && AppVersion("v2.0")! > AppVersion("1.99.99")!, "1.5 == 1.5.0, v-prefix")
+check(AppVersion("1.5.1")! > AppVersion("1.5")! && AppVersion("abc") == nil && AppVersion("") == nil, "patch bump, invalid")
+check(Set([AppVersion("1.5")!, AppVersion("1.5.0")!]).count == 1, "hash agrees with ==")
+
+let sample = try! Changelog.decode(Data("""
+{"releases":[{"version":"1.2.0","date":"2026-01-02","notes":["b"]},{"version":"1.10.0","date":"2026-02-01","title":"Big","notes":["c"]},{"version":"1.0.0","date":"2025-12-01","notes":["a"]}]}
+""".utf8))
+check(sample.releases.map(\.version) == ["1.10.0", "1.2.0", "1.0.0"], "changelog sorted newest first")
+check(sample.releases(newerThan: AppVersion("1.2.0")!).map(\.version) == ["1.10.0"], "pending releases")
+check(sample.releases(after: AppVersion("1.0.0")!, upTo: AppVersion("1.10.0")!).map(\.version) == ["1.10.0", "1.2.0"], "what's new range")
+let remoteSample = Changelog(releases: [Release(version: "1.11.0", build: 9, date: "2026-03-01", title: nil, notes: ["d"]),
+                                        Release(version: "1.10.0", build: 8, date: "2026-02-01", title: "Big (edited)", notes: ["c"])])
+check(sample.merged(with: remoteSample).releases.map(\.version) == ["1.11.0", "1.10.0", "1.2.0", "1.0.0"]
+      && sample.merged(with: remoteSample).releases[1].title == "Big (edited)", "merge prefers fetched notes")
+check(sample.releases[1].displayDate.hasSuffix("2, 2026"), "display date → \(sample.releases[1].displayDate)")
+
+// The real CHANGELOG.json must be valid and match project.yml.
+if let data = FileManager.default.contents(atPath: "CHANGELOG.json"), let log = try? Changelog.decode(data),
+   let yml = try? String(contentsOfFile: "project.yml", encoding: .utf8) {
+    func setting(_ key: String) -> String? {
+        yml.split(separator: "\n").first { $0.trimmingCharacters(in: .whitespaces).hasPrefix(key + ":") }
+            .map { $0.split(separator: ":", maxSplits: 1)[1].trimmingCharacters(in: .whitespaces).trimmingCharacters(in: CharacterSet(charactersIn: "\"")) }
+    }
+    let latest = log.latest!
+    check(setting("MARKETING_VERSION") == latest.version, "project.yml MARKETING_VERSION (\(setting("MARKETING_VERSION") ?? "?")) == newest changelog version (\(latest.version))")
+    check(setting("CURRENT_PROJECT_VERSION") == latest.build.map(String.init), "project.yml build (\(setting("CURRENT_PROJECT_VERSION") ?? "?")) == newest changelog build")
+    let versions = log.releases.compactMap(\.appVersion)
+    check(versions.count == log.releases.count && Set(versions).count == versions.count, "changelog versions valid and unique")
+    let builds = log.releases.compactMap(\.build)
+    check(builds.count == log.releases.count && builds == builds.sorted(by: >) && Set(builds).count == builds.count, "build numbers present and increasing")
+    check(log.releases.allSatisfy { !$0.notes.isEmpty && $0.date.split(separator: "-").count == 3 }, "every release has notes and a YYYY-MM-DD date")
+} else {
+    check(false, "CHANGELOG.json and project.yml readable and valid")
+}
+
 print(failures == 0 ? "\nALL PASSED" : "\n\(failures) FAILED")
 exit(failures == 0 ? 0 : 1)

@@ -16,6 +16,7 @@ final class AppNavigation {
 struct RootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var navigation = AppNavigation.shared
+    @State private var updates = UpdateChecker.shared
 
     var body: some View {
         TabView(selection: $navigation.tab) {
@@ -33,8 +34,24 @@ struct RootView: View {
             }
         }
         .tint(.orange)
+        .sheet(item: $updates.updatePrompt) { release in
+            UpdatePromptView(release: release)
+        }
+        .sheet(isPresented: Binding(
+            get: { !updates.whatsNew.isEmpty },
+            set: { if !$0 { updates.whatsNew = [] } }
+        )) {
+            WhatsNewView(releases: updates.whatsNew)
+        }
+        .task {
+            updates.showWhatsNewIfUpdated()
+            updates.checkIfNeeded()
+        }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { TodoController.shared.reload() }
+            if phase == .active {
+                TodoController.shared.reload()
+                updates.checkIfNeeded()
+            }
         }
     }
 }

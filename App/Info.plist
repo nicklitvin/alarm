@@ -18,6 +18,10 @@
 	<array>
 		<string>fetch</string>
 	</array>
+	<key>UpdateFeedURL</key>
+	<string>https://raw.githubusercontent.com/nicklitvin/alarm/main/CHANGELOG.json</string>
+	<key>UpdatePageURL</key>
+	<string>https://github.com/nicklitvin/alarm</string>
 	<key>AppGroupIdentifier</key>
 	<string>$(APP_GROUP_ID)</string>
 </dict>

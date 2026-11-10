@@ -13,6 +13,10 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 - **Widgets.**
   - **Next Alarm:** home screen (small) and lock screen.
   - **To-Do:** home screen (small, medium, large) and lock screen. Tap a circle to check an item off without opening the app.
+- **Updates and patch notes.**
+  - The app checks GitHub for a newer version and offers to show you how to update.
+  - Tap the info button on the Alarms tab to see your version and the patch notes for every release.
+  - A "What's New" screen appears the first time you open a new version.
 - **Control Center buttons.**
   - **Ask Assistant:** a prompt drops down from the top of the screen. Type or dictate a request, like "wake me at 7 tomorrow", and the reply appears right there without opening the app.
   - **Live Talk:** opens the app and starts listening hands-free.
@@ -72,6 +76,7 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 | To-dos: model, storage, reminders, widget toggle (shared with widget) | `Shared/TodoItem.swift`, `Shared/TodoReminders.swift`, `Shared/TodoIntents.swift` |
 | To-Do tab and suggested times | `App/Todos/` |
 | To-Do widget | `Widget/TodoWidget.swift` |
+| Version check, What's New, patch notes | `App/About/`, `CHANGELOG.json` |
 | Control Center buttons, Siri and Shortcuts | `Shared/AssistantIntents.swift`, `Widget/AssistantControls.swift`, `App/Talk/AssistantShortcuts.swift` |
 | Lock screen widget | `Widget/NextAlarmWidget.swift` |
 
@@ -82,6 +87,13 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 - You open the app or use a notification action.
 
 **Dismissing a one-time alarm** simply turns it off.
+
+## Versions and updates
+
+- `CHANGELOG.json` lists every version with its patch notes, newest first. It's bundled into the app and also read from `main` on GitHub to detect updates.
+- To release: bump `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `project.yml`, add a matching entry at the top of `CHANGELOG.json`, then push to `main`. `./Tests/run.sh` fails if the two don't match.
+- The app checks at launch and when it comes to the foreground, at most every 6 hours, or straight away with **Check for Updates** on the About screen.
+- On the App Store, iOS would install updates by itself. This check exists because the app is installed from Xcode. To point it elsewhere, change `UpdateFeedURL` and `UpdatePageURL` in `App/Info.plist`.
 
 ## Tests
 

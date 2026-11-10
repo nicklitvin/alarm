@@ -16,6 +16,7 @@ struct AlarmListView: View {
     @Environment(AlarmController.self) private var controller
     @Environment(\.scenePhase) private var scenePhase
     @State private var editorTarget: EditorTarget?
+    @State private var showAbout = false
 
     var body: some View {
         NavigationStack {
@@ -24,10 +25,24 @@ struct AlarmListView: View {
             }
             .navigationTitle("Alarms")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showAbout = true
+                    } label: {
+                        Image(systemName: "info.circle")
+                            .overlay(alignment: .topTrailing) {
+                                if UpdateChecker.shared.updateAvailable {
+                                    Circle().fill(Color.red).frame(width: 8, height: 8).offset(x: 3, y: -2)
+                                }
+                            }
+                    }
+                    .accessibilityLabel(UpdateChecker.shared.updateAvailable ? "About, update available" : "About")
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Add Alarm", systemImage: "plus") { editorTarget = .new }
                 }
             }
+            .sheet(isPresented: $showAbout) { AboutView() }
             .sheet(item: $editorTarget) { target in
                 AlarmEditorView(target: target)
             }
