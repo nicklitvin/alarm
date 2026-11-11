@@ -310,5 +310,21 @@ check(changes.first == unNow.addingTimeInterval(120) && changes.contains(d(2026,
       && changes.contains(d(2026, 11, 13, 6, 0)), "widget refreshes at timer end, alarm, deadline, next heads-up window")
 check(changes == changes.sorted() && changes.allSatisfy { $0 > unNow }, "change dates sorted and in the future")
 
+// Time-of-day deadline options.
+let tuesdayNoonish = d(2026, 11, 17, 12, 30)
+check(TimeOfDay.evening.apply(to: d(2026, 11, 20, 9, 0), now: tuesdayNoonish) == d(2026, 11, 20, 18, 0), "evening keeps the chosen day")
+check(TimeOfDay.afternoon.apply(to: tuesdayNoonish, now: tuesdayNoonish) == d(2026, 11, 17, 15, 0), "afternoon later today")
+check(TimeOfDay.morning.apply(to: tuesdayNoonish, now: tuesdayNoonish) == d(2026, 11, 18, 9, 0), "morning already passed today → tomorrow")
+check(TimeOfDay.matching(d(2026, 11, 17, 21, 0)) == .night && TimeOfDay.matching(d(2026, 11, 17, 21, 5)) == nil, "matching highlights exact times only")
+
+// Deep links (widget taps).
+let someID = UUID()
+for link in [DeepLink.alarms, .alarm(someID), .timers, .todos, .todo(someID), .notes, .note(someID)] {
+    check(DeepLink(url: link.url) == link, "deep link round trip \(link.url.absoluteString)")
+}
+check(DeepLink(url: URL(string: "https://example.com/alarm")!) == nil && DeepLink(url: URL(string: "alarmapp://bogus")!) == nil, "foreign/unknown links ignored")
+check(UpNextItem(kind: .todo(TodoItem(id: someID, title: "x"))).deepLink == .todo(someID), "widget to-do row opens that to-do")
+check(UpNextItem(kind: .nextAlarm(AlarmItem(id: someID, hour: 7, minute: 0), Date())).deepLink == .alarm(someID), "widget alarm row opens that alarm")
+
 print(failures == 0 ? "\nALL PASSED" : "\n\(failures) FAILED")
 exit(failures == 0 ? 0 : 1)

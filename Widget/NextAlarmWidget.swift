@@ -52,12 +52,16 @@ struct NextAlarmWidgetView: View {
     let entry: NextAlarmEntry
 
     var body: some View {
-        switch family {
-        case .accessoryInline: inline
-        case .accessoryCircular: circular
-        case .systemSmall: small
-        default: rectangular
+        Group {
+            switch family {
+            case .accessoryInline: inline
+            case .accessoryCircular: circular
+            case .systemSmall: small
+            default: rectangular
+            }
         }
+        // Tapping opens that alarm in the app (or the Alarms tab when there's none).
+        .widgetURL((entry.next.map { DeepLink.alarm($0.alarm.id) } ?? .alarms).url)
     }
 
     // Home screen: big time, day and countdown.

@@ -40,6 +40,8 @@ struct TodoEditorView: View {
                             Spacer()
                             IntervalDatePicker(selection: $deadline, mode: .dateAndTime, style: .compact, minuteInterval: 5)
                         }
+                        TimeOfDayChips(date: $deadline)
+                            .padding(.vertical, 2)
                     }
                 } footer: {
                     if hasDeadline {

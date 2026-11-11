@@ -1,6 +1,17 @@
 {
   "releases": [
     {
+      "version": "1.7.0",
+      "build": 8,
+      "date": "2026-11-11",
+      "title": "Widgets Open What You Tap",
+      "notes": [
+        "Tapping the Next Alarm widget now opens that alarm in the app.",
+        "Tapping a to-do in the Up Next widget opens it on the To-Do tab. Tapping its circle still checks it off. Alarms and timers open their tabs too.",
+        "New quick times for to-do deadlines: Morning, Noon, Afternoon, Evening and Night. They keep the day you picked, and move to tomorrow if that time has already passed."
+      ]
+    },
+    {
       "version": "1.6.0",
       "build": 7,
       "date": "2026-11-11",

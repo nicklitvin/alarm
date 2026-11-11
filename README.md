@@ -12,8 +12,8 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 - **To-Do tab.** Add a to-do and tap a suggested time ("In 1 hour", "Tonight", "Tomorrow morning", …) or pick a custom time and date. You get a notification at the deadline with **Mark as Done** and **Remind Me in 1 Hour** buttons. Items are grouped into Overdue, Today, Tomorrow, Later and No Deadline.
 - **Notes tab.** Searchable notes with a **Copy All** button on every note. The assistant can read them ("what's on my packing note?") and write to them ("add charger to my packing note").
 - **Widgets.**
-  - **Up Next:** home screen (small, medium, large) and lock screen. Shows what's relevant now: an alarm within the hour with a **Dismiss** button, running timers, overdue and soon-due to-dos, the next alarm, then the rest of your to-dos. Check items off right from the widget. The ✦ button in the bottom-right corner opens a prompt to ask the assistant.
-  - **Next Alarm:** home screen (small) and lock screen.
+  - **Up Next:** home screen (small, medium, large) and lock screen. Shows what's relevant now: an alarm within the hour with a **Dismiss** button, running timers, overdue and soon-due to-dos, the next alarm, then the rest of your to-dos. Tap an item to open it in the app, or tap a to-do's circle to check it off. The ✦ button in the bottom-right corner opens a prompt to ask the assistant.
+  - **Next Alarm:** home screen (small) and lock screen. Tap it to open that alarm.
 - **Updates and patch notes.**
   - The app checks GitHub for a newer version and offers to show you how to update.
   - Tap the info button on the Alarms tab to see your version and the patch notes for every release.

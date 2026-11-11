@@ -46,3 +46,47 @@ enum DueSuggestions {
         return result
     }
 }
+
+/// Quick times for a deadline: set the time, keep the chosen day.
+enum TimeOfDay: String, CaseIterable, Identifiable, Sendable {
+    case morning, noon, afternoon, evening, night
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .morning: "Morning"
+        case .noon: "Noon"
+        case .afternoon: "Afternoon"
+        case .evening: "Evening"
+        case .night: "Night"
+        }
+    }
+
+    var hour: Int {
+        switch self {
+        case .morning: 9
+        case .noon: 12
+        case .afternoon: 15
+        case .evening: 18
+        case .night: 21
+        }
+    }
+
+    /// `date`'s day at this time. If that's already past (only possible today), the next day.
+    func apply(to date: Date, now: Date = Date(), calendar: Calendar = .current) -> Date {
+        let day = calendar.startOfDay(for: date)
+        var result = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: day) ?? date
+        if result <= now, let next = calendar.date(byAdding: .day, value: 1, to: result) {
+            result = next
+        }
+        return result
+    }
+
+    /// The option a deadline currently matches, for highlighting.
+    static func matching(_ date: Date, calendar: Calendar = .current) -> TimeOfDay? {
+        let c = calendar.dateComponents([.hour, .minute], from: date)
+        guard c.minute == 0 else { return nil }
+        return allCases.first { $0.hour == c.hour }
+    }
+}

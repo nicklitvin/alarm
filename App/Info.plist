@@ -18,6 +18,17 @@
 	<array>
 		<string>fetch</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>alarmapp</string>
+			</array>
+		</dict>
+	</array>
 	<key>UpdateFeedURL</key>
 	<string>https://raw.githubusercontent.com/nicklitvin/alarm/main/CHANGELOG.json</string>
 	<key>UpdatePageURL</key>

@@ -5,13 +5,8 @@ enum AppTab: Hashable {
     case alarms, timers, todos, notes, talk
 }
 
-/// Something in the app a chat message can point to.
-enum ChatLink: Hashable {
-    case alarm(UUID)
-    case todo(UUID)
-    case note(UUID)
-    case timers
-}
+/// Something in the app a chat message can point to: the same places widgets link to.
+typealias ChatLink = DeepLink
 
 /// Which tab is showing, and which item to open. Notifications and chat links use it.
 @MainActor
@@ -24,19 +19,25 @@ final class AppNavigation {
     var pendingTodoID: UUID?
     var pendingNoteID: UUID?
 
-    func open(_ link: ChatLink) {
+    func open(_ link: DeepLink) {
         switch link {
+        case .alarms:
+            tab = .alarms
         case .alarm(let id):
             tab = .alarms
             pendingAlarmID = id
+        case .timers:
+            tab = .timers
+        case .todos:
+            tab = .todos
         case .todo(let id):
             tab = .todos
             pendingTodoID = id
+        case .notes:
+            tab = .notes
         case .note(let id):
             tab = .notes
             pendingNoteID = id
-        case .timers:
-            tab = .timers
         }
     }
 }
@@ -73,6 +74,10 @@ struct RootView: View {
             set: { if !$0 { updates.whatsNew = [] } }
         )) {
             WhatsNewView(releases: updates.whatsNew)
+        }
+        .onOpenURL { url in
+            // Taps on widgets: open exactly what was tapped.
+            if let link = DeepLink(url: url) { navigation.open(link) }
         }
         .task {
             updates.showWhatsNewIfUpdated()

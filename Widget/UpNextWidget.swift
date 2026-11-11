@@ -62,12 +62,16 @@ struct UpNextWidgetView: View {
     let entry: UpNextEntry
 
     var body: some View {
-        switch family {
-        case .accessoryInline: inline
-        case .accessoryRectangular: rectangular
-        case .systemSmall: small
-        default: list
+        Group {
+            switch family {
+            case .accessoryInline: inline
+            case .accessoryRectangular: rectangular
+            case .systemSmall: small
+            default: list
+            }
         }
+        // Tapping anywhere else opens the top item (small and lock screen widgets only support this).
+        .widgetURL((entry.items.first?.deepLink ?? .todos).url)
     }
 
     private var maxRows: Int {
@@ -201,16 +205,23 @@ private struct UpNextRow: View {
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
             leading
-            VStack(alignment: .leading, spacing: 0) {
-                title
-                    .font(compactLockScreen ? .system(size: 15, weight: .semibold) : (prominent ? .headline : .subheadline.weight(.medium)))
-                    .lineLimit(prominent ? 2 : 1)
-                subtitle
-                    .font(compactLockScreen ? .system(size: 12, weight: .medium) : .caption2)
-                    .foregroundStyle(subtitleIsUrgent ? Color.red : Color.secondary)
-                    .lineLimit(1)
+            // Tapping the text opens the item in the app; the circle and buttons do their own thing.
+            Link(destination: item.deepLink.url) {
+                HStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        title
+                            .font(compactLockScreen ? .system(size: 15, weight: .semibold) : (prominent ? .headline : .subheadline.weight(.medium)))
+                            .lineLimit(prominent ? 2 : 1)
+                        subtitle
+                            .font(compactLockScreen ? .system(size: 12, weight: .medium) : .caption2)
+                            .foregroundStyle(subtitleIsUrgent ? Color.red : Color.secondary)
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
             }
-            Spacer(minLength: 0)
+            .foregroundStyle(.primary)
             if !compactLockScreen { trailing }
         }
     }
