@@ -19,6 +19,7 @@ final class AlarmController {
 
     private(set) var alarms: [AlarmItem]
     private(set) var isAuthorized = true
+    private(set) var notificationsAllowed = true
 
     @ObservationIgnored private let scheduler = AlarmKitScheduler()
     @ObservationIgnored private var syncTask: Task<Void, Never>?
@@ -155,7 +156,7 @@ final class AlarmController {
     @discardableResult
     private func commit() -> Task<Void, Never> {
         AlarmStorage.save(alarms)
-        WidgetCenter.shared.reloadTimelines(ofKind: AlarmStorage.widgetKind)
+        WidgetCenter.shared.reloadAllTimelines()
         BackgroundRefresh.schedule(at: AlarmPlan.nextRestoreDate(for: alarms, now: .now))
 
         let previous = syncTask
@@ -164,7 +165,7 @@ final class AlarmController {
             let snapshot = self.alarms
             let now = Date()
             self.isAuthorized = await self.scheduler.sync(snapshot, now: now)
-            await NotificationScheduler.sync(snapshot, now: now)
+            self.notificationsAllowed = await NotificationScheduler.sync(snapshot, now: now)
         }
         syncTask = task
         return task

@@ -11,6 +11,7 @@ struct AlarmApp: App {
                 .environment(AlarmController.shared)
                 .environment(TimerController.shared)
                 .environment(TodoController.shared)
+                .environment(NotesController.shared)
         }
     }
 }
@@ -31,6 +32,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         AssistantBridge.ask = { request in
             await TalkModel.shared.respond(to: request) ?? "Sorry, I couldn't do that."
         }
+        AlarmIntentBridge.dismiss = { id in await AlarmController.shared.dismissNextRing(of: id) }
+        AlarmIntentBridge.undo = { id in AlarmController.shared.undoDismiss(of: id) }
         AssistantBridge.openLiveTalk = {
             AppNavigation.shared.tab = .talk
             TalkModel.shared.startLive()

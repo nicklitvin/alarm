@@ -236,5 +236,79 @@ if let data = FileManager.default.contents(atPath: "CHANGELOG.json"), let log = 
     check(false, "CHANGELOG.json and project.yml readable and valid")
 }
 
+// Day parsing for chat edits (bug: "change which days my alarm is on").
+func days(_ t: String) -> String { AssistantMatching.parseDays(t).map { $0.sorted().map { $0.shortName }.joined(separator: ",") } ?? "nil" }
+check(days("monday, wednesday and friday") == "Mon,Wed,Fri", "one string with commas/and → \(days("monday, wednesday and friday"))")
+check(days("every weekday") == "Mon,Tue,Wed,Thu,Fri", "every weekday")
+check(days("Mon-Fri") == "Mon,Tue,Wed,Thu,Fri" && days("monday to friday") == "Mon,Tue,Wed,Thu,Fri", "ranges")
+check(days("friday through monday") == "Sun,Mon,Fri,Sat", "wrapping range")
+check(days("every day except sunday") == "Mon,Tue,Wed,Thu,Fri,Sat", "except")
+check(days("weekends and wednesday") == "Sun,Wed,Sat", "weekend + day")
+check(days("Tuesdays and Thursdays") == "Tue,Thu" && days("tues thurs") == "Tue,Thu", "plurals/abbrevs")
+check(days("[\"Monday\",\"Friday\"]") == "Mon,Fri", "JSON-ish list")
+check(days("all weekdays") == "Mon,Tue,Wed,Thu,Fri", "'all weekdays' isn't every day")
+check(days("daily") == "Sun,Mon,Tue,Wed,Thu,Fri,Sat", "daily")
+check(days("once") == "" && days("never") == "" && days("one-time") == "", "one-time")
+check(days("purple") == "nil" && days("") == "nil", "unrecognized → nil (not one-time)")
+check(days("the weekend") == "Sun,Sat", "'the' isn't Thursday")
+
+// Saved data from older versions still loads.
+let oldTodoJSON = #"[{"id":"7D5C2B1A-1111-4222-8333-944455556666","title":"Old","isDone":false,"createdAt":700000000}]"#
+let decodedOld = try? JSONDecoder().decode([TodoItem].self, from: Data(oldTodoJSON.utf8))
+check(decodedOld?.first?.title == "Old" && decodedOld?.first?.details == "", "to-do without details decodes")
+var withDetails = TodoItem(title: "T", details: "Aisle 4"); withDetails.setDone(true)
+check((try? JSONDecoder().decode(TodoItem.self, from: JSONEncoder().encode(withDetails))) == withDetails, "to-do round trip with details")
+let note = Note(title: "Packing", body: "Socks\nCharger")
+check(note.copyText == "Packing\n\nSocks\nCharger" && note.displayTitle == "Packing" && note.preview == "Socks Charger", "note copy/title/preview")
+let untitled = Note(body: "Groceries\nMilk\nEggs")
+check(untitled.displayTitle == "Groceries" && untitled.preview == "Milk Eggs" && untitled.copyText == "Groceries\nMilk\nEggs", "untitled note uses first line")
+check(Note().isEmpty && Note().displayTitle == "New Note", "empty note")
+check((try? JSONDecoder().decode(Note.self, from: Data(#"{"title":"x"}"#.utf8)))?.title == "x", "note decodes with missing fields")
+
+// Note matching.
+let packing = Note(title: "Packing list", body: "Socks, charger, passport")
+let groceries = Note(body: "Groceries\nMilk\nEggs")
+let meeting = Note(title: "Meeting with Sam", body: "Budget review and hiring plan")
+let notesList = [packing, groceries, meeting]
+check(found(AssistantMatching.note(matching: "my packing note", in: notesList))?.id == packing.id, "note by title word")
+check(found(AssistantMatching.note(matching: "groceries", in: notesList))?.id == groceries.id, "untitled note by first line")
+check(found(AssistantMatching.note(matching: "the meeting notes", in: notesList))?.id == meeting.id, "'the ... notes' filler ignored")
+check(found(AssistantMatching.note(matching: "hiring plan", in: notesList))?.id == meeting.id, "note by body text")
+if case .none = AssistantMatching.note(matching: "recipes", in: notesList) { check(true, "no note") } else { check(false, "no note") }
+
+// Up Next widget ranking.
+let unNow = d(2026, 11, 12, 6, 30)   // Thursday 6:30 AM
+let wakeAlarm = AlarmItem(hour: 7, minute: 0, label: "Wake", weekdays: Weekday.workdays)      // in 30 min
+let evening = AlarmItem(hour: 21, minute: 0, label: "Wind down", weekdays: Set(Weekday.allCases))
+let runningTimer = TimerItem(id: UUID(), label: "Tea", duration: 300, state: .running, fireDate: unNow.addingTimeInterval(120), remaining: 300)
+let pausedTimer = TimerItem(id: UUID(), label: "Bread", duration: 600, state: .paused, fireDate: unNow, remaining: 400)
+let overdueTodo = TodoItem(title: "Pay bill", due: d(2026, 11, 12, 6, 0))
+let soonTodo = TodoItem(title: "Leave for train", due: d(2026, 11, 12, 8, 0))
+let laterTodo = TodoItem(title: "Dentist", due: d(2026, 11, 14, 9, 0))
+let somedayTodo = TodoItem(title: "Read book")
+func kinds(_ items: [UpNextItem]) -> [String] {
+    items.map {
+        switch $0.kind {
+        case .alarmSoon(let a, _): "soon:\(a.label)"
+        case .alarmDismissed(let a, _): "dismissed:\(a.label)"
+        case .timer(let t): "timer:\(t.label)"
+        case .todo(let t): "todo:\(t.title)"
+        case .nextAlarm(let a, _): "next:\(a.label)"
+        }
+    }
+}
+let upNext = UpNext.items(alarms: [evening, wakeAlarm], todos: [somedayTodo, laterTodo, soonTodo, overdueTodo],
+                          timers: [pausedTimer, runningTimer], now: unNow)
+check(kinds(upNext) == ["soon:Wake", "timer:Tea", "timer:Bread", "todo:Pay bill", "todo:Leave for train", "next:Wind down", "todo:Dentist", "todo:Read book"],
+      "up next order → \(kinds(upNext))")
+var skippedWake = wakeAlarm; skippedWake.skippedOccurrence = d(2026, 11, 12, 7, 0)
+check(kinds(UpNext.items(alarms: [skippedWake], todos: [], timers: [], now: unNow)) == ["dismissed:Wake"], "dismissed alarm shows with undo")
+check(kinds(UpNext.items(alarms: [wakeAlarm], todos: [], timers: [], now: d(2026, 11, 12, 5, 0))) == ["next:Wake"], "alarm 2h away → next alarm, not dismissable")
+check(kinds(UpNext.items(alarms: [], todos: [], timers: [], now: unNow)).isEmpty, "nothing → empty")
+let changes = UpNext.changeDates(alarms: [wakeAlarm], todos: [soonTodo], timers: [runningTimer], now: unNow)
+check(changes.first == unNow.addingTimeInterval(120) && changes.contains(d(2026, 11, 12, 7, 0)) && changes.contains(d(2026, 11, 12, 8, 0))
+      && changes.contains(d(2026, 11, 13, 6, 0)), "widget refreshes at timer end, alarm, deadline, next heads-up window")
+check(changes == changes.sorted() && changes.allSatisfy { $0 > unNow }, "change dates sorted and in the future")
+
 print(failures == 0 ? "\nALL PASSED" : "\n\(failures) FAILED")
 exit(failures == 0 ? 0 : 1)

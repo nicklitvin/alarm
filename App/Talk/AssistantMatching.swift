@@ -11,30 +11,87 @@ enum AssistantMatching {
 
     private static let englishDays = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
 
-    /// Reads repeat days. Words like "once" or "never" mean a one-time alarm (empty set).
-    static func weekdays(from words: [String]) -> Set<Weekday> {
-        var result = Set<Weekday>()
-        for raw in words {
-            let word = raw.lowercased().trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters))
-            switch word {
-            case "weekdays", "weekday", "workdays", "work days", "monday to friday", "mon-fri":
-                result.formUnion(Weekday.workdays)
-            case "weekends", "weekend":
-                result.formUnion(Weekday.weekend)
-            case "every day", "everyday", "daily", "all", "all days":
-                result.formUnion(Weekday.allCases)
-            default:
-                if word.count >= 2, let index = englishDays.firstIndex(where: { $0.hasPrefix(String(word.prefix(3))) }) {
-                    result.insert(Weekday(rawValue: index + 1)!)
-                }
-            }
+    /// Reads repeat days from free text: "weekdays", "mon-fri", "monday to friday",
+    /// "tuesdays and thursdays", "every day except sunday", "weekends and wednesday".
+    /// Returns an empty set for a one-time alarm ("once", "never"), and nil if no days were recognized.
+    static func parseDays(_ text: String) -> Set<Weekday>? {
+        var normalized = " " + text.lowercased() + " "
+        for separator in [",", ";", "/", "&", "+", ".", "\"", "[", "]", "(", ")", "'"] {
+            normalized = normalized.replacingOccurrences(of: separator, with: " ")
         }
-        return result
+        normalized = normalized
+            .replacingOccurrences(of: "–", with: "-").replacingOccurrences(of: "—", with: "-")
+            .replacingOccurrences(of: "-", with: " - ")
+        let words = normalized.split(separator: " ").map(String.init)
+        let joined = " " + words.joined(separator: " ") + " "
+
+        let oneTimePhrases = [" once ", " never ", " none ", " one time ", " one - time ", " no repeat", " not repeat", " no days "]
+        if oneTimePhrases.contains(where: joined.contains) { return [] }
+
+        // Split off "except sunday" / "but not friday".
+        let exceptMarkers: Set<String> = ["except", "excluding", "but", "besides", "minus", "without"]
+        let split = words.firstIndex(where: exceptMarkers.contains) ?? words.endIndex
+        guard var days = dayList(Array(words[..<split])) else { return nil }
+        if split < words.endIndex, let excluded = dayList(Array(words[words.index(after: split)...])) {
+            days.subtract(excluded)
+        }
+        return days
     }
 
-    /// Whether a days list explicitly asks for a one-time alarm.
+    /// Backwards-compatible: a list of day words. Unrecognized input gives an empty set.
+    static func weekdays(from words: [String]) -> Set<Weekday> {
+        parseDays(words.joined(separator: ", ")) ?? []
+    }
+
     static func meansOneTime(_ words: [String]) -> Bool {
-        words.contains { ["once", "never", "none", "one time", "one-time", "no repeat"].contains($0.lowercased()) }
+        parseDays(words.joined(separator: ", ")) == []
+    }
+
+    private static func dayList(_ words: [String]) -> Set<Weekday>? {
+        let joined = " " + words.joined(separator: " ") + " "
+        var days = Set<Weekday>()
+        var found = false
+
+        if [" every day ", " everyday ", " daily ", " all week ", " all days ", " 7 days ", " seven days "].contains(where: joined.contains) {
+            days.formUnion(Weekday.allCases); found = true
+        }
+        if [" weekday ", " weekdays ", " workday ", " workdays ", " work days ", " week days ", " business days "].contains(where: joined.contains) {
+            days.formUnion(Weekday.workdays); found = true
+        }
+        if joined.contains(" weekend ") || joined.contains(" weekends ") {
+            days.formUnion(Weekday.weekend); found = true
+        }
+
+        var previous: Weekday?
+        var rangePending = false
+        for word in words {
+            if let day = dayName(word) {
+                if rangePending, let start = previous {
+                    var current = start
+                    while current != day {
+                        days.insert(current)
+                        current = Weekday(rawValue: current.rawValue % 7 + 1)!
+                    }
+                }
+                days.insert(day)
+                previous = day
+                rangePending = false
+                found = true
+            } else if ["to", "through", "thru", "until", "till", "-"].contains(word), previous != nil {
+                rangePending = true
+            }
+        }
+        return found ? days : nil
+    }
+
+    private static func dayName(_ word: String) -> Weekday? {
+        var w = word
+        if w.count > 3, w.hasSuffix("s") { w.removeLast() }   // "mondays", "tues", "thurs"
+        guard w.count >= 2 else { return nil }
+        guard let index = englishDays.firstIndex(where: { $0.hasPrefix(w) }) else { return nil }
+        // Two letters only for unambiguous abbreviations ("tu", "th", "sa", "su", …).
+        if w.count == 2, englishDays.filter({ $0.hasPrefix(w) }).count > 1 { return nil }
+        return Weekday(rawValue: index + 1)
     }
 
     static func alarm(matching query: String, in alarms: [AlarmItem]) -> Match<AlarmItem> {
@@ -81,6 +138,35 @@ enum AssistantMatching {
             return words.filter { title.contains($0) }.count * 2 >= words.count
         }
         return result(preferOpen(overlapping))
+    }
+
+    /// Finds a note by title, then by words in its title or text.
+    static func note(matching query: String, in notes: [Note]) -> Match<Note> {
+        let fillers: Set<String> = ["my", "the", "a", "note", "notes"]
+        let q = query.lowercased()
+            .split(separator: " ")
+            .map(String.init)
+            .filter { !fillers.contains($0) }
+            .joined(separator: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty else { return notes.count == 1 ? .found(notes[0]) : .none }
+
+        let titled = notes.map { ($0, $0.displayTitle.lowercased()) }
+        if let exact = titled.filter({ $0.1 == q }).map(\.0).first { return .found(exact) }
+
+        let inTitle = titled.filter { $0.1.contains(q) || (q.count > 3 && q.contains($0.1)) }.map(\.0)
+        if !inTitle.isEmpty { return result(inTitle) }
+
+        let words = q.split(whereSeparator: { !$0.isLetter && !$0.isNumber }).map(String.init).filter { $0.count >= 3 }
+        guard !words.isEmpty else { return .none }
+        let byTitleWords = titled.filter { pair in words.filter { pair.1.contains($0) }.count * 2 >= words.count }.map(\.0)
+        if !byTitleWords.isEmpty { return result(byTitleWords) }
+
+        let byBody = notes.filter { note in
+            let text = note.body.lowercased()
+            return words.allSatisfy { text.contains($0) }
+        }
+        return result(byBody)
     }
 
     private static func preferOpen(_ todos: [TodoItem]) -> [TodoItem] {

@@ -10,9 +10,10 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 - **Dismiss in the app.** If you open the app within an hour of an alarm, a card at the top has a **Dismiss** button, plus **Undo**.
 - **Timers tab.** Hour, minute and second wheels plus one-tap presets. Timers ring through Silent mode and show a countdown on the lock screen and in the Dynamic Island, with Pause and Cancel buttons.
 - **To-Do tab.** Add a to-do and tap a suggested time ("In 1 hour", "Tonight", "Tomorrow morning", …) or pick a custom time and date. You get a notification at the deadline with **Mark as Done** and **Remind Me in 1 Hour** buttons. Items are grouped into Overdue, Today, Tomorrow, Later and No Deadline.
+- **Notes tab.** Searchable notes with a **Copy All** button on every note. The assistant can read them ("what's on my packing note?") and write to them ("add charger to my packing note").
 - **Widgets.**
+  - **Up Next:** home screen (small, medium, large) and lock screen. Shows what's relevant now: an alarm within the hour with a **Dismiss** button, running timers, overdue and soon-due to-dos, the next alarm, then the rest of your to-dos. Check items off right from the widget. The ✦ button in the bottom-right corner opens a prompt to ask the assistant.
   - **Next Alarm:** home screen (small) and lock screen.
-  - **To-Do:** home screen (small, medium, large) and lock screen. Tap a circle to check an item off without opening the app.
 - **Updates and patch notes.**
   - The app checks GitHub for a newer version and offers to show you how to update.
   - Tap the info button on the Alarms tab to see your version and the patch notes for every release.
@@ -25,7 +26,8 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
   - Tap the waveform for hands-free **Live Talk**: it listens, replies out loud and listens again. You can still type at any time.
   - It can manage almost everything in the app:
     - **Alarms:** create, change, turn on or off, delete ("wake me up at 6:45 on weekdays", "move my gym alarm to 7").
-    - **To-dos:** add with a deadline, reschedule, complete, delete ("remind me to call mom tomorrow at 6").
+    - **To-dos:** add with a deadline and details, reschedule, complete, delete ("remind me to call mom tomorrow at 6").
+    - **Notes:** read, create, add to, replace, rename, delete ("add eggs to my grocery note").
     - **Timers:** start and cancel ("set a pasta timer for 9 minutes").
     - **Settings:** wake word and spoken replies ("turn on the wake word and set it to Jarvis").
   - **Optional wake word**, off by default (Talk settings → Require Wake Word). When on, Live Talk ignores sentences that don't start with your wake word, e.g. "Hey Alarm, …". Say only the wake word and your next sentence counts. Typed messages always get a reply.
@@ -75,7 +77,8 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 | Talk: reading "tomorrow at 5pm" and finding "my gym alarm" | `App/Talk/NaturalTime.swift`, `App/Talk/AssistantMatching.swift` |
 | To-dos: model, storage, reminders, widget toggle (shared with widget) | `Shared/TodoItem.swift`, `Shared/TodoReminders.swift`, `Shared/TodoIntents.swift` |
 | To-Do tab and suggested times | `App/Todos/` |
-| To-Do widget | `Widget/TodoWidget.swift` |
+| Up Next widget (what's relevant now) | `Shared/UpNext.swift`, `Widget/UpNextWidget.swift` |
+| Notes tab | `App/Notes/` |
 | Version check, What's New, patch notes | `App/About/`, `CHANGELOG.json` |
 | Control Center buttons, Siri and Shortcuts | `Shared/AssistantIntents.swift`, `Widget/AssistantControls.swift`, `App/Talk/AssistantShortcuts.swift` |
 | Lock screen widget | `Widget/NextAlarmWidget.swift` |

@@ -29,8 +29,9 @@ final class TodoController {
     // MARK: - Editing
 
     @discardableResult
-    func add(title: String, due: Date?) -> TodoItem {
-        let todo = TodoItem(title: title.trimmingCharacters(in: .whitespacesAndNewlines), due: due)
+    func add(title: String, details: String = "", due: Date?) -> TodoItem {
+        let todo = TodoItem(title: title.trimmingCharacters(in: .whitespacesAndNewlines),
+                            details: details.trimmingCharacters(in: .whitespacesAndNewlines), due: due)
         todos.append(todo)
         commit()
         return todo
@@ -87,7 +88,7 @@ final class TodoController {
     @discardableResult
     private func commit(reloadWidget: Bool = true) -> Task<Void, Never> {
         TodoStorage.save(todos)
-        if reloadWidget { WidgetCenter.shared.reloadTimelines(ofKind: TodoStorage.widgetKind) }
+        if reloadWidget { WidgetCenter.shared.reloadAllTimelines() }
 
         let previous = syncTask
         let task = Task { @MainActor in

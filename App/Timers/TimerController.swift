@@ -3,31 +3,7 @@ import AlarmKit
 import Foundation
 import Observation
 import SwiftUI
-
-struct TimerItem: Identifiable, Codable, Hashable {
-    enum State: String, Codable {
-        case running, paused, ringing
-    }
-
-    var id: UUID
-    var label: String
-    var duration: TimeInterval
-    var state: State
-    /// When it goes off (meaningful while running).
-    var fireDate: Date
-    /// Time left (meaningful while paused).
-    var remaining: TimeInterval
-
-    var title: String { label.isEmpty ? TimeFormat.durationName(duration) : label }
-
-    func timeLeft(at date: Date) -> TimeInterval {
-        switch state {
-        case .running: max(0, fireDate.timeIntervalSince(date))
-        case .paused: remaining
-        case .ringing: 0
-        }
-    }
-}
+import WidgetKit
 
 enum TimerError: LocalizedError {
     case notAuthorized
@@ -49,17 +25,11 @@ final class TimerController {
     @ObservationIgnored private let manager = AlarmManager.shared
     @ObservationIgnored private var pendingIDs: Set<UUID> = []
     @ObservationIgnored private var observation: Task<Void, Never>?
-    @ObservationIgnored private static let storageKey = "timers.v1"
 
     var timerIDs: Set<UUID> { Set(timers.map(\.id)) }
 
     private init() {
-        if let data = UserDefaults.standard.data(forKey: Self.storageKey),
-           let saved = try? JSONDecoder().decode([TimerItem].self, from: data) {
-            timers = saved
-        } else {
-            timers = []
-        }
+        timers = TimerStorage.load()
 
         TimerIntentRunner.handler = { [weak self] action, id in
             guard let self else { return }
@@ -176,9 +146,8 @@ final class TimerController {
     }
 
     private func save() {
-        if let data = try? JSONEncoder().encode(timers) {
-            UserDefaults.standard.set(data, forKey: Self.storageKey)
-        }
+        TimerStorage.save(timers)
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     private static func configuration(for item: TimerItem) -> AlarmManager.AlarmConfiguration<AlarmPayload> {

@@ -4,10 +4,37 @@ import Foundation
 struct TodoItem: Identifiable, Codable, Hashable, Sendable {
     var id: UUID = UUID()
     var title: String
+    /// Optional extra line shown under the title.
+    var details: String = ""
     var due: Date? = nil
     var isDone: Bool = false
     var completedAt: Date? = nil
     var createdAt: Date = Date()
+
+    init(id: UUID = UUID(), title: String, details: String = "", due: Date? = nil,
+         isDone: Bool = false, completedAt: Date? = nil, createdAt: Date = Date()) {
+        self.id = id
+        self.title = title
+        self.details = details
+        self.due = due
+        self.isDone = isDone
+        self.completedAt = completedAt
+        self.createdAt = createdAt
+    }
+
+    // Tolerates to-dos saved by older versions (e.g. without `details`).
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        title = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
+        details = try c.decodeIfPresent(String.self, forKey: .details) ?? ""
+        due = try c.decodeIfPresent(Date.self, forKey: .due)
+        isDone = try c.decodeIfPresent(Bool.self, forKey: .isDone) ?? false
+        completedAt = try c.decodeIfPresent(Date.self, forKey: .completedAt)
+        createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
+    }
+
+    var trimmedDetails: String { details.trimmingCharacters(in: .whitespacesAndNewlines) }
 
     func isOverdue(at now: Date) -> Bool {
         guard !isDone, let due else { return false }

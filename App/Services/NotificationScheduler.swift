@@ -24,12 +24,17 @@ enum NotificationScheduler {
         UNUserNotificationCenter.current().setNotificationCategories([category, TodoReminders.category])
     }
 
-    static func sync(_ alarms: [AlarmItem], now: Date = .now) async {
+    /// Schedules all heads-ups. Returns whether notifications are allowed.
+    @discardableResult
+    static func sync(_ alarms: [AlarmItem], now: Date = .now) async -> Bool {
         let center = UNUserNotificationCenter.current()
 
-        if await center.notificationSettings().authorizationStatus == .notDetermined {
+        var status = await center.notificationSettings().authorizationStatus
+        if status == .notDetermined {
             _ = try? await center.requestAuthorization(options: [.alert, .sound, .badge])
+            status = await center.notificationSettings().authorizationStatus
         }
+        let allowed = [.authorized, .provisional, .ephemeral].contains(status)
 
         let pending = await center.pendingNotificationRequests()
         center.removePendingNotificationRequests(
@@ -41,7 +46,56 @@ enum NotificationScheduler {
                 do { try await center.add(request) } catch { print("Notification scheduling failed: \(error)") }
             }
         }
+
+        await sendMissedHeadsUps(for: alarms, now: now, center: center)
+        return allowed
     }
+
+    /// The regular heads-up fires exactly 1 hour before. An alarm created (or turned on, or moved)
+    /// less than an hour before it rings would never get one, so send it right away instead.
+    /// Each ring only ever gets one heads-up.
+    private static func sendMissedHeadsUps(for alarms: [AlarmItem], now: Date, center: UNUserNotificationCenter) async {
+        let defaults = UserDefaults.standard
+        var sent = Set(defaults.stringArray(forKey: sentKey) ?? [])
+        let delivered = await center.deliveredNotifications()
+
+        for alarm in alarms where alarm.isEnabled {
+            guard let ring = alarm.nextFireDate(after: now) else { continue }
+            let lead = ring.timeIntervalSince(now)
+            guard lead > 60, lead <= AlarmItem.headsUpInterval else { continue }
+
+            let key = "\(alarm.id.uuidString)|\(Int(ring.timeIntervalSince1970))"
+            guard !sent.contains(key) else { continue }
+            sent.insert(key)
+
+            // The scheduled heads-up already showed for this ring.
+            let alreadyShown = delivered.contains {
+                ($0.request.content.userInfo[alarmIDKey] as? String) == alarm.id.uuidString
+                    && $0.date >= ring.addingTimeInterval(-AlarmItem.headsUpInterval - 120)
+            }
+            guard !alreadyShown else { continue }
+
+            let content = makeContent(for: alarm)
+            let minutes = max(1, Int((lead / 60).rounded(.up)))
+            content.title = "Alarm in \(minutes) min"
+            let request = UNNotificationRequest(
+                identifier: "\(immediatePrefix)\(alarm.id.uuidString)",
+                content: content,
+                trigger: UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+            )
+            try? await center.add(request)
+        }
+        // Forget rings that are long past.
+        let cutoff = now.addingTimeInterval(-24 * 3600).timeIntervalSince1970
+        let recent = sent.filter { key in
+            key.split(separator: "|").last.flatMap { Double($0) }.map { $0 > cutoff } ?? false
+        }
+        defaults.set(Array(recent), forKey: sentKey)
+    }
+
+    /// Separate prefix so a sync a moment later doesn't cancel it before it shows.
+    private static let immediatePrefix = "heads-up-now."
+    private static let sentKey = "notifications.immediateHeadsUpsSent"
 
     /// Clears an already-delivered heads-up for an alarm (e.g. after dismissing it in the app).
     static func removeDelivered(for alarmID: UUID) async {

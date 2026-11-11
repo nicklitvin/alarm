@@ -156,13 +156,30 @@ private struct MessageRow: View {
                 Spacer(minLength: 48)
             }
         case .event(let systemImage):
-            Label(message.text, systemImage: systemImage)
-                .font(.footnote.weight(.medium))
-                .foregroundStyle(.orange)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Capsule().fill(Color.orange.opacity(0.12)))
-                .frame(maxWidth: .infinity)
+            Group {
+                if let link = message.link {
+                    Button {
+                        AppNavigation.shared.open(link)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Label(message.text, systemImage: systemImage)
+                            Image(systemName: "chevron.right")
+                                .font(.caption2.weight(.bold))
+                                .opacity(0.7)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("Opens it")
+                } else {
+                    Label(message.text, systemImage: systemImage)
+                }
+            }
+            .font(.footnote.weight(.medium))
+            .foregroundStyle(.orange)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Capsule().fill(Color.orange.opacity(0.12)))
+            .frame(maxWidth: .infinity)
         case .error:
             Label(message.text, systemImage: "exclamationmark.circle")
                 .font(.footnote)

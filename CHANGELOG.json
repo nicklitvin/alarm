@@ -1,6 +1,24 @@
 {
   "releases": [
     {
+      "version": "1.6.0",
+      "build": 7,
+      "date": "2026-11-11",
+      "title": "Notes & Smarter Widget",
+      "notes": [
+        "New Notes tab. Every note has a Copy All button, and you can ask the assistant about your notes or have it write to them.",
+        "The To-Do widget is now Up Next. It shows what matters right now: an alarm you can dismiss, running timers and to-dos that are due.",
+        "Tap the ✦ button in the corner of the Up Next widget to ask the assistant from your home screen.",
+        "Tap a change in the chat (like \"Alarm updated\") to jump straight to that alarm, to-do or note.",
+        "Asking the assistant to change an alarm's days now works reliably, including \"weekdays\", \"mon-fri\" and \"every day except Sunday\".",
+        "You now get the 1-hour heads-up even when you set an alarm less than an hour before it rings.",
+        "To-dos can have an extra line of detail. Mark as Done is now a button next to Delete.",
+        "Alarm times and deadlines are picked in 5-minute steps.",
+        "New Alarm, New To-Do and New Note are big buttons at the bottom, easy to reach with your thumb.",
+        "Tidier layouts: timer presets and deadline suggestions no longer scroll sideways, the timer wheel labels are evenly spaced, and widget text lines up with its checkboxes."
+      ]
+    },
+    {
       "version": "1.5.0",
       "build": 6,
       "date": "2026-11-10",

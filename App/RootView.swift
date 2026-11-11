@@ -2,15 +2,43 @@ import Observation
 import SwiftUI
 
 enum AppTab: Hashable {
-    case alarms, timers, todos, talk
+    case alarms, timers, todos, notes, talk
 }
 
-/// Which tab is showing. Notifications use it to open the right tab.
+/// Something in the app a chat message can point to.
+enum ChatLink: Hashable {
+    case alarm(UUID)
+    case todo(UUID)
+    case note(UUID)
+    case timers
+}
+
+/// Which tab is showing, and which item to open. Notifications and chat links use it.
 @MainActor
 @Observable
 final class AppNavigation {
     static let shared = AppNavigation()
     var tab: AppTab = .alarms
+    /// Set to open that item's editor; the tab clears it once shown.
+    var pendingAlarmID: UUID?
+    var pendingTodoID: UUID?
+    var pendingNoteID: UUID?
+
+    func open(_ link: ChatLink) {
+        switch link {
+        case .alarm(let id):
+            tab = .alarms
+            pendingAlarmID = id
+        case .todo(let id):
+            tab = .todos
+            pendingTodoID = id
+        case .note(let id):
+            tab = .notes
+            pendingNoteID = id
+        case .timers:
+            tab = .timers
+        }
+    }
 }
 
 struct RootView: View {
@@ -28,6 +56,9 @@ struct RootView: View {
             }
             Tab("To-Do", systemImage: "checklist", value: AppTab.todos) {
                 TodoListView()
+            }
+            Tab("Notes", systemImage: "note.text", value: AppTab.notes) {
+                NotesListView()
             }
             Tab("Talk", systemImage: "waveform", value: AppTab.talk) {
                 TalkView()

@@ -200,7 +200,7 @@ struct NextAlarmWidget: Widget {
 struct AlarmWidgetBundle: WidgetBundle {
     var body: some Widget {
         NextAlarmWidget()
-        TodoWidget()
+        UpNextWidget()
         TimerLiveActivity()
         AskAssistantControl()
         LiveTalkControl()

@@ -10,6 +10,8 @@ struct ChatMessage: Identifiable, Hashable {
     let id = UUID()
     let role: Role
     let text: String
+    /// Tapping an event opens the alarm, to-do or note it's about.
+    var link: ChatLink? = nil
 }
 
 /// The Talk tab's conversation with Apple's on-device model, by text or by voice.
@@ -149,8 +151,8 @@ final class TalkModel {
         return await work.value
     }
 
-    func addEvent(_ text: String, systemImage: String) {
-        messages.append(ChatMessage(role: .event(systemImage: systemImage), text: text))
+    func addEvent(_ text: String, systemImage: String, link: ChatLink? = nil) {
+        messages.append(ChatMessage(role: .event(systemImage: systemImage), text: text, link: link))
     }
 
     private func ask(_ text: String) async throws -> String {
@@ -178,6 +180,7 @@ final class TalkModel {
                 ListItemsTool(),
                 CreateAlarmTool(), EditAlarmTool(),
                 CreateTodoTool(), EditTodoTool(),
+                ReadNoteTool(), WriteNoteTool(),
                 SetTimerTool(), CancelTimersTool(),
                 UpdateSettingsTool(),
             ],
@@ -192,16 +195,18 @@ final class TalkModel {
         let now = Date().formatted(.dateTime.weekday(.wide).month(.wide).day().year().hour().minute())
         return """
         You are a friendly, quick assistant inside the user's alarm clock app. You manage their \
-        alarms, to-dos, timers and settings using your tools.
+        alarms, to-dos, timers, notes and settings using your tools.
         Reply in one or two short sentences of plain text with no markdown, lists or emoji, \
         because replies may be read aloud.
         Rules:
         - Wake-up times and "wake me" requests are alarms (createAlarm). "Remind me to..." and tasks \
         are to-dos (createTodo). Countdowns like "in 10 minutes" for cooking are timers (setTimer).
         - Alarm hours use the 24-hour clock: 7 PM is 19.
-        - To change or delete something, call editAlarm or editTodo with how the user referred to it. \
+        - To change or delete something, call editAlarm, editTodo or writeNote with how the user referred to it. \
+        To change an alarm's days use editAlarm with newDays, addDays or removeDays in plain words. \
         If it is unclear what exists, call listItems first.
-        - Never invent alarms or to-dos. After a tool runs, briefly confirm what was done.
+        - When the user mentions a note or asks about its contents, call readNote and answer from it.
+        - Only say something was done if a tool's result confirms it. If a tool reports a problem, say so.
         The current date and time is \(now).
         """
     }

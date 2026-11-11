@@ -12,7 +12,7 @@ struct TodoEditorView: View {
     init(todo: TodoItem) {
         _draft = State(initialValue: todo)
         _hasDeadline = State(initialValue: todo.due != nil)
-        _deadline = State(initialValue: todo.due ?? DueSuggestions.make().first?.date ?? .now)
+        _deadline = State(initialValue: todo.due ?? DueSuggestions.make().first?.date ?? Date().roundedToMinutes(5))
     }
 
     var body: some View {
@@ -21,10 +21,10 @@ struct TodoEditorView: View {
                 Section {
                     TextField("Title", text: $draft.title, axis: .vertical)
                         .font(.body.weight(.medium))
-                    Toggle("Done", isOn: Binding(
-                        get: { draft.isDone },
-                        set: { draft.setDone($0) }
-                    ))
+                    TextField("Details (optional)", text: $draft.details, axis: .vertical)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1...6)
                 }
 
                 Section {
@@ -34,22 +34,36 @@ struct TodoEditorView: View {
                             get: { deadline },
                             set: { if let date = $0 { deadline = date } }
                         )) { showCustom = true }
-                        .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 0))
-                        DatePicker("Time", selection: $deadline, displayedComponents: .hourAndMinute)
-                        DatePicker("Date", selection: $deadline, displayedComponents: .date)
+                        .padding(.vertical, 4)
+                        HStack {
+                            Text("Due")
+                            Spacer()
+                            IntervalDatePicker(selection: $deadline, mode: .dateAndTime, style: .compact, minuteInterval: 5)
+                        }
                     }
                 } footer: {
                     if hasDeadline {
-                        Text("You'll get a notification \(TimeFormat.dueDescription(deadline, relativeTo: .now).lowercasedFirstIfRelative).")
+                        Text("You'll get a notification \(TimeFormat.dueDescription(deadline, relativeTo: .now).asDeadlinePhrase).")
                     }
                 }
 
+                // Done is an action next to Delete, not a switch.
                 Section {
-                    Button("Delete To-Do", role: .destructive) {
+                    Button {
+                        draft.setDone(!draft.isDone)
+                        save()
+                    } label: {
+                        Label(draft.isDone ? "Mark as Not Done" : "Mark as Done",
+                              systemImage: draft.isDone ? "arrow.uturn.backward.circle" : "checkmark.circle")
+                            .frame(maxWidth: .infinity)
+                    }
+                    Button(role: .destructive) {
                         controller.delete(draft.id)
                         dismiss()
+                    } label: {
+                        Label("Delete To-Do", systemImage: "trash")
+                            .frame(maxWidth: .infinity)
                     }
-                    .frame(maxWidth: .infinity)
                 }
             }
             .navigationTitle("Edit To-Do")
@@ -74,14 +88,16 @@ struct TodoEditorView: View {
 
     private func save() {
         draft.due = hasDeadline ? deadline : nil
+        draft.details = draft.details.trimmingCharacters(in: .whitespacesAndNewlines)
         controller.update(draft)
         dismiss()
     }
 }
 
 private extension String {
-    /// "at 5:00 PM" style phrasing: "Tomorrow 9:00 AM" → "tomorrow at 9:00 AM", "5:00 PM" → "at 5:00 PM".
-    var lowercasedFirstIfRelative: String {
+    /// "5:00 PM" → "at 5:00 PM", "Tomorrow 9:00 AM" → "tomorrow at 9:00 AM",
+    /// "Mon 9:00 AM" → "on Mon at 9:00 AM", "Nov 20, 9:00 AM" → "on Nov 20, 9:00 AM".
+    var asDeadlinePhrase: String {
         if first?.isNumber == true { return "at \(self)" }
         if contains(",") { return "on \(self)" }
         let parts = split(separator: " ", maxSplits: 1).map(String.init)

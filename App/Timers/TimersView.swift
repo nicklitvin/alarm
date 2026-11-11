@@ -34,20 +34,22 @@ struct TimersView: View {
                 .listRowBackground(Color.clear)
 
                 Section {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            ForEach(Self.presets, id: \.self) { preset in
-                                Button(TimeFormat.compactDuration(preset)) { start(preset) }
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
+                        ForEach(Self.presets, id: \.self) { preset in
+                            Button {
+                                start(preset)
+                            } label: {
+                                Text(TimeFormat.compactDuration(preset))
                                     .font(.subheadline.weight(.semibold))
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 8)
-                                    .background(Capsule().fill(Color.orange.opacity(0.14)))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.orange.opacity(0.14)))
                                     .foregroundStyle(.orange)
-                                    .buttonStyle(.plain)
                             }
+                            .buttonStyle(.plain)
                         }
-                        .padding(.vertical, 4)
                     }
+                    .padding(.vertical, 4)
                     HStack {
                         Text("Label")
                         TextField("Timer", text: $label)
@@ -195,6 +197,11 @@ private struct DurationWheel: View {
     @Binding var minutes: Int
     @Binding var seconds: Int
 
+    /// Numbers end at the same spot in every column, and each label starts a fixed gap after it.
+    private static let numberWidth: CGFloat = 40
+    private static let labelWidth: CGFloat = 52
+    private static let gap: CGFloat = 6
+
     var body: some View {
         HStack(spacing: 0) {
             wheel($hours, range: 0..<24, unit: "hours")
@@ -207,7 +214,13 @@ private struct DurationWheel: View {
     private func wheel(_ selection: Binding<Int>, range: Range<Int>, unit: String) -> some View {
         Picker(unit, selection: selection) {
             ForEach(range, id: \.self) { value in
-                Text("\(value)").tag(value)
+                HStack(spacing: 0) {
+                    Text("\(value)")
+                        .monospacedDigit()
+                        .frame(width: Self.numberWidth, alignment: .trailing)
+                    Color.clear.frame(width: Self.gap + Self.labelWidth)
+                }
+                .tag(value)
             }
         }
         .pickerStyle(.wheel)
@@ -215,11 +228,14 @@ private struct DurationWheel: View {
         .frame(maxWidth: .infinity)
         .clipped()
         .contentShape(Rectangle())
-        .overlay(alignment: .trailing) {
-            Text(unit)
-                .font(.headline)
-                .padding(.trailing, 6)
-                .allowsHitTesting(false)
+        .overlay {
+            HStack(spacing: 0) {
+                Color.clear.frame(width: Self.numberWidth + Self.gap)
+                Text(unit)
+                    .font(.headline)
+                    .frame(width: Self.labelWidth, alignment: .leading)
+            }
+            .allowsHitTesting(false)
         }
     }
 }

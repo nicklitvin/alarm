@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 enum EditorTarget: Identifiable {
     case new
@@ -38,11 +39,20 @@ struct AlarmListView: View {
                     }
                     .accessibilityLabel(UpdateChecker.shared.updateAvailable ? "About, update available" : "About")
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Add Alarm", systemImage: "plus") { editorTarget = .new }
-                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                BottomActionButton(title: "New Alarm", systemImage: "plus") { editorTarget = .new }
             }
             .sheet(isPresented: $showAbout) { AboutView() }
+            .task(id: AppNavigation.shared.pendingAlarmID) {
+                // Opened from a chat event: show that alarm.
+                guard let id = AppNavigation.shared.pendingAlarmID else { return }
+                AppNavigation.shared.pendingAlarmID = nil
+                if let alarm = controller.alarms.first(where: { $0.id == id }) {
+                    showAbout = false
+                    editorTarget = .edit(alarm)
+                }
+            }
             .sheet(item: $editorTarget) { target in
                 AlarmEditorView(target: target)
             }
@@ -59,16 +69,20 @@ struct AlarmListView: View {
             ContentUnavailableView {
                 Label("No Alarms", systemImage: "alarm")
             } description: {
-                Text("Tap + to set your first alarm.")
-            } actions: {
-                Button("Add Alarm") { editorTarget = .new }
-                    .buttonStyle(.borderedProminent)
-                    .buttonBorderShape(.capsule)
+                Text("Tap New Alarm below to set your first one.")
             }
         } else {
             List {
                 if !controller.isAuthorized {
                     Section { PermissionBanner() }
+                }
+                if !controller.notificationsAllowed {
+                    Section {
+                        PermissionBanner(
+                            title: "Notifications Are Off",
+                            message: "Turn on notifications for Alarm in Settings to get the heads-up an hour before each alarm."
+                        )
+                    }
                 }
 
                 let soon = controller.soonAlarms(now: now)
@@ -235,13 +249,15 @@ private struct SoonAlarmCard: View {
 
 private struct PermissionBanner: View {
     @Environment(\.openURL) private var openURL
+    var title = "Alarms Are Off"
+    var message = "Allow alarms in Settings so they can ring, even in Silent mode."
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("Alarms Are Off", systemImage: "exclamationmark.triangle.fill")
+            Label(title, systemImage: "exclamationmark.triangle.fill")
                 .font(.headline)
                 .foregroundStyle(.orange)
-            Text("Allow alarms in Settings so they can ring, even in Silent mode.")
+            Text(message)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             Button("Open Settings") {

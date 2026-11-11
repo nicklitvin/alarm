@@ -11,11 +11,11 @@ struct AlarmEditorView: View {
     init(target: EditorTarget) {
         switch target {
         case .new:
-            let now = Date()
-            let components = Calendar.current.dateComponents([.hour, .minute], from: now)
+            let start = Date().roundedToMinutes(5)
+            let components = Calendar.current.dateComponents([.hour, .minute], from: start)
             isNew = true
             _draft = State(initialValue: AlarmItem(hour: components.hour ?? 7, minute: components.minute ?? 0))
-            _time = State(initialValue: now)
+            _time = State(initialValue: start)
         case .edit(let alarm):
             isNew = false
             _draft = State(initialValue: alarm)
@@ -28,9 +28,7 @@ struct AlarmEditorView: View {
         NavigationStack {
             Form {
                 Section {
-                    DatePicker("Time", selection: $time, displayedComponents: .hourAndMinute)
-                        .datePickerStyle(.wheel)
-                        .labelsHidden()
+                    IntervalDatePicker(selection: $time, mode: .time, style: .wheels, minuteInterval: 5)
                         .frame(maxWidth: .infinity)
                 }
                 .listRowBackground(Color.clear)
