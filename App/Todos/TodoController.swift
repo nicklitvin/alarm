@@ -75,6 +75,11 @@ final class TodoController {
         commit()
     }
 
+    /// Re-applies To-Do notification settings.
+    func refreshReminders() {
+        commit(reloadWidget: false)
+    }
+
     /// Picks up changes made from the widget while the app wasn't running.
     func reload() {
         let stored = TodoStorage.load()

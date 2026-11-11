@@ -41,6 +41,9 @@ enum NotificationScheduler {
             withIdentifiers: pending.map(\.identifier).filter { $0.hasPrefix(idPrefix) }
         )
 
+        // Heads-ups can be turned off in Alarm settings.
+        guard AppSettings.alarmHeadsUpEnabled else { return allowed }
+
         for alarm in alarms where alarm.isEnabled {
             for request in requests(for: alarm, now: now) {
                 do { try await center.add(request) } catch { print("Notification scheduling failed: \(error)") }
@@ -145,7 +148,7 @@ enum NotificationScheduler {
 
     private static func makeContent(for alarm: AlarmItem) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
-        content.title = "Alarm in 1 hour"
+        content.title = "Alarm in \(AppSettings.leadTimeName(AppSettings.alarmHeadsUpMinutes))"
         if !alarm.label.trimmingCharacters(in: .whitespaces).isEmpty {
             content.subtitle = alarm.title
         }

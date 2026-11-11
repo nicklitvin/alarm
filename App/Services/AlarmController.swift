@@ -60,8 +60,11 @@ final class AlarmController {
         alarm.isEnabled = true
         if let index = alarms.firstIndex(where: { $0.id == alarm.id }) {
             let old = alarms[index]
-            if old.hour != alarm.hour || old.minute != alarm.minute || old.weekdays != alarm.weekdays {
+            if old.hour != alarm.hour || old.minute != alarm.minute || old.weekdays != alarm.weekdays || !old.isEnabled {
+                // A changed alarm is a new alarm: forget today's dismissal and use a brand-new
+                // system alarm, so it can ring at its new time even if it already rang today.
                 alarm.skippedOccurrence = nil
+                alarm.revision = old.revision + 1
             }
             alarms[index] = prepared(alarm)
         } else {

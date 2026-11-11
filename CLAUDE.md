@@ -20,3 +20,11 @@ notes, so pushing to `main` is what "publishes" a release.
 `./Tests/run.sh` compiles the Foundation-only logic (scheduling, parsing, matching, versioning)
 with plain `swiftc` and runs it; it works on Linux too. Keep new pure logic in files that only
 import Foundation so it can be added there.
+
+## Web preview (`web/`)
+
+A Vite + React mock of the app's screens, deployed on Vercel for UI review. It is not part of the
+Xcode build and never rings or notifies. When you change the iOS UI or behaviour, update the
+matching screen in `web/src/` (logic mirrors live in `web/src/logic/model.ts`) and check that
+`cd web && npm run build` passes.
+

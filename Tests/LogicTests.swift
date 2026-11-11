@@ -326,5 +326,29 @@ check(DeepLink(url: URL(string: "https://example.com/alarm")!) == nil && DeepLin
 check(UpNextItem(kind: .todo(TodoItem(id: someID, title: "x"))).deepLink == .todo(someID), "widget to-do row opens that to-do")
 check(UpNextItem(kind: .nextAlarm(AlarmItem(id: someID, hour: 7, minute: 0), Date())).deepLink == .alarm(someID), "widget alarm row opens that alarm")
 
+// Editing an alarm after it rang/was dismissed makes it a new system alarm.
+var rang = AlarmItem(hour: 7, minute: 0, weekdays: Weekday.workdays)
+let rangPlanIDs = Set(AlarmPlan.make(for: [rang], now: now).keys)
+rang.revision += 1
+check(Set(AlarmPlan.make(for: [rang], now: now).keys).isDisjoint(with: rangPlanIDs), "new revision → new AlarmKit IDs even at the same time")
+let legacyAlarmJSON = #"{"id":"7D5C2B1A-1111-4222-8333-944455556666","hour":6,"minute":30,"label":"","weekdays":[2,3],"isEnabled":true}"#
+let legacyAlarm = try? JSONDecoder().decode(AlarmItem.self, from: Data(legacyAlarmJSON.utf8))
+check(legacyAlarm?.revision == 0 && legacyAlarm?.weekdays == [.monday, .tuesday], "alarms saved before revisions still load")
+check(AlarmItem.headsUpInterval == 3600, "heads-up defaults to 1 hour")
+check(AppSettings.leadTimeName(15) == "15 min" && AppSettings.leadTimeName(60) == "1 hour" && AppSettings.leadTimeName(120) == "2 hours" && AppSettings.leadTimeName(1440) == "1 day", "lead time names")
+
+// Note sorting.
+let t0 = d(2026, 11, 1, 9, 0)
+let nA = Note(title: "Banana", createdAt: t0, updatedAt: t0.addingTimeInterval(300), sortIndex: 2)
+let nB = Note(title: "apple", createdAt: t0.addingTimeInterval(100), updatedAt: t0.addingTimeInterval(100), sortIndex: 0)
+let nC = Note(title: "Cherry", createdAt: t0.addingTimeInterval(200), updatedAt: t0.addingTimeInterval(200), isPinned: true, sortIndex: 5)
+func titles(_ notes: [Note]) -> [String] { notes.map(\.title) }
+check(titles(NotesSort.edited.sorted([nA, nB, nC])) == ["Cherry", "Banana", "apple"], "edited, pinned first")
+check(titles(NotesSort.created.sorted([nA, nB, nC])) == ["Cherry", "apple", "Banana"], "created")
+check(titles(NotesSort.title.sorted([nA, nB, nC])) == ["Cherry", "apple", "Banana"], "title, case-insensitive")
+check(titles(NotesSort.manual.sorted([nA, nB, nC])) == ["Cherry", "apple", "Banana"], "manual uses sortIndex")
+let legacyNote = try? JSONDecoder().decode(Note.self, from: Data(#"{"title":"old","createdAt":700000000}"#.utf8))
+check(legacyNote?.isPinned == false && legacyNote?.sortIndex == -(Date(timeIntervalSinceReferenceDate: 700000000).timeIntervalSince1970), "old notes load unpinned, newest-first manual order")
+
 print(failures == 0 ? "\nALL PASSED" : "\n\(failures) FAILED")
 exit(failures == 0 ? 0 : 1)

@@ -30,9 +30,12 @@ struct NextAlarmProvider: TimelineProvider {
             return
         }
 
-        var entries = [NextAlarmEntry(date: now, next: upcoming.first)]
-        for index in upcoming.indices.dropLast() {
-            entries.append(NextAlarmEntry(date: upcoming[index].date, next: upcoming[index + 1]))
+        // Refresh when each alarm rings (move on to the next one) and when it comes within 24 hours
+        // (the lock screen shows zzz until then).
+        let moments = Set(upcoming.flatMap { [$0.date, $0.date.addingTimeInterval(-NextAlarmWidgetView.lockScreenWindow)] }
+            .filter { $0 > now })
+        let entries = ([now] + moments.sorted().prefix(40)).map { date in
+            NextAlarmEntry(date: date, next: upcoming.first { $0.date > date })
         }
         completion(Timeline(entries: entries, policy: .after(last.date)))
     }
@@ -50,6 +53,15 @@ private extension UpcomingAlarm {
 struct NextAlarmWidgetView: View {
     @Environment(\.widgetFamily) private var family
     let entry: NextAlarmEntry
+
+    /// Lock screen widgets only show an alarm within this window; otherwise zzz.
+    static let lockScreenWindow: TimeInterval = 24 * 3600
+
+    /// The next alarm, if it rings within 24 hours.
+    private var soon: UpcomingAlarm? {
+        guard let next = entry.next, next.date.timeIntervalSince(entry.date) <= Self.lockScreenWindow else { return nil }
+        return next
+    }
 
     var body: some View {
         Group {
@@ -112,20 +124,20 @@ struct NextAlarmWidgetView: View {
     // "⏰ Tue 7:00 AM"
     @ViewBuilder
     private var inline: some View {
-        if let next = entry.next {
+        if let next = soon {
             let isToday = Calendar.current.isDate(next.date, inSameDayAs: entry.date)
             let day = next.date.formatted(.dateTime.weekday(.abbreviated))
             Label(isToday ? TimeFormat.string(for: next.date) : "\(day) \(TimeFormat.string(for: next.date))",
                   systemImage: "alarm.fill")
         } else {
-            Label("No Alarm", systemImage: "alarm")
+            Label(entry.next == nil ? "No alarms" : "No alarm today", systemImage: "zzz")
         }
     }
 
     private var circular: some View {
         ZStack {
             AccessoryWidgetBackground()
-            if let next = entry.next {
+            if let next = soon {
                 let parts = TimeFormat.parts(for: next.date)
                 VStack(spacing: 0) {
                     Image(systemName: "alarm.fill")
@@ -144,15 +156,16 @@ struct NextAlarmWidgetView: View {
                 }
                 .padding(4)
             } else {
-                Image(systemName: "alarm")
-                    .font(.system(size: 22, weight: .medium))
+                Image(systemName: "zzz")
+                    .font(.system(size: 20, weight: .semibold))
+                    .widgetAccentable()
             }
         }
     }
 
     private var rectangular: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if let next = entry.next {
+            if let next = soon {
                 let parts = TimeFormat.parts(for: next.date)
                 Label(next.alarm.title, systemImage: "alarm.fill")
                     .font(.system(size: 13, weight: .semibold))
@@ -174,12 +187,16 @@ struct NextAlarmWidgetView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             } else {
-                Label("Alarm", systemImage: "alarm")
-                    .font(.system(size: 13, weight: .semibold))
-                    .widgetAccentable()
-                Text("No alarms set")
-                    .font(.system(size: 17, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.secondary)
+                // Nothing in the next 24 hours: just zzz.
+                HStack(spacing: 8) {
+                    Image(systemName: "zzz")
+                        .font(.system(size: 26, weight: .semibold))
+                        .widgetAccentable()
+                    Text(entry.next == nil ? "No alarms" : "No alarm in the next 24 hours")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

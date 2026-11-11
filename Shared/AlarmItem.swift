@@ -51,9 +51,39 @@ struct AlarmItem: Identifiable, Codable, Hashable, Sendable {
     var skippedOccurrence: Date? = nil
     /// For one-time alarms: the exact moment it will ring.
     var oneTimeDate: Date? = nil
+    /// Bumped whenever the time or days change. The system alarm is then a brand-new one, so an
+    /// alarm that already rang (or was dismissed) today can ring again at its new time today.
+    var revision: Int = 0
 
-    /// How long before an alarm the heads-up notification and in-app dismiss button appear.
-    static let headsUpInterval: TimeInterval = 60 * 60
+    init(id: UUID = UUID(), hour: Int, minute: Int, label: String = "", weekdays: Set<Weekday> = [],
+         isEnabled: Bool = true, skippedOccurrence: Date? = nil, oneTimeDate: Date? = nil, revision: Int = 0) {
+        self.id = id
+        self.hour = hour
+        self.minute = minute
+        self.label = label
+        self.weekdays = weekdays
+        self.isEnabled = isEnabled
+        self.skippedOccurrence = skippedOccurrence
+        self.oneTimeDate = oneTimeDate
+        self.revision = revision
+    }
+
+    // Tolerates alarms saved by older versions (e.g. without `revision`).
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        hour = try c.decode(Int.self, forKey: .hour)
+        minute = try c.decode(Int.self, forKey: .minute)
+        label = try c.decodeIfPresent(String.self, forKey: .label) ?? ""
+        weekdays = try c.decodeIfPresent(Set<Weekday>.self, forKey: .weekdays) ?? []
+        isEnabled = try c.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? true
+        skippedOccurrence = try c.decodeIfPresent(Date.self, forKey: .skippedOccurrence)
+        oneTimeDate = try c.decodeIfPresent(Date.self, forKey: .oneTimeDate)
+        revision = try c.decodeIfPresent(Int.self, forKey: .revision) ?? 0
+    }
+
+    /// How long before an alarm the heads-up notification and the Dismiss button appear (a setting).
+    static var headsUpInterval: TimeInterval { TimeInterval(AppSettings.alarmHeadsUpMinutes * 60) }
 
     var isRepeating: Bool { !weekdays.isEmpty }
 

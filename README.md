@@ -6,17 +6,18 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 
 - **Alarms for specific days and times.** Pick a time and any set of weekdays, or none for a one-time alarm.
 - **Lock screen widget** that shows when your next alarm will go off. It comes in three sizes: rectangular, circular and inline.
-- **Heads-up notification 1 hour before** each alarm. Touch and hold it and tap **Dismiss Alarm** to cancel that ring. The next one still rings as normal.
+- **Heads-up notification before each alarm** (1 hour by default; change it in Alarm settings). Touch and hold it and tap **Dismiss Alarm** to cancel that ring. The next one still rings as normal.
 - **Dismiss in the app.** If you open the app within an hour of an alarm, a card at the top has a **Dismiss** button, plus **Undo**.
 - **Timers tab.** Hour, minute and second wheels plus one-tap presets. Timers ring through Silent mode and show a countdown on the lock screen and in the Dynamic Island, with Pause and Cancel buttons.
 - **To-Do tab.** Add a to-do and tap a suggested time ("In 1 hour", "Tonight", "Tomorrow morning", …) or pick a custom time and date. You get a notification at the deadline with **Mark as Done** and **Remind Me in 1 Hour** buttons. Items are grouped into Overdue, Today, Tomorrow, Later and No Deadline.
-- **Notes tab.** Searchable notes with a **Copy All** button on every note. The assistant can read them ("what's on my packing note?") and write to them ("add charger to my packing note").
+- **Notes tab.** Searchable notes with a **Copy All** button on every note. Pin notes to the top, drag to rearrange, or sort by date or title. The assistant can read them ("what's on my packing note?") and write to them ("add charger to my packing note").
 - **Widgets.**
   - **Up Next:** home screen (small, medium, large) and lock screen. Shows what's relevant now: an alarm within the hour with a **Dismiss** button, running timers, overdue and soon-due to-dos, the next alarm, then the rest of your to-dos. Tap an item to open it in the app, or tap a to-do's circle to check it off. The ✦ button in the bottom-right corner opens a prompt to ask the assistant.
-  - **Next Alarm:** home screen (small) and lock screen. Tap it to open that alarm.
+  - **Next Alarm:** home screen (small) and lock screen. Tap it to open that alarm. On the lock screen it shows zzz when nothing rings in the next 24 hours.
+- **Settings per tab.** The gear next to each tab's title opens that tab's settings: when to get alarm heads-ups, timer warnings and to-do reminders, how to sort notes, and Talk options. Each also has **About & Updates**.
 - **Updates and patch notes.**
   - The app checks GitHub for a newer version and offers to show you how to update.
-  - Tap the info button on the Alarms tab to see your version and the patch notes for every release.
+  - Open any tab's settings → **About & Updates** to see your version and the patch notes for every release.
   - A "What's New" screen appears the first time you open a new version.
 - **Control Center buttons.**
   - **Ask Assistant:** a prompt drops down from the top of the screen. Type or dictate a request, like "wake me at 7 tomorrow", and the reply appears right there without opening the app.
@@ -67,7 +68,7 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 | Syncs that plan to AlarmKit | `App/Services/AlarmKitScheduler.swift` |
 | Re-syncs when an alarm's Stop is tapped | `App/Services/StopAlarmIntent.swift` |
 | Background refresh after a dismissed ring | `App/Services/BackgroundRefresh.swift` |
-| 1-hour heads-up notifications and the Dismiss action | `App/Services/NotificationScheduler.swift` |
+| Heads-up notifications and the Dismiss action | `App/Services/NotificationScheduler.swift` |
 | App state; every change syncs AlarmKit, notifications and widget | `App/Services/AlarmController.swift` |
 | Alarms UI | `App/Views/` |
 | Timers (AlarmKit countdowns) and their tab | `App/Timers/` |
@@ -90,6 +91,10 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 - You open the app or use a notification action.
 
 **Dismissing a one-time alarm** simply turns it off.
+
+## Web preview
+
+`web/` is a browser copy of the app's screens (Vite + React) for reviewing the design without building in Xcode. It never rings, isn't part of the iPhone app, and can be deployed on Vercel. See [web/README.md](web/README.md).
 
 ## Versions and updates
 

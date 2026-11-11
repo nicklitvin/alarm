@@ -148,6 +148,14 @@ final class TimerController {
     private func save() {
         TimerStorage.save(timers)
         WidgetCenter.shared.reloadAllTimelines()
+        let snapshot = timers
+        Task { await TimerNotifications.sync(snapshot) }
+    }
+
+    /// Re-applies Timers notification settings.
+    func refreshNotifications() {
+        let snapshot = timers
+        Task { await TimerNotifications.sync(snapshot) }
     }
 
     private static func configuration(for item: TimerItem) -> AlarmManager.AlarmConfiguration<AlarmPayload> {

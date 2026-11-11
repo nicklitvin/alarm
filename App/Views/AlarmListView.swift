@@ -17,7 +17,6 @@ struct AlarmListView: View {
     @Environment(AlarmController.self) private var controller
     @Environment(\.scenePhase) private var scenePhase
     @State private var editorTarget: EditorTarget?
-    @State private var showAbout = false
 
     var body: some View {
         NavigationStack {
@@ -25,31 +24,20 @@ struct AlarmListView: View {
                 content(now: context.date)
             }
             .navigationTitle("Alarms")
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        showAbout = true
-                    } label: {
-                        Image(systemName: "info.circle")
-                            .overlay(alignment: .topTrailing) {
-                                if UpdateChecker.shared.updateAvailable {
-                                    Circle().fill(Color.red).frame(width: 8, height: 8).offset(x: 3, y: -2)
-                                }
-                            }
-                    }
-                    .accessibilityLabel(UpdateChecker.shared.updateAvailable ? "About, update available" : "About")
+            .toolbar(.hidden, for: .navigationBar)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                TabHeader(title: "Alarms", tab: .alarms) { now in
+                    controller.nextFire(now: now).map { "Next in \(TimeFormat.countdown(from: now, to: $0.date))" }
                 }
             }
             .safeAreaInset(edge: .bottom) {
                 BottomActionButton(title: "New Alarm", systemImage: "plus") { editorTarget = .new }
             }
-            .sheet(isPresented: $showAbout) { AboutView() }
             .task(id: AppNavigation.shared.pendingAlarmID) {
                 // Opened from a chat event: show that alarm.
                 guard let id = AppNavigation.shared.pendingAlarmID else { return }
                 AppNavigation.shared.pendingAlarmID = nil
                 if let alarm = controller.alarms.first(where: { $0.id == id }) {
-                    showAbout = false
                     editorTarget = .edit(alarm)
                 }
             }
@@ -103,11 +91,6 @@ struct AlarmListView: View {
                     .onDelete { offsets in
                         let sorted = controller.sortedAlarms
                         offsets.map { sorted[$0].id }.forEach(controller.delete)
-                    }
-                } header: {
-                    if let next = controller.nextFire(now: now) {
-                        Text("Next alarm in \(TimeFormat.countdown(from: now, to: next.date))")
-                            .textCase(nil)
                     }
                 }
             }

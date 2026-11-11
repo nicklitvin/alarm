@@ -6,13 +6,20 @@ struct Note: Identifiable, Codable, Hashable, Sendable {
     var body: String = ""
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
+    /// Pinned notes stay at the top in every sort order.
+    var isPinned: Bool = false
+    /// Position in the Manual order (lower = higher up).
+    var sortIndex: Double = 0
 
-    init(id: UUID = UUID(), title: String = "", body: String = "", createdAt: Date = Date(), updatedAt: Date = Date()) {
+    init(id: UUID = UUID(), title: String = "", body: String = "", createdAt: Date = Date(), updatedAt: Date = Date(),
+         isPinned: Bool = false, sortIndex: Double = 0) {
         self.id = id
         self.title = title
         self.body = body
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.isPinned = isPinned
+        self.sortIndex = sortIndex
     }
 
     // Tolerates fields added in later versions.
@@ -23,6 +30,9 @@ struct Note: Identifiable, Codable, Hashable, Sendable {
         body = try c.decodeIfPresent(String.self, forKey: .body) ?? ""
         createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
         updatedAt = try c.decodeIfPresent(Date.self, forKey: .updatedAt) ?? createdAt
+        isPinned = try c.decodeIfPresent(Bool.self, forKey: .isPinned) ?? false
+        // Older notes: newest first in Manual order until rearranged.
+        sortIndex = try c.decodeIfPresent(Double.self, forKey: .sortIndex) ?? -createdAt.timeIntervalSince1970
     }
 
     var isEmpty: Bool {
@@ -53,6 +63,40 @@ struct Note: Identifiable, Codable, Hashable, Sendable {
         if t.isEmpty { return b }
         if b.isEmpty { return t }
         return "\(t)\n\n\(b)"
+    }
+}
+
+/// How the Notes list is ordered (Notes settings).
+enum NotesSort: String, CaseIterable, Identifiable, Sendable {
+    case manual, edited, created, title
+
+    var id: String { rawValue }
+
+    var name: String {
+        switch self {
+        case .manual: "Manual"
+        case .edited: "Date Edited"
+        case .created: "Date Created"
+        case .title: "Title"
+        }
+    }
+
+    /// Pinned notes first, then by this order.
+    func sorted(_ notes: [Note]) -> [Note] {
+        notes.sorted { a, b in
+            if a.isPinned != b.isPinned { return a.isPinned }
+            switch self {
+            case .manual:
+                return a.sortIndex != b.sortIndex ? a.sortIndex < b.sortIndex : a.updatedAt > b.updatedAt
+            case .edited:
+                return a.updatedAt > b.updatedAt
+            case .created:
+                return a.createdAt > b.createdAt
+            case .title:
+                let order = a.displayTitle.localizedCaseInsensitiveCompare(b.displayTitle)
+                return order != .orderedSame ? order == .orderedAscending : a.updatedAt > b.updatedAt
+            }
+        }
     }
 }
 

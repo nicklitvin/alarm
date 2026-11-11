@@ -1,0 +1,214 @@
+import SwiftUI
+
+/// Settings for one tab (mostly when to notify), plus About & Updates.
+struct TabSettingsView: View {
+    @Environment(\.dismiss) private var dismiss
+    let tab: AppTab
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                switch tab {
+                case .alarms: AlarmSettingsSection()
+                case .timers: TimerSettingsSection()
+                case .todos: TodoSettingsSection()
+                case .notes: NotesSettingsSection()
+                case .talk: TalkSettingsSection { dismiss() }
+                }
+
+                Section {
+                    NavigationLink {
+                        AboutView()
+                    } label: {
+                        HStack {
+                            Label("About & Updates", systemImage: "info.circle")
+                            Spacer()
+                            if UpdateChecker.shared.updateAvailable {
+                                Text("Update")
+                                    .font(.caption.weight(.bold))
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 3)
+                                    .background(Capsule().fill(Color.red))
+                            } else {
+                                Text("Version \(UpdateChecker.shared.installedVersionString)")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }.fontWeight(.semibold)
+                }
+            }
+        }
+        .tint(.orange)
+    }
+
+    private var title: String {
+        switch tab {
+        case .alarms: "Alarm Settings"
+        case .timers: "Timer Settings"
+        case .todos: "To-Do Settings"
+        case .notes: "Notes Settings"
+        case .talk: "Talk Settings"
+        }
+    }
+}
+
+// MARK: - Alarms
+
+private struct AlarmSettingsSection: View {
+    @AppStorage(AppSettings.alarmHeadsUpEnabledKey, store: AppSettings.store) private var headsUpEnabled = true
+    @AppStorage(AppSettings.alarmHeadsUpMinutesKey, store: AppSettings.store) private var headsUpMinutes = 60
+
+    var body: some View {
+        Section {
+            Toggle("Heads-Up Notification", isOn: $headsUpEnabled)
+            Picker("Notify Me", selection: $headsUpMinutes) {
+                ForEach(AppSettings.alarmHeadsUpChoices, id: \.self) { minutes in
+                    Text("\(AppSettings.leadTimeName(minutes)) before").tag(minutes)
+                }
+            }
+            .disabled(!headsUpEnabled)
+        } header: {
+            Text("Notifications")
+        } footer: {
+            Text(headsUpEnabled
+                 ? "You'll get a notification \(AppSettings.leadTimeName(headsUpMinutes)) before each alarm, with a button to dismiss that ring. The Dismiss button in the app and widget appears at the same time."
+                 : "No notification before alarms. You can still dismiss the next ring from the app and widget \(AppSettings.leadTimeName(headsUpMinutes)) before it.")
+        }
+        .onChange(of: headsUpEnabled) { AlarmController.shared.refresh() }
+        .onChange(of: headsUpMinutes) { AlarmController.shared.refresh() }
+    }
+}
+
+// MARK: - Timers
+
+private struct TimerSettingsSection: View {
+    @AppStorage(AppSettings.timerWarningMinutesKey, store: AppSettings.store) private var warningMinutes = 0
+
+    var body: some View {
+        Section {
+            Picker("Before a Timer Ends", selection: $warningMinutes) {
+                ForEach(AppSettings.timerWarningChoices, id: \.self) { minutes in
+                    Text(minutes == 0 ? "Off" : "\(AppSettings.leadTimeName(minutes)) before").tag(minutes)
+                }
+            }
+        } header: {
+            Text("Notifications")
+        } footer: {
+            Text(warningMinutes == 0
+                 ? "Timers ring when they finish, even in Silent mode."
+                 : "You'll get a notification \(AppSettings.leadTimeName(warningMinutes)) before a timer finishes. It still rings when it's done.")
+        }
+        .onChange(of: warningMinutes) { TimerController.shared.refreshNotifications() }
+    }
+}
+
+// MARK: - To-dos
+
+private struct TodoSettingsSection: View {
+    @AppStorage(AppSettings.todoDueAlertEnabledKey, store: AppSettings.store) private var dueAlert = true
+    @AppStorage(AppSettings.todoEarlyReminderMinutesKey, store: AppSettings.store) private var earlyMinutes = 0
+
+    var body: some View {
+        Section {
+            Toggle("At the Deadline", isOn: $dueAlert)
+            Picker("Early Reminder", selection: $earlyMinutes) {
+                ForEach(AppSettings.todoEarlyReminderChoices, id: \.self) { minutes in
+                    Text(minutes == 0 ? "None" : "\(AppSettings.leadTimeName(minutes)) before").tag(minutes)
+                }
+            }
+        } header: {
+            Text("Notifications")
+        } footer: {
+            Text(footer)
+        }
+        .onChange(of: dueAlert) { TodoController.shared.refreshReminders() }
+        .onChange(of: earlyMinutes) { TodoController.shared.refreshReminders() }
+    }
+
+    private var footer: String {
+        switch (dueAlert, earlyMinutes) {
+        case (false, 0): "No notifications for to-dos. Deadlines still show in the app and widget."
+        case (true, 0): "You'll get a notification when a to-do is due, with Mark as Done and Remind Me in 1 Hour."
+        case (false, let m): "You'll get a reminder \(AppSettings.leadTimeName(m)) before each deadline."
+        case (true, let m): "You'll get a reminder \(AppSettings.leadTimeName(m)) before each deadline, and another when it's due."
+        }
+    }
+}
+
+// MARK: - Notes
+
+private struct NotesSettingsSection: View {
+    @State private var notes = NotesController.shared
+
+    var body: some View {
+        Section {
+            Picker("Sort By", selection: Binding(get: { notes.sort }, set: { notes.setSort($0) })) {
+                ForEach(NotesSort.allCases) { sort in
+                    Text(sort.name).tag(sort)
+                }
+            }
+            .pickerStyle(.inline)
+            .labelsHidden()
+        } header: {
+            Text("Sort By")
+        } footer: {
+            Text(notes.sort == .manual
+                 ? "Tap Reorder in Notes to drag notes into any order. Pinned notes always stay on top."
+                 : "Pinned notes always stay on top. Choose Manual to arrange notes yourself.")
+        }
+    }
+}
+
+// MARK: - Talk
+
+private struct TalkSettingsSection: View {
+    @AppStorage(TalkSettings.wakeWordEnabledKey) private var wakeWordEnabled = false
+    @AppStorage(TalkSettings.wakeWordKey) private var wakeWord = TalkSettings.defaultWakeWord
+    @AppStorage(TalkSettings.speakRepliesKey) private var speakReplies = true
+    let onCleared: () -> Void
+
+    var body: some View {
+        Section {
+            Toggle("Require Wake Word", isOn: $wakeWordEnabled.animation())
+            if wakeWordEnabled {
+                HStack {
+                    Text("Wake Word")
+                    TextField(TalkSettings.defaultWakeWord, text: $wakeWord)
+                        .multilineTextAlignment(.trailing)
+                        .foregroundStyle(.secondary)
+                        .autocorrectionDisabled()
+                        .submitLabel(.done)
+                }
+            }
+        } header: {
+            Text("Live Talk")
+        } footer: {
+            Text(wakeWordEnabled
+                 ? "Only sentences that start with “\(wakeWord.isEmpty ? TalkSettings.defaultWakeWord : wakeWord)” get a reply. Say it on its own and your next sentence counts too. Typed messages always get a reply."
+                 : "Live Talk replies to everything it hears.")
+        }
+
+        Section {
+            Toggle("Speak Replies", isOn: $speakReplies)
+        } footer: {
+            Text("Reads replies aloud during Live Talk.")
+        }
+
+        Section {
+            Button("Clear Conversation", role: .destructive) {
+                TalkModel.shared.clear()
+                onCleared()
+            }
+        } footer: {
+            Text("Everything runs on your iPhone with Apple's on-device model. Nothing you say is sent anywhere.")
+        }
+    }
+}

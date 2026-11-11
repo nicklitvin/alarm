@@ -77,7 +77,7 @@ struct SetTimerTool: Tool {
         do {
             let timer = try await TimerController.shared.start(duration: TimeInterval(seconds), label: label)
             await TalkModel.shared.addEvent("Timer · \(timer.title) · \(TimeFormat.clock(timer.duration))", systemImage: "timer", link: .timers)
-            return "Started a \(TimeFormat.durationName(timer.duration)) timer\(label.isEmpty ? "" : " called \(label)")."
+            return "Started a timer for \(TimeFormat.durationName(timer.duration))\(label.isEmpty ? "" : " called \(label)")."
         } catch {
             return "Couldn't start the timer: \(error.localizedDescription)"
         }

@@ -1,6 +1,25 @@
 {
   "releases": [
     {
+      "version": "1.8.0",
+      "build": 9,
+      "date": "2026-11-11",
+      "title": "Settings & Notes Order",
+      "notes": [
+        "Every tab has its own settings (the gear next to the title) to choose when you get notified:",
+        "Alarms: turn the heads-up on or off and pick 15 min, 30 min, 1 hour or 2 hours before.",
+        "Timers: optional notification 1 or 5 minutes before a timer ends.",
+        "To-dos: notification at the deadline, plus an optional early reminder (5 min to 1 day before).",
+        "Notes: pin notes to the top, Move to Top, drag to rearrange, and sort by Manual, Date Edited, Date Created or Title.",
+        "Changing an alarm's time after it rang or was dismissed now lets it ring again at the new time the same day.",
+        "Lock screen alarm widgets show zzz when no alarm rings in the next 24 hours.",
+        "The next alarm now sits on the same line as the Alarms title. Timers, To-Do and Notes use the same title style, and Talk has no title.",
+        "Links the assistant sends in chat now appear as cards on the left, like attachments.",
+        "About & Updates moved into settings. This also fixes the info button flickering when switching tabs.",
+        "Deadline suggestions are easier to read, in two columns without repeating the day."
+      ]
+    },
+    {
       "version": "1.7.0",
       "build": 8,
       "date": "2026-11-11",

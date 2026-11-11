@@ -16,8 +16,8 @@ settings:
     SWIFT_VERSION: "5.0"
     # Version: bump both for every release and add a matching entry to CHANGELOG.json
     # (Tests/run.sh fails if they don't match).
-    MARKETING_VERSION: "1.7.0"
-    CURRENT_PROJECT_VERSION: "8"
+    MARKETING_VERSION: "1.8.0"
+    CURRENT_PROJECT_VERSION: "9"
     TARGETED_DEVICE_FAMILY: "1"
     GENERATE_INFOPLIST_FILE: YES
 

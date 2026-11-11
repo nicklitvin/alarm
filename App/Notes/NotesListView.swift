@@ -4,8 +4,12 @@ struct NotesListView: View {
     @Environment(NotesController.self) private var controller
     @State private var path: [UUID] = []
     @State private var query = ""
+    @State private var editMode: EditMode = .inactive
 
-    private var filtered: [Note] {
+    private var isSearching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
+    private var canReorder: Bool { controller.sort == .manual && !isSearching }
+
+    private var visible: [Note] {
         let q = query.trimmingCharacters(in: .whitespaces).lowercased()
         let notes = controller.sortedNotes.filter { !$0.isEmpty || path.contains($0.id) }
         guard !q.isEmpty else { return notes }
@@ -14,22 +18,24 @@ struct NotesListView: View {
 
     var body: some View {
         NavigationStack(path: $path) {
+            let pinned = visible.filter(\.isPinned)
+            let others = visible.filter { !$0.isPinned }
             List {
-                ForEach(filtered) { note in
-                    NavigationLink(value: note.id) {
-                        NoteRow(note: note)
+                if !pinned.isEmpty {
+                    Section("Pinned") {
+                        ForEach(pinned) { row($0) }
+                            .onMove(perform: canReorder ? { controller.move(in: pinned, from: $0, to: $1) } : nil)
                     }
-                    .swipeActions(edge: .trailing) {
-                        Button("Delete", systemImage: "trash", role: .destructive) { controller.delete(note.id) }
-                    }
-                    .contextMenu {
-                        Button("Copy All", systemImage: "doc.on.doc") { controller.copy(note) }
-                        Button("Delete", systemImage: "trash", role: .destructive) { controller.delete(note.id) }
-                    }
+                }
+                Section {
+                    ForEach(others) { row($0) }
+                        .onMove(perform: canReorder ? { controller.move(in: others, from: $0, to: $1) } : nil)
+                } header: {
+                    if !pinned.isEmpty && !others.isEmpty { Text("Notes") }
                 }
             }
             .listStyle(.insetGrouped)
-            .searchable(text: $query, prompt: "Search Notes")
+            .environment(\.editMode, $editMode)
             .overlay {
                 if controller.notes.isEmpty {
                     ContentUnavailableView {
@@ -37,20 +43,42 @@ struct NotesListView: View {
                     } description: {
                         Text("Tap New Note below. You can also ask in Talk: “what's on my packing note?”")
                     }
-                } else if filtered.isEmpty {
+                } else if visible.isEmpty {
                     ContentUnavailableView.search(text: query)
                 }
             }
             .navigationTitle("Notes")
+            .toolbar(.hidden, for: .navigationBar)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                VStack(spacing: 0) {
+                    TabHeader(title: "Notes", tab: .notes, detail: { _ in
+                        controller.notes.isEmpty ? nil : "\(controller.notes.count) note\(controller.notes.count == 1 ? "" : "s")"
+                    }) {
+                        if canReorder && controller.notes.count > 1 {
+                            Button(editMode.isEditing ? "Done" : "Reorder") {
+                                withAnimation { editMode = editMode.isEditing ? .inactive : .active }
+                            }
+                            .font(.subheadline.weight(.semibold))
+                        }
+                    }
+                    SearchField(text: $query)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 6)
+                        .background(Color(.systemGroupedBackground))
+                }
+            }
             .navigationDestination(for: UUID.self) { id in
                 NoteEditorView(noteID: id)
             }
             .safeAreaInset(edge: .bottom) {
-                BottomActionButton(title: "New Note", systemImage: "square.and.pencil") {
-                    path.append(controller.add().id)
+                if !editMode.isEditing {
+                    BottomActionButton(title: "New Note", systemImage: "square.and.pencil") {
+                        path.append(controller.add().id)
+                    }
                 }
             }
             .animation(.snappy, value: controller.notes)
+            .onChange(of: canReorder) { _, can in if !can { editMode = .inactive } }
             .task(id: AppNavigation.shared.pendingNoteID) {
                 // Opened from a chat event: show that note.
                 guard let id = AppNavigation.shared.pendingNoteID else { return }
@@ -59,6 +87,55 @@ struct NotesListView: View {
             }
         }
         .tint(.orange)
+    }
+
+    private func row(_ note: Note) -> some View {
+        NavigationLink(value: note.id) {
+            NoteRow(note: note)
+        }
+        .swipeActions(edge: .leading) {
+            Button(note.isPinned ? "Unpin" : "Pin", systemImage: note.isPinned ? "pin.slash" : "pin") {
+                controller.setPinned(!note.isPinned, for: note.id)
+            }
+            .tint(.orange)
+        }
+        .swipeActions(edge: .trailing) {
+            Button("Delete", systemImage: "trash", role: .destructive) { controller.delete(note.id) }
+        }
+        .contextMenu {
+            Button("Copy All", systemImage: "doc.on.doc") { controller.copy(note) }
+            Button(note.isPinned ? "Unpin" : "Pin to Top", systemImage: note.isPinned ? "pin.slash" : "pin") {
+                controller.setPinned(!note.isPinned, for: note.id)
+            }
+            Button("Move to Top", systemImage: "arrow.up.to.line") { controller.moveToTop(note.id) }
+            Button("Delete", systemImage: "trash", role: .destructive) { controller.delete(note.id) }
+        }
+    }
+}
+
+/// Rounded search field under the Notes title.
+private struct SearchField: View {
+    @Binding var text: String
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+            TextField("Search Notes", text: $text)
+                .submitLabel(.search)
+                .autocorrectionDisabled()
+            if !text.isEmpty {
+                Button {
+                    text = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Clear search")
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 

@@ -14,7 +14,7 @@ struct PlannedAlarm: Equatable {
 
     /// Stable description of this system alarm. Any change (time, label, day) yields a new key → new ID.
     var key: String {
-        let base = "\(item.id.uuidString)|\(item.hour):\(item.minute)|\(item.title)"
+        let base = "\(item.id.uuidString)|r\(item.revision)|\(item.hour):\(item.minute)|\(item.title)"
         switch kind {
         case .weekly(let day):
             return base + "|weekly|" + String(day.rawValue)

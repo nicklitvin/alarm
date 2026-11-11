@@ -41,9 +41,10 @@ enum TodoReminders {
         let upcoming = todos
             .filter { !$0.isDone && ($0.due ?? .distantPast) > now }
             .sorted { $0.due! < $1.due! }
-            .prefix(maxPending)
+            // Each to-do can use two notifications when early reminders are on.
+            .prefix(AppSettings.todoEarlyReminderMinutes > 0 ? maxPending / 2 : maxPending)
         for todo in upcoming {
-            if let request = request(for: todo, now: now) {
+            for request in requests(for: todo, now: now) {
                 try? await center.add(request)
             }
         }
@@ -52,28 +53,49 @@ enum TodoReminders {
     /// Updates the reminder for a single to-do.
     static func update(_ todo: TodoItem, now: Date = Date()) async {
         let center = UNUserNotificationCenter.current()
-        center.removePendingNotificationRequests(withIdentifiers: [identifier(for: todo.id)])
-        center.removeDeliveredNotifications(withIdentifiers: [identifier(for: todo.id)])
-        if let request = request(for: todo, now: now) {
+        let ids = [identifier(for: todo.id), earlyIdentifier(for: todo.id)]
+        center.removePendingNotificationRequests(withIdentifiers: ids)
+        center.removeDeliveredNotifications(withIdentifiers: ids)
+        for request in requests(for: todo, now: now) {
             try? await center.add(request)
         }
     }
 
-    private static func request(for todo: TodoItem, now: Date) -> UNNotificationRequest? {
-        guard !todo.isDone, let due = todo.due, due > now else { return nil }
+    private static func earlyIdentifier(for id: UUID) -> String { identifier(for: id) + ".early" }
 
+    /// The at-deadline alert and the optional earlier reminder, per To-Do settings.
+    private static func requests(for todo: TodoItem, now: Date) -> [UNNotificationRequest] {
+        guard !todo.isDone, let due = todo.due, due > now else { return [] }
+        var result: [UNNotificationRequest] = []
+
+        if AppSettings.todoDueAlertEnabled {
+            result.append(request(id: identifier(for: todo.id), todo: todo, at: due,
+                                  body: "Due now · \(TimeFormat.string(for: due))"))
+        }
+        let early = AppSettings.todoEarlyReminderMinutes
+        if early > 0 {
+            let when = due.addingTimeInterval(-TimeInterval(early * 60))
+            if when > now {
+                result.append(request(id: earlyIdentifier(for: todo.id), todo: todo, at: when,
+                                      body: "Due in \(AppSettings.leadTimeName(early)) · \(TimeFormat.dueDescription(due, relativeTo: when))"))
+            }
+        }
+        return result
+    }
+
+    private static func request(id: String, todo: TodoItem, at date: Date, body: String) -> UNNotificationRequest {
         let content = UNMutableNotificationContent()
         content.title = todo.title
-        content.body = "Due now · \(TimeFormat.string(for: due))"
+        content.body = todo.trimmedDetails.isEmpty ? body : "\(body)\n\(todo.trimmedDetails)"
         content.sound = .default
         content.categoryIdentifier = categoryID
         content.threadIdentifier = "todos"
         content.interruptionLevel = .timeSensitive
         content.userInfo = [todoIDKey: todo.id.uuidString]
 
-        let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: due)
+        let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
         return UNNotificationRequest(
-            identifier: identifier(for: todo.id),
+            identifier: id,
             content: content,
             trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
         )

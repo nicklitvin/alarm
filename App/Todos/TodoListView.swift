@@ -11,6 +11,15 @@ struct TodoListView: View {
                 list(now: context.date)
             }
             .navigationTitle("To-Do")
+            .toolbar(.hidden, for: .navigationBar)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                TabHeader(title: "To-Do", tab: .todos) { now in
+                    let open = controller.openTodos
+                    let overdue = open.filter { $0.isOverdue(at: now) }.count
+                    if open.isEmpty { return nil }
+                    return overdue > 0 ? "\(overdue) overdue · \(open.count) left" : "\(open.count) left"
+                }
+            }
             .safeAreaInset(edge: .bottom) {
                 if composing {
                     TodoComposer { composing = false }
@@ -257,14 +266,15 @@ struct SuggestionChips: View {
         let suggestions = DueSuggestions.make(now: now)
         let isCustom = selection.map { picked in !suggestions.contains { $0.date == picked } } ?? false
 
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: 8)], spacing: 8) {
+        // Two columns so titles like "Tomorrow morning" are never cut off.
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
             ForEach(suggestions) { suggestion in
                 let selected = selection == suggestion.date
                 Button {
                     selection = selected ? nil : suggestion.date
                 } label: {
                     chip(title: suggestion.title,
-                         subtitle: TimeFormat.dueDescription(suggestion.date, relativeTo: now),
+                         subtitle: Self.subtitle(for: suggestion, now: now),
                          selected: selected)
                 }
                 .buttonStyle(.plain)
@@ -278,6 +288,13 @@ struct SuggestionChips: View {
             .buttonStyle(.plain)
         }
         .sensoryFeedback(.selection, trigger: selection)
+    }
+
+    /// The time under a suggestion, without repeating the day its title already says
+    /// ("Tomorrow morning" → "9:00 AM", "This weekend" → "Sat 10:00 AM").
+    private static func subtitle(for suggestion: DueSuggestions.Suggestion, now: Date) -> String {
+        let impliesDay = ["Tomorrow", "Tonight", "This afternoon", "This evening", "In "].contains { suggestion.title.hasPrefix($0) }
+        return impliesDay ? TimeFormat.string(for: suggestion.date) : TimeFormat.dueDescription(suggestion.date, relativeTo: now)
     }
 
     private func chip(title: String, subtitle: String, selected: Bool, systemImage: String? = nil) -> some View {

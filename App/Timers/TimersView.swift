@@ -79,6 +79,19 @@ struct TimersView: View {
             }
             .listStyle(.insetGrouped)
             .navigationTitle("Timers")
+            .toolbar(.hidden, for: .navigationBar)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                TabHeader(title: "Timers", tab: .timers) { _ in
+                    let running = controller.timers.filter { $0.state != .paused }.count
+                    let paused = controller.timers.count - running
+                    switch (running, paused) {
+                    case (0, 0): return nil
+                    case (_, 0): return "\(running) running"
+                    case (0, _): return "\(paused) paused"
+                    default: return "\(running) running · \(paused) paused"
+                    }
+                }
+            }
             .animation(.default, value: controller.timers)
             .alert("Couldn't Start Timer", isPresented: Binding(
                 get: { errorMessage != nil },

@@ -1,13 +1,11 @@
 import SwiftUI
 
-/// Version info, update check and patch notes for every version.
+/// Version info, update check and patch notes for every version. Opened from any tab's settings.
 struct AboutView: View {
-    @Environment(\.dismiss) private var dismiss
     @State private var updates = UpdateChecker.shared
     @State private var shownUpdate: Release?
 
     var body: some View {
-        NavigationStack {
             List {
                 Section {
                     VStack(spacing: 10) {
@@ -53,15 +51,9 @@ struct AboutView: View {
                 }
             }
             .sheet(item: $shownUpdate) { UpdatePromptView(release: $0) }
-            .navigationTitle("About")
+            .navigationTitle("About & Updates")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }.fontWeight(.semibold)
-                }
-            }
-        }
-        .tint(.orange)
+            .tint(.orange)
     }
 }
 

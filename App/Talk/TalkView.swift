@@ -3,7 +3,6 @@ import SwiftUI
 struct TalkView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var model = TalkModel.shared
-    @State private var showSettings = false
     @FocusState private var inputFocused: Bool
 
     var body: some View {
@@ -23,15 +22,10 @@ struct TalkView: View {
                     conversation
                 }
             }
-            .navigationTitle("Talk")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Settings", systemImage: "gearshape") { showSettings = true }
-                }
-            }
-            .sheet(isPresented: $showSettings) {
-                TalkSettingsView(onClear: model.clear)
+            .toolbar(.hidden, for: .navigationBar)
+            // No title on Talk: just the settings button, in the same spot as the other tabs.
+            .safeAreaInset(edge: .top, spacing: 0) {
+                TabHeader(title: nil, tab: .talk, background: Color(.systemBackground))
             }
         }
         .tint(.orange)
@@ -156,30 +150,21 @@ private struct MessageRow: View {
                 Spacer(minLength: 48)
             }
         case .event(let systemImage):
-            Group {
+            // Shown like an attachment the assistant sent: left-aligned, tappable when it links somewhere.
+            HStack {
                 if let link = message.link {
                     Button {
                         AppNavigation.shared.open(link)
                     } label: {
-                        HStack(spacing: 6) {
-                            Label(message.text, systemImage: systemImage)
-                            Image(systemName: "chevron.right")
-                                .font(.caption2.weight(.bold))
-                                .opacity(0.7)
-                        }
+                        AttachmentCard(text: message.text, systemImage: systemImage, isLink: true)
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint("Opens it")
                 } else {
-                    Label(message.text, systemImage: systemImage)
+                    AttachmentCard(text: message.text, systemImage: systemImage, isLink: false)
                 }
+                Spacer(minLength: 48)
             }
-            .font(.footnote.weight(.medium))
-            .foregroundStyle(.orange)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(Capsule().fill(Color.orange.opacity(0.12)))
-            .frame(maxWidth: .infinity)
         case .error:
             Label(message.text, systemImage: "exclamationmark.circle")
                 .font(.footnote)
@@ -304,63 +289,42 @@ private struct LiveStatusCard: View {
     }
 }
 
-// MARK: - Settings
-
-struct TalkSettingsView: View {
-    @Environment(\.dismiss) private var dismiss
-    @AppStorage(TalkSettings.wakeWordEnabledKey) private var wakeWordEnabled = false
-    @AppStorage(TalkSettings.wakeWordKey) private var wakeWord = TalkSettings.defaultWakeWord
-    @AppStorage(TalkSettings.speakRepliesKey) private var speakReplies = true
-    let onClear: () -> Void
+/// "Alarm updated · 7:00 AM · Weekdays" shown as a card: icon, title, details, chevron.
+private struct AttachmentCard: View {
+    let text: String
+    let systemImage: String
+    let isLink: Bool
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    Toggle("Require Wake Word", isOn: $wakeWordEnabled)
-                    if wakeWordEnabled {
-                        HStack {
-                            Text("Wake Word")
-                            TextField(TalkSettings.defaultWakeWord, text: $wakeWord)
-                                .multilineTextAlignment(.trailing)
-                                .foregroundStyle(.secondary)
-                                .autocorrectionDisabled()
-                                .submitLabel(.done)
-                        }
-                    }
-                } header: {
-                    Text("Live Talk")
-                } footer: {
-                    Text(wakeWordEnabled
-                         ? "Only sentences that start with “\(wakeWord.isEmpty ? TalkSettings.defaultWakeWord : wakeWord)” get a reply. Say it on its own and your next sentence counts too. Typed messages always get a reply."
-                         : "Live Talk replies to everything it hears.")
-                }
-
-                Section {
-                    Toggle("Speak Replies", isOn: $speakReplies)
-                } footer: {
-                    Text("Reads replies aloud during Live Talk.")
-                }
-
-                Section {
-                    Button("Clear Conversation", role: .destructive) {
-                        onClear()
-                        dismiss()
-                    }
-                } footer: {
-                    Text("Everything runs on your iPhone with Apple's on-device model. Nothing you say is sent anywhere.")
+        let parts = text.components(separatedBy: " · ")
+        HStack(spacing: 10) {
+            Image(systemName: systemImage)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.orange)
+                .frame(width: 34, height: 34)
+                .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(Color.orange.opacity(0.14)))
+            VStack(alignment: .leading, spacing: 1) {
+                Text(parts.first ?? text)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                if parts.count > 1 {
+                    Text(parts.dropFirst().joined(separator: " · "))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
-            .navigationTitle("Talk Settings")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                        .fontWeight(.semibold)
-                }
+            .lineLimit(1)
+            if isLink {
+                Spacer(minLength: 4)
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.tertiary)
             }
-            .animation(.default, value: wakeWordEnabled)
         }
-        .tint(.orange)
+        .padding(.leading, 8)
+        .padding(.trailing, 12)
+        .padding(.vertical, 8)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.primary.opacity(0.06)))
     }
 }
