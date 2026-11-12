@@ -48,3 +48,31 @@ enum TimerStorage {
         AlarmStorage.defaults.set(data, forKey: key)
     }
 }
+
+/// A timer you've used before, shown under Recents so it can be started again with one tap.
+struct RecentTimer: Codable, Hashable, Identifiable, Sendable {
+    var duration: TimeInterval
+    var label: String
+
+    var id: String { "\(Int(duration))|\(label)" }
+    var title: String { label.isEmpty ? TimeFormat.durationName(duration) : label }
+
+    /// Newest first, without duplicates, at most `limit`.
+    static func adding(_ timer: RecentTimer, to recents: [RecentTimer], limit: Int = 12) -> [RecentTimer] {
+        Array(([timer] + recents.filter { $0.id != timer.id }).prefix(limit))
+    }
+}
+
+enum RecentTimerStorage {
+    private static let key = "timers.recents.v1"
+
+    static func load() -> [RecentTimer] {
+        guard let data = AlarmStorage.defaults.data(forKey: key) else { return [] }
+        return (try? JSONDecoder().decode([RecentTimer].self, from: data)) ?? []
+    }
+
+    static func save(_ recents: [RecentTimer]) {
+        guard let data = try? JSONEncoder().encode(recents) else { return }
+        AlarmStorage.defaults.set(data, forKey: key)
+    }
+}

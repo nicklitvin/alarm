@@ -21,6 +21,8 @@ final class TimerController {
     static let shared = TimerController()
 
     private(set) var timers: [TimerItem]
+    /// Timers used before, newest first (the Recents list).
+    private(set) var recents: [RecentTimer]
 
     @ObservationIgnored private let manager = AlarmManager.shared
     @ObservationIgnored private var pendingIDs: Set<UUID> = []
@@ -30,6 +32,7 @@ final class TimerController {
 
     private init() {
         timers = TimerStorage.load()
+        recents = RecentTimerStorage.load()
 
         TimerIntentRunner.handler = { [weak self] action, id in
             guard let self else { return }
@@ -75,6 +78,8 @@ final class TimerController {
             save()
             throw error
         }
+        recents = RecentTimer.adding(RecentTimer(duration: item.duration, label: item.label), to: recents)
+        RecentTimerStorage.save(recents)
         return item
     }
 
@@ -104,6 +109,18 @@ final class TimerController {
         }
         timers.removeAll { $0.id == id }
         save()
+    }
+
+    func removeRecent(_ recent: RecentTimer) {
+        recents.removeAll { $0.id == recent.id }
+        RecentTimerStorage.save(recents)
+    }
+
+    /// Settings → Delete All Timers: cancels running timers and clears Recents.
+    func deleteAll() {
+        cancelAll()
+        recents = []
+        RecentTimerStorage.save(recents)
     }
 
     func cancelAll() {

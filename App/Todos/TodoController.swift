@@ -70,6 +70,12 @@ final class TodoController {
         commit()
     }
 
+    /// Settings → Delete All To-Dos.
+    func deleteAll() {
+        todos.removeAll()
+        commit()
+    }
+
     func clearCompleted() {
         todos.removeAll(where: \.isDone)
         commit()

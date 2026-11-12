@@ -45,6 +45,12 @@ final class NotesController {
         save()
     }
 
+    /// Settings → Delete All Notes.
+    func deleteAll() {
+        notes.removeAll()
+        save()
+    }
+
     func setPinned(_ pinned: Bool, for id: UUID) {
         guard let index = notes.firstIndex(where: { $0.id == id }) else { return }
         notes[index].isPinned = pinned

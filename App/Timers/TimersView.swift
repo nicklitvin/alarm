@@ -1,18 +1,10 @@
 import SwiftUI
 
+/// Running timers and Recents. New timers are set up in a sheet (like adding an alarm).
 struct TimersView: View {
     @Environment(TimerController.self) private var controller
-    @State private var hours = 0
-    @State private var minutes = 5
-    @State private var seconds = 0
-    @State private var label = ""
+    @State private var showNew = false
     @State private var errorMessage: String?
-
-    private static let presets: [TimeInterval] = [60, 3 * 60, 5 * 60, 10 * 60, 15 * 60, 30 * 60]
-
-    private var pickedDuration: TimeInterval {
-        TimeInterval(hours * 3600 + minutes * 60 + seconds)
-    }
 
     var body: some View {
         NavigationStack {
@@ -28,6 +20,91 @@ struct TimersView: View {
                     }
                 }
 
+                if !controller.recents.isEmpty {
+                    Section("Recents") {
+                        ForEach(controller.recents) { recent in
+                            RecentRow(recent: recent) { start(recent.duration, label: recent.label) }
+                                .swipeActions {
+                                    Button("Remove", systemImage: "trash", role: .destructive) { controller.removeRecent(recent) }
+                                }
+                        }
+                    }
+                }
+            }
+            .listStyle(.insetGrouped)
+            .overlay {
+                if controller.timers.isEmpty && controller.recents.isEmpty {
+                    ContentUnavailableView {
+                        Label("No Timers", systemImage: "timer")
+                    } description: {
+                        Text("Tap New Timer below. Timers you use show up here so you can start them again.")
+                    }
+                }
+            }
+            .navigationTitle("Timers")
+            .toolbar(.hidden, for: .navigationBar)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                TabHeader(title: "Timers", tab: .timers) { _ in
+                    let running = controller.timers.filter { $0.state != .paused }.count
+                    let paused = controller.timers.count - running
+                    switch (running, paused) {
+                    case (0, 0): return nil
+                    case (_, 0): return "\(running) running"
+                    case (0, _): return "\(paused) paused"
+                    default: return "\(running) running · \(paused) paused"
+                    }
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                BottomActionButton(title: "New Timer", systemImage: "plus") { showNew = true }
+            }
+            .animation(.default, value: controller.timers)
+            .animation(.default, value: controller.recents)
+            .sheet(isPresented: $showNew) {
+                NewTimerSheet { duration, label in start(duration, label: label) }
+            }
+            .alert("Couldn't Start Timer", isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(errorMessage ?? "")
+            }
+        }
+        .tint(.orange)
+    }
+
+    private func start(_ duration: TimeInterval, label: String) {
+        Task {
+            do {
+                try await controller.start(duration: duration, label: label)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+}
+
+// MARK: - New timer sheet
+
+private struct NewTimerSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var hours = 0
+    @State private var minutes = 5
+    @State private var seconds = 0
+    @State private var label = ""
+    let onStart: (TimeInterval, String) -> Void
+
+    private static let presets: [TimeInterval] = [60, 3 * 60, 5 * 60, 10 * 60, 15 * 60, 30 * 60]
+
+    private var pickedDuration: TimeInterval {
+        TimeInterval(hours * 3600 + minutes * 60 + seconds)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
                 Section {
                     DurationWheel(hours: $hours, minutes: $minutes, seconds: $seconds)
                 }
@@ -60,61 +137,69 @@ struct TimersView: View {
                 } footer: {
                     Text("Tap a preset to start it right away.")
                 }
-
-                Section {
-                    Button {
-                        start(pickedDuration)
-                    } label: {
-                        Text("Start")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 6)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .buttonBorderShape(.capsule)
-                    .disabled(pickedDuration == 0)
-                }
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets())
             }
-            .listStyle(.insetGrouped)
-            .navigationTitle("Timers")
-            .toolbar(.hidden, for: .navigationBar)
-            .safeAreaInset(edge: .top, spacing: 0) {
-                TabHeader(title: "Timers", tab: .timers) { _ in
-                    let running = controller.timers.filter { $0.state != .paused }.count
-                    let paused = controller.timers.count - running
-                    switch (running, paused) {
-                    case (0, 0): return nil
-                    case (_, 0): return "\(running) running"
-                    case (0, _): return "\(paused) paused"
-                    default: return "\(running) running · \(paused) paused"
-                    }
+            .navigationTitle("New Timer")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Start") { start(pickedDuration) }
+                        .fontWeight(.semibold)
+                        .disabled(pickedDuration == 0)
                 }
             }
-            .animation(.default, value: controller.timers)
-            .alert("Couldn't Start Timer", isPresented: Binding(
-                get: { errorMessage != nil },
-                set: { if !$0 { errorMessage = nil } }
-            )) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(errorMessage ?? "")
+            .safeAreaInset(edge: .bottom) {
+                Button {
+                    start(pickedDuration)
+                } label: {
+                    Text("Start")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                }
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.capsule)
+                .controlSize(.large)
+                .disabled(pickedDuration == 0)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 8)
             }
         }
         .tint(.orange)
     }
 
     private func start(_ duration: TimeInterval) {
-        let label = label
-        Task {
-            do {
-                try await controller.start(duration: duration, label: label)
-                self.label = ""
-            } catch {
-                errorMessage = error.localizedDescription
+        guard duration > 0 else { return }
+        onStart(duration, label.trimmingCharacters(in: .whitespacesAndNewlines))
+        dismiss()
+    }
+}
+
+// MARK: - Recent timer row
+
+/// A timer used before: tap play to start it again.
+private struct RecentRow: View {
+    let recent: RecentTimer
+    let onStart: () -> Void
+
+    var body: some View {
+        HStack(spacing: 14) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(TimeFormat.clock(recent.duration))
+                    .font(.system(size: 34, weight: .light))
+                    .monospacedDigit()
+                Text(recent.title)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
+            Spacer(minLength: 0)
+            CircleButton(systemImage: "play.fill", action: onStart)
+                .accessibilityLabel("Start \(recent.title)")
         }
+        .padding(.vertical, 4)
     }
 }
 

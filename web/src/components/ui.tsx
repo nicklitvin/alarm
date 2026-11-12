@@ -269,6 +269,22 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
           </Section>
         </>
       )}
+      {tab !== 'talk' && (() => {
+        const info = {
+          alarms: { label: 'Delete All Alarms', count: data.alarms.length, ask: `Delete all ${data.alarms.length} alarms?` },
+          timers: { label: 'Delete All Timers', count: data.timers.length + data.recents.length, ask: 'Cancel running timers and clear Recents?' },
+          todos: { label: 'Delete All To-Dos', count: data.todos.length, ask: `Delete all ${data.todos.length} to-dos, including completed ones?` },
+          notes: { label: 'Delete All Notes', count: data.notes.length, ask: `Delete all ${data.notes.length} notes?` },
+        }[tab]
+        const clear = () => update((d) => tab === 'alarms' ? { ...d, alarms: [] } : tab === 'timers' ? { ...d, timers: [], recents: [] }
+          : tab === 'todos' ? { ...d, todos: [] } : { ...d, notes: [] })
+        return (
+          <Section footer={tab === 'timers' ? 'Cancels any running timers and clears the Recents list.' : 'Removes everything on this tab.'}>
+            <button className="row tappable red" style={{ width: '100%', opacity: info.count ? 1 : 0.4 }} disabled={!info.count}
+              onClick={() => { if (confirm(`${info.ask}\nThis can't be undone.`)) clear() }}>🗑︎ {info.label}</button>
+          </Section>
+        )
+      })()}
       <Section>
         <button className="row tappable" style={{ width: '100%', textAlign: 'left' }} onClick={() => setAbout(true)}>
           <span className="grow">ⓘ About & Updates</span><span className="muted">Version {appVersion} ›</span>

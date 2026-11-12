@@ -8,13 +8,13 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 - **Lock screen widget** that shows when your next alarm will go off. It comes in three sizes: rectangular, circular and inline.
 - **Heads-up notification before each alarm** (1 hour by default; change it in Alarm settings). Touch and hold it and tap **Dismiss Alarm** to cancel that ring. The next one still rings as normal.
 - **Dismiss in the app.** If you open the app within an hour of an alarm, a card at the top has a **Dismiss** button. Once dismissed, the card goes away and the alarm shows "Skipping today".
-- **Timers tab.** Hour, minute and second wheels plus one-tap presets. Timers ring through Silent mode and show a countdown on the lock screen and in the Dynamic Island, with Pause and Cancel buttons.
+- **Timers tab.** Running timers and **Recents**: tap ▶ to start a timer you've used before. **New Timer** opens a sheet with hour, minute and second wheels, one-tap presets and a label. Timers ring through Silent mode and show a countdown on the lock screen and in the Dynamic Island, with Pause and Cancel buttons.
 - **To-Do tab.** Add a to-do and tap a suggested time ("In 1 hour", "Tonight", "Tomorrow morning", …) or pick a custom time and date. You get a notification at the deadline with **Mark as Done** and **Remind Me in 1 Hour** buttons. Items are grouped into Overdue, Today, Tomorrow, Later and No Deadline.
 - **Notes tab.** Searchable notes with a **Copy All** button on every note. Pin notes to the top, drag to rearrange, or sort by date or title. The assistant can read them ("what's on my packing note?") and write to them ("add charger to my packing note").
 - **Widgets.**
   - **Up Next:** home screen (small, medium, large) and lock screen. Shows what's relevant now: an alarm within the hour with a **Dismiss** button, running timers, overdue and soon-due to-dos, the next alarm, then the rest of your to-dos. Tap an item to open it in the app, or tap a to-do's circle to check it off. The ✦ button in the bottom-right corner opens a prompt to ask the assistant.
   - **Next Alarm:** home screen (small) and lock screen. Tap it to open that alarm. On the lock screen it shows zzz when nothing rings in the next 24 hours.
-- **Settings per tab.** The gear next to each tab's title opens that tab's settings: when to get alarm heads-ups, timer warnings and to-do reminders, how to sort notes, and Talk options. Each also has **About & Updates**.
+- **Settings per tab.** The gear next to each tab's title opens that tab's settings: when to get alarm heads-ups, timer warnings and to-do reminders, how to sort notes, and Talk options. Each also has **Delete All** for that tab and **About & Updates**.
 - **Updates and patch notes.**
   - The app checks GitHub for a newer version and offers to show you how to update.
   - Open any tab's settings → **About & Updates** to see your version and the patch notes for every release.

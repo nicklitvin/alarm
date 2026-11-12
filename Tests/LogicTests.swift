@@ -350,5 +350,14 @@ check(titles(NotesSort.manual.sorted([nA, nB, nC])) == ["Cherry", "apple", "Bana
 let legacyNote = try? JSONDecoder().decode(Note.self, from: Data(#"{"title":"old","createdAt":700000000}"#.utf8))
 check(legacyNote?.isPinned == false && legacyNote?.sortIndex == -(Date(timeIntervalSinceReferenceDate: 700000000).timeIntervalSince1970), "old notes load unpinned, newest-first manual order")
 
+// Recent timers.
+var recents: [RecentTimer] = []
+recents = RecentTimer.adding(RecentTimer(duration: 300, label: ""), to: recents)
+recents = RecentTimer.adding(RecentTimer(duration: 540, label: "Pasta"), to: recents)
+recents = RecentTimer.adding(RecentTimer(duration: 300, label: ""), to: recents)
+check(recents.map(\.title) == ["5 minutes", "Pasta"], "recents newest first, no duplicates → \(recents.map(\.title))")
+for i in 1...20 { recents = RecentTimer.adding(RecentTimer(duration: TimeInterval(i * 60), label: "T\(i)"), to: recents) }
+check(recents.count == 12 && recents.first?.label == "T20", "recents capped at 12")
+
 print(failures == 0 ? "\nALL PASSED" : "\n\(failures) FAILED")
 exit(failures == 0 ? 0 : 1)

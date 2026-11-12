@@ -22,6 +22,19 @@ export interface TimerItem {
   remaining: number // seconds, while paused
 }
 
+/** A timer used before (the Recents list). */
+export interface RecentTimer {
+  duration: number // seconds
+  label: string
+}
+
+export const recentID = (r: RecentTimer) => `${r.duration}|${r.label}`
+
+/** Newest first, no duplicates, at most 12. */
+export function addRecent(recents: RecentTimer[], timer: RecentTimer) {
+  return [timer, ...recents.filter((r) => recentID(r) !== recentID(timer))].slice(0, 12)
+}
+
 export interface Todo {
   id: string
   title: string

@@ -72,6 +72,12 @@ final class AlarmController {
         commit()
     }
 
+    /// Settings → Delete All Alarms.
+    func deleteAll() {
+        alarms.removeAll()
+        commit()
+    }
+
     func setEnabled(_ enabled: Bool, for id: UUID) {
         guard let index = alarms.firstIndex(where: { $0.id == id }) else { return }
         alarms[index].isEnabled = enabled

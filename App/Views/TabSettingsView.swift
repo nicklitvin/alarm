@@ -16,6 +16,10 @@ struct TabSettingsView: View {
                 case .talk: TalkSettingsSection { dismiss() }
                 }
 
+                if tab != .talk {
+                    DeleteAllSection(tab: tab)
+                }
+
                 Section {
                     NavigationLink {
                         AboutView()
@@ -56,6 +60,79 @@ struct TabSettingsView: View {
         case .todos: "To-Do Settings"
         case .notes: "Notes Settings"
         case .talk: "Talk Settings"
+        }
+    }
+}
+
+// MARK: - Delete all
+
+/// "Delete All Alarms / Timers / To-Dos / Notes", with a confirmation.
+private struct DeleteAllSection: View {
+    let tab: AppTab
+    @State private var confirming = false
+
+    var body: some View {
+        Section {
+            Button(role: .destructive) {
+                confirming = true
+            } label: {
+                Label(title, systemImage: "trash")
+            }
+            .disabled(count == 0)
+        } footer: {
+            Text(footer)
+        }
+        .confirmationDialog(question, isPresented: $confirming, titleVisibility: .visible) {
+            Button(title, role: .destructive, action: deleteAll)
+        } message: {
+            Text("This can't be undone.")
+        }
+    }
+
+    private var count: Int {
+        switch tab {
+        case .alarms: AlarmController.shared.alarms.count
+        case .timers: TimerController.shared.timers.count + TimerController.shared.recents.count
+        case .todos: TodoController.shared.todos.count
+        case .notes: NotesController.shared.notes.count
+        case .talk: 0
+        }
+    }
+
+    private var title: String {
+        switch tab {
+        case .alarms: "Delete All Alarms"
+        case .timers: "Delete All Timers"
+        case .todos: "Delete All To-Dos"
+        case .notes: "Delete All Notes"
+        case .talk: ""
+        }
+    }
+
+    private var question: String {
+        switch tab {
+        case .alarms: "Delete all \(count) alarm\(count == 1 ? "" : "s")?"
+        case .timers: "Cancel running timers and clear Recents?"
+        case .todos: "Delete all \(count) to-do\(count == 1 ? "" : "s"), including completed ones?"
+        case .notes: "Delete all \(count) note\(count == 1 ? "" : "s")?"
+        case .talk: ""
+        }
+    }
+
+    private var footer: String {
+        switch tab {
+        case .timers: "Cancels any running timers and clears the Recents list."
+        default: "Removes everything on this tab."
+        }
+    }
+
+    private func deleteAll() {
+        switch tab {
+        case .alarms: AlarmController.shared.deleteAll()
+        case .timers: TimerController.shared.deleteAll()
+        case .todos: TodoController.shared.deleteAll()
+        case .notes: NotesController.shared.deleteAll()
+        case .talk: break
         }
     }
 }

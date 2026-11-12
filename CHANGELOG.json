@@ -1,6 +1,17 @@
 {
   "releases": [
     {
+      "version": "1.9.0",
+      "build": 12,
+      "date": "2026-11-12",
+      "title": "Timer Recents & Delete All",
+      "notes": [
+        "The Timers tab now lists running timers and Recents. Tap ▶ on a recent timer to start it again.",
+        "Tap New Timer to set one up in a pop-up sheet, the same way you add an alarm.",
+        "Each tab's settings now has Delete All (Alarms, Timers, To-Dos, Notes), with a confirmation first."
+      ]
+    },
+    {
       "version": "1.8.2",
       "build": 11,
       "date": "2026-11-12",

@@ -1,7 +1,7 @@
 // A canned stand-in for the app's on-device assistant, just enough to exercise the chat UI
 // (attachment cards, links into tabs). It is NOT the real model.
 import {
-  alarmTitle, durationName, dueDescription, noteTitle, repeatSummary, timeString, uid, WEEKEND, WORKDAYS, type Alarm, type Weekday,
+  addRecent, alarmTitle, durationName, dueDescription, noteTitle, repeatSummary, timeString, uid, WEEKEND, WORKDAYS, type Alarm, type Weekday,
 } from './model'
 import type { AppData, ChatMessage } from './store'
 
@@ -42,7 +42,7 @@ export function respond(input: string, data: AppData, now: number): { data: AppD
     const name = label && !['a', 'set', 'start', 'new'].includes(label) ? label[0].toUpperCase() + label.slice(1) : ''
     const timer = { id: uid(), label: name, duration: seconds, state: 'running' as const, fireDate: now + seconds * 1000, remaining: seconds }
     return {
-      data: { ...data, timers: [...data.timers, timer] },
+      data: { ...data, timers: [...data.timers, timer], recents: addRecent(data.recents, { duration: seconds, label: name }) },
       reply: `Started a timer for ${durationName(seconds)}${name ? ` called ${name}` : ''}.`,
       events: [event(`Timer · ${name || durationName(seconds)} · ${durationName(seconds)}`, '⏱', { tab: 'timers' })],
     }
