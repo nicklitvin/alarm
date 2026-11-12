@@ -319,7 +319,7 @@ check(TimeOfDay.matching(d(2026, 11, 17, 21, 0)) == .night && TimeOfDay.matching
 
 // Deep links (widget taps).
 let someID = UUID()
-for link in [DeepLink.alarms, .alarm(someID), .timers, .todos, .todo(someID), .notes, .note(someID)] {
+for link in [DeepLink.alarms, .alarm(someID), .timers, .todos, .todo(someID), .notes, .note(someID), .talk] {
     check(DeepLink(url: link.url) == link, "deep link round trip \(link.url.absoluteString)")
 }
 check(DeepLink(url: URL(string: "https://example.com/alarm")!) == nil && DeepLink(url: URL(string: "alarmapp://bogus")!) == nil, "foreign/unknown links ignored")

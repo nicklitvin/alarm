@@ -221,15 +221,6 @@ select.ios { border: 0; background: transparent; color: var(--secondary); font-s
 .orb::after { content: ''; width: 18px; height: 18px; border-radius: 9px; background: var(--orange); }
 @keyframes pulse { 50% { transform: scale(1.18); } }
 
-/* ---------- System prompt (Ask Assistant) ---------- */
-.system-prompt { position: absolute; top: 58px; left: 10px; right: 10px; z-index: 80; background: var(--bar); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-radius: 26px; padding: 14px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25); animation: drop 0.25s cubic-bezier(.2, .9, .3, 1); }
-.system-prompt .app-line { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--secondary); font-weight: 600; margin-bottom: 8px; }
-.system-prompt .app-line img { width: 20px; height: 20px; border-radius: 5px; }
-.system-prompt .q { font-weight: 600; font-size: 17px; margin-bottom: 10px; }
-.system-prompt input { width: 100%; border: 0; outline: 0; border-radius: 12px; padding: 10px 12px; background: var(--fill); font-size: 16px; }
-.system-prompt .answer { font-size: 16px; line-height: 1.35; }
-.system-prompt .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
-@keyframes drop { from { transform: translateY(-30px); opacity: 0; } }
 
 /* ---------- Widgets ---------- */
 .home, .lock { border-radius: 28px; padding: 18px; background: linear-gradient(160deg, #ffb340, #ff5e3a 55%, #8f3bd9); }

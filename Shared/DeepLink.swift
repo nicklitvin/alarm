@@ -9,6 +9,7 @@ enum DeepLink: Hashable, Sendable {
     case todos
     case todo(UUID)
     case notes
+    case talk
     case note(UUID)
 
     static let scheme = "alarmapp"
@@ -23,6 +24,7 @@ enum DeepLink: Hashable, Sendable {
         case .todos: components.host = "todos"
         case .todo(let id): components.host = "todo"; components.path = "/" + id.uuidString
         case .notes: components.host = "notes"
+        case .talk: components.host = "talk"
         case .note(let id): components.host = "note"; components.path = "/" + id.uuidString
         }
         return components.url!
@@ -40,6 +42,7 @@ enum DeepLink: Hashable, Sendable {
         case ("todo", let id?): self = .todo(id)
         case ("todo", nil): self = .todos
         case ("notes", _): self = .notes
+        case ("talk", _), ("chat", _): self = .talk
         case ("note", let id?): self = .note(id)
         case ("note", nil): self = .notes
         default: return nil

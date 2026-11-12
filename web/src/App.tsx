@@ -5,7 +5,7 @@ import { timeParts } from './logic/model'
 import { useStore, type Tab } from './logic/store'
 import { AlarmsTab } from './tabs/AlarmsTab'
 import { NotesTab } from './tabs/NotesTab'
-import { TalkTab, useAsk } from './tabs/TalkTab'
+import { TalkTab } from './tabs/TalkTab'
 import { TimersTab } from './tabs/TimersTab'
 import { TodoTab } from './tabs/TodoTab'
 
@@ -20,7 +20,7 @@ const TABS: { id: Tab; label: string; glyph: string }[] = [
 type Theme = 'light' | 'dark'
 
 export default function App() {
-  const { tab, setTab, now, reset, askOpen } = useStore()
+  const { tab, setTab, now, reset } = useStore()
   const [theme, setTheme] = useState<Theme>(() =>
     (localStorage.getItem('alarm-web-theme') as Theme | null) ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'))
 
@@ -51,7 +51,6 @@ export default function App() {
                 </button>
               ))}
             </nav>
-            {askOpen && <AskPrompt />}
           </div>
           <div className="home-indicator" />
         </div>
@@ -73,42 +72,6 @@ export default function App() {
         </div>
         <Widgets />
       </aside>
-    </div>
-  )
-}
-
-/** The system prompt that drops from the top when ✦ is tapped on a widget. */
-function AskPrompt() {
-  const { setAskOpen } = useStore()
-  const ask = useAsk()
-  const [text, setText] = useState('')
-  const [answer, setAnswer] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
-  const submit = async () => {
-    if (!text.trim()) return
-    setBusy(true)
-    setAnswer(await ask(text.trim()))
-    setBusy(false)
-  }
-  return (
-    <div className="system-prompt" role="dialog" aria-label="Ask Assistant">
-      <div className="app-line"><img src="/icon.png" alt="" />ALARMIE</div>
-      {answer === null ? (
-        <>
-          <div className="q">What can I do for you?</div>
-          <input autoFocus placeholder={busy ? 'Thinking…' : 'Type or dictate a request'} value={text} disabled={busy}
-            onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} />
-          <div className="actions">
-            <button className="btn gray small" onClick={() => setAskOpen(false)}>Cancel</button>
-            <button className="btn prominent small" disabled={busy || !text.trim()} onClick={submit}>Done</button>
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="answer">{answer}</div>
-          <div className="actions"><button className="btn prominent small" onClick={() => setAskOpen(false)}>OK</button></div>
-        </>
-      )}
     </div>
   )
 }

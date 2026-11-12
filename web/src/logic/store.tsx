@@ -80,9 +80,6 @@ interface Store {
   pending: Link | null
   open: (link: Link) => void
   clearPending: () => void
-  /** The "Ask Assistant" prompt that drops down from the top (widget ✦ button). */
-  askOpen: boolean
-  setAskOpen: (open: boolean) => void
 }
 
 const StoreContext = createContext<Store | null>(null)
@@ -92,7 +89,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [now, setNow] = useState(Date.now())
   const [tab, setTab] = useState<Tab>('alarms')
   const [pending, setPending] = useState<Link | null>(null)
-  const [askOpen, setAskOpen] = useState(false)
 
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)) } catch { /* private mode */ }
@@ -114,10 +110,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const open = useCallback((link: Link) => { setTab(link.tab); setPending(link.id ? link : null) }, [])
 
   const value = useMemo<Store>(() => ({
-    data, update, now, tab, setTab, pending, open, askOpen, setAskOpen,
+    data, update, now, tab, setTab, pending, open,
     clearPending: () => setPending(null),
     reset: () => setData(seedData()),
-  }), [data, update, now, tab, pending, open, askOpen])
+  }), [data, update, now, tab, pending, open])
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
 }

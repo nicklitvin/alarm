@@ -35,6 +35,8 @@ final class AppNavigation {
             pendingTodoID = id
         case .notes:
             tab = .notes
+        case .talk:
+            tab = .talk
         case .note(let id):
             tab = .notes
             pendingNoteID = id

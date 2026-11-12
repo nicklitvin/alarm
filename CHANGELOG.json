@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.11.1",
+      "build": 18,
+      "date": "2026-11-12",
+      "title": "Widget Opens Talk",
+      "notes": [
+        "Tapping ✦ on the Up Next widget now opens Alarmie straight to Talk. It's on the medium and large widget sizes."
+      ]
+    },
+    {
       "version": "1.11.0",
       "build": 17,
       "date": "2026-11-12",

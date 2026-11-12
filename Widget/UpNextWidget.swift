@@ -132,6 +132,8 @@ struct UpNextWidgetView: View {
     }
 
     /// "+N more" on the left, the Ask button in the bottom-right corner.
+    /// "+N more" on the left, the ✦ (open Talk) button in the bottom-right corner. The small size
+    /// skips ✦: iOS only lets a small widget have one tap target (the whole widget).
     private func footer(hidden: Int) -> some View {
         HStack(alignment: .center) {
             if hidden > 0 {
@@ -140,8 +142,11 @@ struct UpNextWidgetView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
-            AskButton()
+            if family != .systemSmall {
+                AskButton()
+            }
         }
+        .frame(minHeight: 34)
     }
 
     // Lock screen: the most relevant thing.
@@ -180,17 +185,18 @@ struct UpNextWidgetView: View {
 }
 
 /// Opens the system prompt at the top of the screen to ask the assistant.
+/// Opens Alarmie on the Talk tab. (Widgets can't show the system's type-a-request prompt,
+/// so the assistant is one tap away in the app instead.)
 private struct AskButton: View {
     var body: some View {
-        Button(intent: AskAssistantIntent()) {
+        Link(destination: DeepLink.talk.url) {
             Image(systemName: "sparkles")
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: 34, height: 34)
                 .background(Circle().fill(Color.orange.gradient))
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Ask Assistant")
+        .accessibilityLabel("Open Talk")
     }
 }
 
@@ -322,7 +328,7 @@ struct UpNextWidget: Widget {
                 .widgetBackground()
         }
         .configurationDisplayName("Up Next")
-        .description("What matters now: an alarm you can dismiss, timers, to-dos that are due. Tap ✦ to ask the assistant.")
+        .description("What matters now: an alarm you can dismiss, timers, to-dos that are due. Tap ✦ to open Talk.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .accessoryRectangular, .accessoryInline])
     }
 }

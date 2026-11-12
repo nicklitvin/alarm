@@ -13,7 +13,7 @@ const linkFor = (item: UpNextItem): Link => {
 
 /** Lock screen + home screen widgets, using the same data and rules as the app's widgets. */
 export function Widgets() {
-  const { data, update, now, open, setAskOpen } = useStore()
+  const { data, update, now, open } = useStore()
   const next = nextAlarm(data.alarms, now)
   const within24h = next && next.date - now <= 24 * 3600_000 ? next : undefined
   const items = upNext(data.alarms, data.todos, data.timers, now, data.settings.alarmHeadsUpMinutes)
@@ -100,17 +100,17 @@ export function Widgets() {
               <div className="wh"><span>Up Next</span></div>
               {first ? row(first, true) : <div style={{ marginTop: 10 }}><b>All clear</b></div>}
               <div className="foot"><span>{items.length > 1 ? `+${items.length - 1} more` : ''}</span>
-                <button className="ask" aria-label="Ask Assistant" onClick={(e) => { e.stopPropagation(); setAskOpen(true) }}>✦</button></div>
+                {/* small widgets have one tap target, so no ✦ here */}</div>
             </div>
             <div className="widget medium" onClick={() => open(first ? linkFor(first) : { tab: 'todos' })}>
               <div className="wh"><span>✦ Up Next</span></div>
               {items.length === 0 ? <div style={{ marginTop: 10 }}><b>All clear</b><div className="muted" style={{ fontSize: 12 }}>Nothing coming up.</div></div> : items.slice(0, 2).map((i) => row(i))}
               <div className="foot"><span>{items.length > 2 ? `+${items.length - 2} more` : ''}</span>
-                <button className="ask" aria-label="Ask Assistant" onClick={(e) => { e.stopPropagation(); setAskOpen(true) }}>✦</button></div>
+                <button className="ask" aria-label="Open Talk" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>✦</button></div>
             </div>
           </div>
         </div>
-        <p>Tap a widget item to open it in the phone. Tap a to-do's circle to complete it, or ✦ to ask the assistant from the top of the screen.</p>
+        <p>Tap a widget item to open it in the phone. Tap a to-do's circle to complete it, or ✦ to open Talk.</p>
       </div>
     </>
   )
