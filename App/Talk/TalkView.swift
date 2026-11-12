@@ -121,7 +121,7 @@ struct TalkView: View {
         .padding(.horizontal, 16)
         .padding(.top, 10)
         .padding(.bottom, 8)
-        .background(.bar)
+        .background(Color(.systemGroupedBackground)) // same gray as the rest of the tab
         .animation(.snappy, value: model.isLive)
         .animation(.snappy, value: model.draft.isEmpty)
     }

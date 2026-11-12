@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.10.2",
+      "build": 16,
+      "date": "2026-11-12",
+      "title": "Seamless Talk Input",
+      "notes": [
+        "The area around the message field in Talk now has the same gray background as the rest of the tab."
+      ]
+    },
+    {
       "version": "1.10.1",
       "build": 15,
       "date": "2026-11-12",
