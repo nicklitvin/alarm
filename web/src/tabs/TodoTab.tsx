@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { SwipeRow } from '../components/SwipeRow'
 import { BottomAction, DeadlineInputs, Section, Sheet, SuggestionChips, Switch, TabHeader, TimeOfDayChips } from '../components/ui'
 import { dueDescription, dueSuggestions, isOverdue, roundTo5, sortTodos, uid, type Todo } from '../logic/model'
 import { useStore } from '../logic/store'
@@ -34,7 +35,9 @@ export function TodoTab() {
   const row = (t: Todo) => {
     const late = isOverdue(t, now)
     return (
-      <div className="row tappable" key={t.id} onClick={() => setEditing(t)}>
+      <SwipeRow key={t.id} onClick={() => setEditing(t)}
+        leading={{ label: t.isDone ? 'Undo' : 'Done', color: 'var(--orange)', onAction: () => toggle(t.id) }}
+        trailing={{ label: 'Delete', color: 'var(--red)', onAction: () => update((d) => ({ ...d, todos: d.todos.filter((x) => x.id !== t.id) })) }}>
         <button className={`check ${t.isDone ? 'done' : late ? 'overdue' : ''}`} aria-label={t.isDone ? 'Mark as not done' : 'Mark as done'}
           onClick={(e) => { e.stopPropagation(); toggle(t.id) }}>{t.isDone ? '✓' : ''}</button>
         <div className="grow">
@@ -42,7 +45,7 @@ export function TodoTab() {
           {t.details.trim() && <div className="sub">{t.details}</div>}
           {t.due && !t.isDone && <div className={`sub ${late ? 'red' : ''}`} style={{ fontSize: 12 }}>{late ? '⚠︎' : '🕒'} {dueDescription(t.due, now)}</div>}
         </div>
-      </div>
+      </SwipeRow>
     )
   }
 

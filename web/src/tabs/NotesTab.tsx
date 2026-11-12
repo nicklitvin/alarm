@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { SwipeRow } from '../components/SwipeRow'
 import { BottomAction, Section, TabHeader } from '../components/ui'
 import { noteCopyText, notePreview, noteTitle, sortNotes, uid, type Note } from '../logic/model'
 import { useStore } from '../logic/store'
@@ -64,23 +65,28 @@ export function NotesTab() {
     return ns.map((n) => ({ ...n, sortIndex: order.indexOf(n.id) }))
   })
 
-  const row = (n: Note) => (
-    <div key={n.id} className="row tappable" draggable={reordering}
-      onDragStart={() => setDragID(n.id)} onDragOver={(e) => reordering && e.preventDefault()}
-      onDrop={() => { if (dragID && dragID !== n.id) moveBefore(dragID, n.id); setDragID(null) }}
-      onClick={() => !reordering && setOpenID(n.id)}>
-      <div className="grow">
-        <div className="ellipsis" style={{ fontWeight: 600 }}>{noteTitle(n)}</div>
-        <div className="sub ellipsis">{ago(n.updatedAt, now)} <span style={{ color: 'var(--tertiary)' }}>{notePreview(n)}</span></div>
-      </div>
-      {reordering ? <span className="drag">≡</span> : (
-        <>
-          <button className="muted" title={n.isPinned ? 'Unpin' : 'Pin to top'} aria-label={n.isPinned ? 'Unpin' : 'Pin'}
-            onClick={(e) => { e.stopPropagation(); setNotes((ns) => ns.map((x) => (x.id === n.id ? { ...x, isPinned: !x.isPinned } : x))) }} style={{ opacity: n.isPinned ? 1 : 0.25, filter: n.isPinned ? undefined : 'grayscale(1)' }}>📌</button>
-          <button className="copy-btn" aria-label="Copy All" onClick={(e) => { e.stopPropagation(); copy(n) }}>{copied === n.id ? '✓' : '⧉'}</button>
-        </>
-      )}
+  const info = (n: Note) => (
+    <div className="grow">
+      <div className="ellipsis" style={{ fontWeight: 600 }}>{noteTitle(n)}</div>
+      <div className="sub ellipsis">{ago(n.updatedAt, now)} <span style={{ color: 'var(--tertiary)' }}>{notePreview(n)}</span></div>
     </div>
+  )
+
+  // Reordering: drag rows. Otherwise: swipe left to delete, right to pin, like on iPhone.
+  const row = (n: Note) => reordering ? (
+    <div key={n.id} className="row" draggable
+      onDragStart={() => setDragID(n.id)} onDragOver={(e) => e.preventDefault()}
+      onDrop={() => { if (dragID && dragID !== n.id) moveBefore(dragID, n.id); setDragID(null) }}>
+      {info(n)}
+      <span className="drag">≡</span>
+    </div>
+  ) : (
+    <SwipeRow key={n.id} onClick={() => setOpenID(n.id)}
+      leading={{ label: n.isPinned ? 'Unpin' : 'Pin', color: 'var(--orange)', onAction: () => setNotes((ns) => ns.map((x) => (x.id === n.id ? { ...x, isPinned: !x.isPinned } : x))) }}
+      trailing={{ label: 'Delete', color: 'var(--red)', onAction: () => setNotes((ns) => ns.filter((x) => x.id !== n.id)) }}>
+      {info(n)}
+      <button className="copy-btn" aria-label="Copy All" onClick={(e) => { e.stopPropagation(); copy(n) }}>{copied === n.id ? '✓' : '⧉'}</button>
+    </SwipeRow>
   )
 
   const pinned = visible.filter((n) => n.isPinned)

@@ -81,7 +81,15 @@ input, textarea, select { font: inherit; color: var(--label); }
 .section-footer { font-size: 13px; color: var(--secondary); margin: 6px 16px 0; line-height: 1.35; }
 .card { background: var(--card); border-radius: 12px; overflow: hidden; }
 .row { display: flex; align-items: center; gap: 12px; padding: 11px 16px; min-height: 44px; position: relative; }
-.row + .row::before { content: ''; position: absolute; top: 0; left: 16px; right: 0; border-top: 0.5px solid var(--separator); }
+.row + .row::before, .swipe + .swipe > .swipe-content::before, .row + .swipe > .swipe-content::before, .swipe + .row::before {
+  content: ''; position: absolute; top: 0; left: 16px; right: 0; border-top: 0.5px solid var(--separator);
+}
+/* Swipe-to-delete rows */
+.swipe { position: relative; overflow: hidden; }
+.swipe-content { background: var(--card); touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.swipe-action { position: absolute; top: 0; bottom: 0; color: #fff; font-weight: 600; font-size: 15px; display: flex; align-items: center; justify-content: center; }
+.swipe-action.trailing { right: 0; }
+.swipe-action.leading { left: 0; }
 .row.tappable { cursor: pointer; }
 .row.tappable:active { background: var(--fill); }
 .row .grow { flex: 1; min-width: 0; }

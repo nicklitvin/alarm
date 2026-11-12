@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SwipeRow } from '../components/SwipeRow'
 import { BottomAction, Section, Sheet, TabHeader, Wheel } from '../components/ui'
 import { addRecent, clock, compactDuration, durationName, recentID, uid, type RecentTimer, type TimerItem } from '../logic/model'
 import { useStore } from '../logic/store'
@@ -28,13 +29,13 @@ export function TimersTab() {
     <>
       <TabHeader title="Timers" tab="timers" detail={detail} />
       {timers.length > 0 && (
-        <Section header="Running">
+        <Section header="Running" footer="Swipe left to cancel a timer.">
           {timers.map((t) => {
             const left = t.state === 'running' ? Math.max(0, (t.fireDate - now) / 1000) : t.state === 'paused' ? t.remaining : 0
             const progress = t.duration ? left / t.duration : 0
             const title = t.label || durationName(t.duration)
             return (
-              <div className="row" key={t.id}>
+              <SwipeRow key={t.id} trailing={{ label: 'Cancel', color: 'var(--red)', onAction: () => set(t.id, () => null) }}>
                 <svg className="ring" viewBox="0 0 44 44" aria-hidden>
                   <circle cx="22" cy="22" r="19" fill="none" stroke="color-mix(in srgb, var(--orange) 18%, transparent)" strokeWidth="5" />
                   <circle cx="22" cy="22" r="19" fill="none" stroke="var(--orange)" strokeWidth="5" strokeLinecap="round"
@@ -48,24 +49,22 @@ export function TimersTab() {
                 {t.state === 'ringing' && <button className="btn small" style={{ background: 'var(--red)', color: '#fff' }} onClick={() => set(t.id, () => null)}>Stop</button>}
                 {t.state === 'running' && <button className="circle-btn" aria-label="Pause" onClick={() => set(t.id, (x) => ({ ...x, state: 'paused', remaining: Math.max(0, (x.fireDate - Date.now()) / 1000) }))}>❚❚</button>}
                 {t.state === 'paused' && <button className="circle-btn" aria-label="Resume" onClick={() => set(t.id, (x) => ({ ...x, state: 'running', fireDate: Date.now() + x.remaining * 1000 }))}>▶</button>}
-                {t.state !== 'ringing' && <button className="muted" aria-label="Cancel" onClick={() => set(t.id, () => null)}>✕</button>}
-              </div>
+              </SwipeRow>
             )
           })}
         </Section>
       )}
 
       {data.recents.length > 0 && (
-        <Section header="Recents" footer="Tap ▶ to start a timer again.">
+        <Section header="Recents" footer="Tap ▶ to start a timer again. Swipe left to remove it.">
           {data.recents.map((r) => (
-            <div className="row" key={recentID(r)}>
+            <SwipeRow key={recentID(r)} trailing={{ label: 'Remove', color: 'var(--red)', onAction: () => removeRecent(r) }}>
               <div className="grow">
                 <div className="timer-time">{clock(r.duration)}</div>
                 <div className="sub ellipsis">{r.label || durationName(r.duration)}</div>
               </div>
               <button className="circle-btn" aria-label={`Start ${r.label || durationName(r.duration)}`} onClick={() => start(r.duration, r.label)}>▶</button>
-              <button className="muted" aria-label="Remove from Recents" onClick={() => removeRecent(r)}>✕</button>
-            </div>
+            </SwipeRow>
           ))}
         </Section>
       )}

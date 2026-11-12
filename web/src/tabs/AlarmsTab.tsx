@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { SwipeRow } from '../components/SwipeRow'
 import { BottomAction, Section, Sheet, Switch, TabHeader, TimeWheel } from '../components/ui'
 import {
   alarmTitle, countdown, dayDescription, nextAlarm, nextFire, repeatSummary, roundTo5, timeOf, timeParts, uid,
@@ -60,7 +61,8 @@ export function AlarmsTab() {
               const sub = [alarm.label.trim() || null,
                 alarm.weekdays.length ? repeatSummary(alarm) : alarm.isEnabled && fire ? dayDescription(fire, now) : 'Once'].filter(Boolean).join(', ')
               return (
-                <div key={alarm.id} className={`row tappable alarm-row ${alarm.isEnabled ? '' : 'off'}`} onClick={() => setEditing(alarm)}>
+                <SwipeRow key={alarm.id} className={`alarm-row ${alarm.isEnabled ? '' : 'off'}`} onClick={() => setEditing(alarm)}
+                  trailing={{ label: 'Delete', color: 'var(--red)', onAction: () => update((d) => ({ ...d, alarms: d.alarms.filter((a) => a.id !== alarm.id) })) }}>
                   <div className="grow">
                     <div className="alarm-time">{p.time}<small>{p.period}</small></div>
                     <div className="sub ellipsis">{sub}</div>
@@ -71,7 +73,7 @@ export function AlarmsTab() {
                   <span onClick={(e) => e.stopPropagation()}>
                     <Switch label="Enabled" on={alarm.isEnabled} onChange={(v) => setAlarm(alarm.id, (a) => ({ ...a, isEnabled: v, skippedOccurrence: undefined }))} />
                   </span>
-                </div>
+                </SwipeRow>
               )
             })}
           </Section>
