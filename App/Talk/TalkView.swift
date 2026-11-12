@@ -22,10 +22,13 @@ struct TalkView: View {
                     conversation
                 }
             }
+            // Same light gray as the other tabs; bubbles and cards sit on it like list rows.
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(.systemGroupedBackground))
             .toolbar(.hidden, for: .navigationBar)
             // No title on Talk: just the settings button, in the same spot as the other tabs.
             .safeAreaInset(edge: .top, spacing: 0) {
-                TabHeader(title: nil, tab: .talk, background: Color(.systemBackground))
+                TabHeader(title: nil, tab: .talk)
             }
         }
         .tint(.orange)
@@ -88,7 +91,7 @@ struct TalkView: View {
                     .onSubmit { model.sendDraft() }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
-                    .background(Capsule().fill(Color(.secondarySystemBackground)))
+                    .background(Capsule().fill(Color(.secondarySystemGroupedBackground)))
 
                 if !model.draft.trimmingCharacters(in: .whitespaces).isEmpty {
                     Button {
@@ -145,7 +148,7 @@ private struct MessageRow: View {
                 Text(message.text)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 9)
-                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                     .textSelection(.enabled)
                 Spacer(minLength: 48)
             }
@@ -183,7 +186,7 @@ private struct TypingIndicator: View {
                 .symbolEffect(.variableColor.iterative)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
             Spacer()
         }
     }
@@ -243,7 +246,7 @@ private struct LiveStatusCard: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(12)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .animation(.easeOut(duration: 0.15), value: voice.transcript)
     }
 
@@ -324,7 +327,7 @@ private struct AttachmentCard: View {
         .padding(.leading, 8)
         .padding(.trailing, 12)
         .padding(.vertical, 8)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.primary.opacity(0.06)))
     }
 }

@@ -12,8 +12,8 @@ from `project.yml` with XcodeGen; it is not committed.
    they can now do — not implementation details).
 3. Run `./Tests/run.sh` — it fails if `project.yml` and `CHANGELOG.json` disagree.
 
-The installed app reads `CHANGELOG.json` from `main` on GitHub to detect updates and show patch
-notes, so pushing to `main` is what "publishes" a release.
+`CHANGELOG.json` is bundled into the app for patch notes and What's New. Update checks use the App
+Store (iTunes lookup by bundle ID), so a version only counts as "available" once it's on the App Store.
 
 ## Tests
 

@@ -1,8 +1,9 @@
 import Foundation
 import Observation
 
-/// Checks GitHub for a newer version (the app is installed from Xcode, so the App Store can't
-/// update it), and shows "What's New" the first time a new version is opened.
+/// Checks the App Store for a newer version and offers to open it there, and shows "What's New"
+/// the first time a new version is opened. Copies installed from Xcode aren't on the App Store,
+/// so for those the check simply says so (no prompts).
 @MainActor
 @Observable
 final class UpdateChecker {
@@ -13,12 +14,14 @@ final class UpdateChecker {
         case checking
         case upToDate
         case available(Release)
+        /// This app isn't listed on the App Store (e.g. installed from Xcode).
+        case notOnAppStore
         case failed(String)
     }
 
     private(set) var status: Status = .idle
     private(set) var lastChecked: Date?
-    /// The version history: bundled with the app, plus anything newer found online.
+    /// The version history bundled with the app, plus the App Store's notes for a newer version.
     private(set) var changelog: Changelog
     /// Shown as a sheet: a newer version is available.
     var updatePrompt: Release?
@@ -29,9 +32,9 @@ final class UpdateChecker {
     let buildNumber: String
     var installedVersion: AppVersion { AppVersion(installedVersionString) ?? AppVersion("0")! }
 
-    /// Where updates come from. Override with `UpdateFeedURL` / `UpdatePageURL` in Info.plist.
-    let feedURL: URL?
-    let updatePageURL: URL?
+    /// The app's App Store page, once found.
+    private(set) var appStoreURL: URL?
+    private let bundleID: String
 
     /// Don't check more often than this automatically.
     private static let checkInterval: TimeInterval = 6 * 3600
@@ -50,8 +53,7 @@ final class UpdateChecker {
         let info = Bundle.main.infoDictionary ?? [:]
         installedVersionString = info["CFBundleShortVersionString"] as? String ?? "0"
         buildNumber = info["CFBundleVersion"] as? String ?? "0"
-        feedURL = (info["UpdateFeedURL"] as? String).flatMap(URL.init(string:))
-        updatePageURL = (info["UpdatePageURL"] as? String).flatMap(URL.init(string:))
+        bundleID = Bundle.main.bundleIdentifier ?? ""
         lastChecked = UserDefaults.standard.object(forKey: Self.lastCheckKey) as? Date
 
         if let url = Bundle.main.url(forResource: "CHANGELOG", withExtension: "json"),
@@ -90,32 +92,35 @@ final class UpdateChecker {
     }
 
     func check(userInitiated: Bool) async {
-        guard let feedURL else {
-            status = .failed("No update source is configured.")
+        guard status != .checking else { return }
+        guard let url = AppStoreLookup.url(bundleID: bundleID, countryCode: Locale.current.region?.identifier) else {
+            status = .failed("Couldn't check for updates.")
             return
         }
-        guard status != .checking else { return }
         status = .checking
 
         do {
-            var request = URLRequest(url: feedURL, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
-            request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+            let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
             let (data, response) = try await URLSession.shared.data(for: request)
             guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
-            let remote = try Changelog.decode(data)
-
-            changelog = changelog.merged(with: remote)
             lastChecked = Date()
             UserDefaults.standard.set(lastChecked, forKey: Self.lastCheckKey)
 
-            if let latest = remote.latest, let version = latest.appVersion, version > installedVersion {
+            guard let result = try AppStoreLookup.parse(data) else {
+                status = .notOnAppStore
+                return
+            }
+            appStoreURL = result.storeURL
+            let latest = result.release
+            if let version = latest.appVersion, version > installedVersion {
+                changelog = changelog.merged(with: Changelog(releases: [latest]))
                 status = .available(latest)
                 if userInitiated || !isSkipped(version) { prompt(latest, force: userInitiated) }
             } else {
                 status = .upToDate
             }
         } catch {
-            status = .failed(userInitiated ? "Couldn't reach GitHub. Check your connection and try again." : "Couldn't check for updates.")
+            status = .failed(userInitiated ? "Couldn't reach the App Store. Check your connection and try again." : "Couldn't check for updates.")
         }
     }
 

@@ -371,5 +371,17 @@ let byTitle = [r1, r2, r3].reordered(moving: r2.id, onto: r1.id, currentSort: .t
 check(order(byTitle) == ["Two", "One", "Three"], "starts from the order on screen when switching to Manual → \(order(byTitle))")
 check(order([r1, r2].reordered(moving: r1.id, onto: r1.id, currentSort: .manual)) == ["One", "Two"], "dropping on itself does nothing")
 
+// App Store update lookup.
+let lookupJSON = #"{"resultCount":1,"results":[{"version":"2.1.0","releaseNotes":"• Faster alarms\n• New widget\n\n- Bug fixes","trackViewUrl":"https://apps.apple.com/us/app/alarm/id123","currentVersionReleaseDate":"2026-12-01T08:00:00Z"}]}"#
+let found = try? AppStoreLookup.parse(Data(lookupJSON.utf8))
+check(found?.release.version == "2.1.0" && found?.release.notes == ["Faster alarms", "New widget", "Bug fixes"], "App Store notes parsed into bullets → \(found?.release.notes ?? [])")
+check(found?.release.date == "2026-12-01" && found?.storeURL?.absoluteString == "https://apps.apple.com/us/app/alarm/id123", "release date and store link")
+do {
+    let notListed = try AppStoreLookup.parse(Data(#"{"resultCount":0,"results":[]}"#.utf8))
+    check(notListed == nil, "not on the App Store → nil (no prompt)")
+} catch { check(false, "not on the App Store → nil (no prompt)") }
+let lookupURL = AppStoreLookup.url(bundleID: "com.example.alarm", countryCode: "US")?.absoluteString ?? ""
+check(lookupURL.hasPrefix("https://itunes.apple.com/lookup?bundleId=com.example.alarm&country=us"), "lookup URL → \(lookupURL)")
+
 print(failures == 0 ? "\nALL PASSED" : "\n\(failures) FAILED")
 exit(failures == 0 ? 0 : 1)

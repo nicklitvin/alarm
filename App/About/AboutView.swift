@@ -86,6 +86,7 @@ private struct UpdateStatusRow: View {
         case .checking: ProgressView()
         case .available: Image(systemName: "arrow.down.circle.fill").foregroundStyle(.orange).font(.title2)
         case .upToDate: Image(systemName: "checkmark.circle.fill").foregroundStyle(.green).font(.title2)
+        case .notOnAppStore: Image(systemName: "bag").foregroundStyle(.secondary).font(.title2)
         case .failed: Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.yellow).font(.title2)
         case .idle: Image(systemName: "questionmark.circle").foregroundStyle(.secondary).font(.title2)
         }
@@ -96,6 +97,7 @@ private struct UpdateStatusRow: View {
         case .checking: "Checking…"
         case .available(let release): "Version \(release.version) Available"
         case .upToDate: "You're Up to Date"
+        case .notOnAppStore: "Not From the App Store"
         case .failed: "Couldn't Check"
         case .idle: "Not Checked Yet"
         }
@@ -103,6 +105,7 @@ private struct UpdateStatusRow: View {
 
     private var subtitle: String? {
         if case .failed(let message) = updates.status { return message }
+        if updates.status == .notOnAppStore { return "This copy was installed from Xcode, so the App Store can't update it." }
         guard let checked = updates.lastChecked else { return nil }
         return "Last checked \(checked.formatted(.relative(presentation: .named)))"
     }

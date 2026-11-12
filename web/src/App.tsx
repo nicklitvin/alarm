@@ -37,7 +37,7 @@ export default function App() {
           <div className="island" />
           <div className="app">
             <div className="statusbar"><span>{timeParts(d.getHours(), d.getMinutes()).time}</span><span className="icons">▂▄▆ 5G ▭</span></div>
-            <div className={`app-body ${tab === 'talk' ? 'talk' : ''}`} key={tab}>
+            <div className="app-body" key={tab}>
               {tab === 'alarms' && <AlarmsTab />}
               {tab === 'timers' && <TimersTab />}
               {tab === 'todos' && <TodoTab />}

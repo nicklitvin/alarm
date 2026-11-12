@@ -46,7 +46,7 @@ export function TalkTab() {
   const wake = data.settings.wakeWordEnabled ? data.settings.wakeWord : null
   return (
     <>
-      <TabHeader tab="talk" plain />
+      <TabHeader tab="talk" />
       <div className="chat">
         {data.chat.length === 0 && !live && (
           <div className="talk-empty" style={{ paddingTop: 90 }}>

@@ -16,7 +16,7 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
   - **Next Alarm:** home screen (small) and lock screen. Tap it to open that alarm. On the lock screen it shows zzz when nothing rings in the next 24 hours.
 - **Settings per tab.** The gear next to each tab's title opens that tab's settings: when to get alarm heads-ups, timer warnings and to-do reminders, how to sort notes, and Talk options. Each also has **Delete All** for that tab and **About & Updates**.
 - **Updates and patch notes.**
-  - The app checks GitHub for a newer version and offers to show you how to update.
+  - The app checks the App Store for a newer version and offers to open it there. A copy installed from Xcode isn't on the App Store, so it just says so.
   - Open any tab's settings → **About & Updates** to see your version and the patch notes for every release.
   - A "What's New" screen appears the first time you open a new version.
 - **Control Center buttons.**
@@ -98,10 +98,10 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 
 ## Versions and updates
 
-- `CHANGELOG.json` lists every version with its patch notes, newest first. It's bundled into the app and also read from `main` on GitHub to detect updates.
+- `CHANGELOG.json` lists every version with its patch notes, newest first. It's bundled into the app for the patch notes and What's New screens.
 - To release: bump `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `project.yml`, add a matching entry at the top of `CHANGELOG.json`, then push to `main`. `./Tests/run.sh` fails if the two don't match.
 - The app checks at launch and when it comes to the foreground, at most every 6 hours, or straight away with **Check for Updates** on the About screen.
-- On the App Store, iOS would install updates by itself. This check exists because the app is installed from Xcode. To point it elsewhere, change `UpdateFeedURL` and `UpdatePageURL` in `App/Info.plist`.
+- Updates are found with Apple's App Store lookup service, using the app's bundle ID. When a newer version is listed, the app shows its App Store release notes with an **Update in App Store** button. iOS also installs App Store updates by itself if automatic updates are on.
 
 ## Tests
 

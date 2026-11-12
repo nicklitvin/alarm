@@ -1,12 +1,11 @@
 import SwiftUI
 
-/// "Update Available": what's new in the versions you don't have, and how to install them.
+/// "Update Available": what's new in the App Store version, with a button to update there.
 struct UpdatePromptView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     let release: Release
     @State private var updates = UpdateChecker.shared
-    @State private var showSteps = false
 
     var body: some View {
         NavigationStack {
@@ -30,37 +29,22 @@ struct UpdatePromptView: View {
                         }
                     }
 
-                    DisclosureGroup("How to Update", isExpanded: $showSteps) {
-                        VStack(alignment: .leading, spacing: 10) {
-                            step(1, "On your Mac, open Terminal in the project folder.")
-                            step(2, "Run `git pull` then `xcodegen generate`")
-                            step(3, "Plug in your iPhone, open Alarm.xcodeproj and press ⌘R.")
-                            Text("Your alarms, to-dos and settings are kept.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(.top, 8)
-                    }
-                    .font(.headline)
-                    .padding(16)
-                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
                 .padding(24)
             }
             .safeAreaInset(edge: .bottom) {
                 VStack(spacing: 8) {
-                    if let url = updates.updatePageURL {
-                        Button {
-                            openURL(url)
-                        } label: {
-                            Text("View on GitHub")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 6)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .buttonBorderShape(.capsule)
+                    Button {
+                        openURL(updates.appStoreURL ?? URL(string: "itms-apps://apps.apple.com/account/updates")!)
+                        dismiss()
+                    } label: {
+                        Label("Update in App Store", systemImage: "arrow.down.app")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 6)
                     }
+                    .buttonStyle(.borderedProminent)
+                    .buttonBorderShape(.capsule)
                     HStack {
                         Button("Skip This Version") {
                             updates.skip(release)
@@ -88,18 +72,6 @@ struct UpdatePromptView: View {
     private var newReleases: [Release] {
         let pending = updates.pendingReleases
         return pending.isEmpty ? [release] : pending
-    }
-
-    private func step(_ number: Int, _ text: LocalizedStringKey) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Text("\(number)")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.white)
-                .frame(width: 20, height: 20)
-                .background(Circle().fill(Color.orange))
-            Text(text)
-                .font(.subheadline)
-        }
     }
 }
 

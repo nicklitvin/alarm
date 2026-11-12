@@ -1,6 +1,16 @@
 {
   "releases": [
     {
+      "version": "1.10.0",
+      "build": 14,
+      "date": "2026-11-12",
+      "title": "App Store Updates",
+      "notes": [
+        "Update checks now look on the App Store. When a new version is out, you'll see its release notes and an Update in App Store button.",
+        "Talk now uses the same light gray background as the other tabs."
+      ]
+    },
+    {
       "version": "1.9.1",
       "build": 13,
       "date": "2026-11-12",
