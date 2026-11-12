@@ -87,6 +87,10 @@ input, textarea, select { font: inherit; color: var(--label); }
 /* Swipe-to-delete rows */
 .swipe { position: relative; overflow: hidden; }
 .swipe-content { background: var(--card); touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.swipe-content.lifted { transform: scale(1.02) !important; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18); position: relative; z-index: 2; opacity: 0.95; }
+.swipe-content.drop-before { box-shadow: inset 0 3px 0 var(--orange); }
+.swipe-content.drop-after { box-shadow: inset 0 -3px 0 var(--orange); }
+.swipe:has(.lifted) { overflow: visible; z-index: 2; }
 .swipe-action { position: absolute; top: 0; bottom: 0; color: #fff; font-weight: 600; font-size: 15px; display: flex; align-items: center; justify-content: center; }
 .swipe-action.trailing { right: 0; }
 .swipe-action.leading { left: 0; }

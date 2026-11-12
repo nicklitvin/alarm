@@ -1,6 +1,16 @@
 {
   "releases": [
     {
+      "version": "1.9.1",
+      "build": 13,
+      "date": "2026-11-12",
+      "title": "Hold to Reorder Notes",
+      "notes": [
+        "Press and hold a note, then drag it onto another to move it there. The separate Reorder button is gone.",
+        "Dragging a note into or out of Pinned pins or unpins it."
+      ]
+    },
+    {
       "version": "1.9.0",
       "build": 12,
       "date": "2026-11-12",

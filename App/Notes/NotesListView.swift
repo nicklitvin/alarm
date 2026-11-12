@@ -4,10 +4,8 @@ struct NotesListView: View {
     @Environment(NotesController.self) private var controller
     @State private var path: [UUID] = []
     @State private var query = ""
-    @State private var editMode: EditMode = .inactive
 
     private var isSearching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
-    private var canReorder: Bool { controller.sort == .manual && !isSearching }
 
     private var visible: [Note] {
         let q = query.trimmingCharacters(in: .whitespaces).lowercased()
@@ -24,18 +22,15 @@ struct NotesListView: View {
                 if !pinned.isEmpty {
                     Section("Pinned") {
                         ForEach(pinned) { row($0) }
-                            .onMove(perform: canReorder ? { controller.move(in: pinned, from: $0, to: $1) } : nil)
                     }
                 }
                 Section {
                     ForEach(others) { row($0) }
-                        .onMove(perform: canReorder ? { controller.move(in: others, from: $0, to: $1) } : nil)
                 } header: {
                     if !pinned.isEmpty && !others.isEmpty { Text("Notes") }
                 }
             }
             .listStyle(.insetGrouped)
-            .environment(\.editMode, $editMode)
             .overlay {
                 if controller.notes.isEmpty {
                     ContentUnavailableView {
@@ -51,15 +46,8 @@ struct NotesListView: View {
             .toolbar(.hidden, for: .navigationBar)
             .safeAreaInset(edge: .top, spacing: 0) {
                 VStack(spacing: 0) {
-                    TabHeader(title: "Notes", tab: .notes, detail: { _ in
+                    TabHeader(title: "Notes", tab: .notes) { _ in
                         controller.notes.isEmpty ? nil : "\(controller.notes.count) note\(controller.notes.count == 1 ? "" : "s")"
-                    }) {
-                        if canReorder && controller.notes.count > 1 {
-                            Button(editMode.isEditing ? "Done" : "Reorder") {
-                                withAnimation { editMode = editMode.isEditing ? .inactive : .active }
-                            }
-                            .font(.subheadline.weight(.semibold))
-                        }
                     }
                     SearchField(text: $query)
                         .padding(.horizontal, 20)
@@ -71,14 +59,11 @@ struct NotesListView: View {
                 NoteEditorView(noteID: id)
             }
             .safeAreaInset(edge: .bottom) {
-                if !editMode.isEditing {
-                    BottomActionButton(title: "New Note", systemImage: "square.and.pencil") {
-                        path.append(controller.add().id)
-                    }
+                BottomActionButton(title: "New Note", systemImage: "square.and.pencil") {
+                    path.append(controller.add().id)
                 }
             }
             .animation(.snappy, value: controller.notes)
-            .onChange(of: canReorder) { _, can in if !can { editMode = .inactive } }
             .task(id: AppNavigation.shared.pendingNoteID) {
                 // Opened from a chat event: show that note.
                 guard let id = AppNavigation.shared.pendingNoteID else { return }
@@ -102,13 +87,19 @@ struct NotesListView: View {
         .swipeActions(edge: .trailing) {
             Button("Delete", systemImage: "trash", role: .destructive) { controller.delete(note.id) }
         }
-        .contextMenu {
-            Button("Copy All", systemImage: "doc.on.doc") { controller.copy(note) }
-            Button(note.isPinned ? "Unpin" : "Pin to Top", systemImage: note.isPinned ? "pin.slash" : "pin") {
-                controller.setPinned(!note.isPinned, for: note.id)
-            }
-            Button("Move to Top", systemImage: "arrow.up.to.line") { controller.moveToTop(note.id) }
-            Button("Delete", systemImage: "trash", role: .destructive) { controller.delete(note.id) }
+        // Press and hold a note to pick it up, then drop it on another note to move it there.
+        .draggable(note.id.uuidString) {
+            NoteRow(note: note)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .frame(width: 320)
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .environment(controller)
+        }
+        .dropDestination(for: String.self) { items, _ in
+            guard !isSearching, let id = items.first.flatMap(UUID.init(uuidString:)), id != note.id else { return false }
+            withAnimation(.snappy) { controller.move(id, onto: note.id) }
+            return true
         }
     }
 }

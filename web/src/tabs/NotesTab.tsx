@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { SwipeRow } from '../components/SwipeRow'
 import { BottomAction, Section, TabHeader } from '../components/ui'
-import { noteCopyText, notePreview, noteTitle, sortNotes, uid, type Note } from '../logic/model'
+import { noteCopyText, notePreview, noteTitle, reorderNotes, sortNotes, uid, type Note } from '../logic/model'
 import { useStore } from '../logic/store'
 
 const ago = (ms: number, now: number) => {
@@ -28,8 +28,10 @@ export function NotesTab() {
   const { data, update, now, pending, clearPending } = useStore()
   const [openID, setOpenID] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  const [reordering, setReordering] = useState(false)
-  const [dragID, setDragID] = useState<string | null>(null)
+  /** A note picked up by press-and-hold, and the note it's currently over. */
+  const [drag, setDrag] = useState<{ id: string; overId: string | null } | null>(null)
+  const dragRef = useRef(drag)
+  dragRef.current = drag
   const { copied, copy } = useCopy()
   const sort = data.settings.notesSort
 
@@ -42,7 +44,31 @@ export function NotesTab() {
   const setNotes = (change: (notes: Note[]) => Note[]) => update((d) => ({ ...d, notes: change(d.notes) }))
   const q = query.trim().toLowerCase()
   const visible = sortNotes(data.notes, sort).filter((n) => !q || n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q))
-  const canReorder = sort === 'manual' && !q
+
+  // While a note is held: track which note the pointer is over, and drop it there on release.
+  useEffect(() => {
+    if (!drag) return
+    const over = (e: PointerEvent) => {
+      const id = (document.elementFromPoint(e.clientX, e.clientY)?.closest('.swipe[data-id]') as HTMLElement | null)?.dataset.id ?? null
+      setDrag((d) => (d && d.overId !== id ? { ...d, overId: id } : d))
+    }
+    const drop = () => {
+      const d = dragRef.current
+      if (d?.overId && d.overId !== d.id) {
+        const { id, overId } = d
+        update((s) => ({ ...s, notes: reorderNotes(s.notes, id, overId, s.settings.notesSort), settings: { ...s.settings, notesSort: 'manual' } }))
+      }
+      setDrag(null)
+    }
+    document.addEventListener('pointermove', over)
+    document.addEventListener('pointerup', drop)
+    document.body.style.userSelect = 'none'
+    return () => {
+      document.removeEventListener('pointermove', over)
+      document.removeEventListener('pointerup', drop)
+      document.body.style.userSelect = ''
+    }
+  }, [drag?.id, update]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (openID) {
     const note = data.notes.find((n) => n.id === openID)
@@ -59,12 +85,6 @@ export function NotesTab() {
     setOpenID(note.id)
   }
 
-  const moveBefore = (dragged: string, target: string) => setNotes((ns) => {
-    const order = sortNotes(ns, 'manual').map((n) => n.id).filter((id) => id !== dragged)
-    order.splice(order.indexOf(target), 0, dragged)
-    return ns.map((n) => ({ ...n, sortIndex: order.indexOf(n.id) }))
-  })
-
   const info = (n: Note) => (
     <div className="grow">
       <div className="ellipsis" style={{ fontWeight: 600 }}>{noteTitle(n)}</div>
@@ -72,16 +92,17 @@ export function NotesTab() {
     </div>
   )
 
-  // Reordering: drag rows. Otherwise: swipe left to delete, right to pin, like on iPhone.
-  const row = (n: Note) => reordering ? (
-    <div key={n.id} className="row" draggable
-      onDragStart={() => setDragID(n.id)} onDragOver={(e) => e.preventDefault()}
-      onDrop={() => { if (dragID && dragID !== n.id) moveBefore(dragID, n.id); setDragID(null) }}>
-      {info(n)}
-      <span className="drag">≡</span>
-    </div>
-  ) : (
-    <SwipeRow key={n.id} onClick={() => setOpenID(n.id)}
+  // Swipe left to delete, right to pin. Press and hold to pick a note up and drag it elsewhere.
+  const order = visible.map((n) => n.id)
+  const dragClass = (n: Note) => {
+    if (!drag) return ''
+    if (drag.id === n.id) return 'lifted'
+    if (drag.overId !== n.id || q) return ''
+    return order.indexOf(drag.id) < order.indexOf(n.id) ? 'drop-after' : 'drop-before'
+  }
+  const row = (n: Note) => (
+    <SwipeRow key={n.id} dataId={n.id} className={dragClass(n)} onClick={() => setOpenID(n.id)}
+      onHold={q ? undefined : () => setDrag({ id: n.id, overId: null })}
       leading={{ label: n.isPinned ? 'Unpin' : 'Pin', color: 'var(--orange)', onAction: () => setNotes((ns) => ns.map((x) => (x.id === n.id ? { ...x, isPinned: !x.isPinned } : x))) }}
       trailing={{ label: 'Delete', color: 'var(--red)', onAction: () => setNotes((ns) => ns.filter((x) => x.id !== n.id)) }}>
       {info(n)}
@@ -93,17 +114,15 @@ export function NotesTab() {
   const others = visible.filter((n) => !n.isPinned)
   return (
     <>
-      <TabHeader title="Notes" tab="notes" detail={data.notes.length ? `${data.notes.length} note${data.notes.length === 1 ? '' : 's'}` : null}
-        accessory={canReorder && data.notes.length > 1 ? <button className="text-btn" onClick={() => setReordering(!reordering)}>{reordering ? 'Done' : 'Reorder'}</button> : null} />
+      <TabHeader title="Notes" tab="notes" detail={data.notes.length ? `${data.notes.length} note${data.notes.length === 1 ? '' : 's'}` : null} />
       <div style={{ padding: '0 20px 10px', position: 'sticky', top: 52, zIndex: 19, background: 'var(--bg-grouped)' }}>
         <div className="field"><span className="muted">⌕</span><input placeholder="Search Notes" value={query} onChange={(e) => setQuery(e.target.value)} /></div>
       </div>
-      {reordering && <div className="section-footer" style={{ marginBottom: 10 }}>Drag notes to rearrange. Pinned notes stay on top.</div>}
       {pinned.length > 0 && <Section header="Pinned">{pinned.map(row)}</Section>}
       {others.length > 0 && <Section header={pinned.length ? 'Notes' : undefined}>{others.map(row)}</Section>}
       {data.notes.length === 0 && <div className="talk-empty" style={{ paddingTop: 80 }}><div className="big">🗒</div><h3>No Notes</h3>Tap New Note below.</div>}
       {data.notes.length > 0 && visible.length === 0 && <div className="talk-empty" style={{ paddingTop: 60 }}>No results for “{query}”</div>}
-      {!reordering && <BottomAction label="New Note" onClick={newNote} />}
+      <BottomAction label="New Note" onClick={newNote} />
     </>
   )
 }

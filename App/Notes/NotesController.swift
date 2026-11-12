@@ -57,30 +57,13 @@ final class NotesController {
         save()
     }
 
-    /// Moves a note to the top of the Manual order (switching to Manual if needed).
-    func moveToTop(_ id: UUID) {
-        if sort != .manual { setSort(.manual) }
-        guard let index = notes.firstIndex(where: { $0.id == id }) else { return }
-        notes[index].sortIndex = (notes.map(\.sortIndex).min() ?? 0) - 1
-        save()
-    }
-
-    /// Drag-to-rearrange within a section (pinned or not) of the Manual order.
-    func move(in section: [Note], from source: IndexSet, to destination: Int) {
-        var reordered = section
-        reordered.move(fromOffsets: source, toOffset: destination)
-        let base = (notes.map(\.sortIndex).min() ?? 0) - Double(notes.count) - 1
-        for (offset, note) in reordered.enumerated() {
-            if let index = notes.firstIndex(where: { $0.id == note.id }) {
-                notes[index].sortIndex = base + Double(offset)
-            }
-        }
-        // Keep the other section's notes after these, in their current order.
-        let others = sort.sorted(notes).filter { note in !reordered.contains { $0.id == note.id } }
-        for (offset, note) in others.enumerated() {
-            if let index = notes.firstIndex(where: { $0.id == note.id }) {
-                notes[index].sortIndex = base + Double(reordered.count + offset)
-            }
+    /// Press-and-hold drag: drop `id` onto `target`. Switches the list to Manual order.
+    func move(_ id: UUID, onto target: UUID) {
+        let previousSort = sort
+        notes = notes.reordered(moving: id, onto: target, currentSort: previousSort)
+        if previousSort != .manual {
+            sort = .manual
+            AppSettings.store.set(NotesSort.manual.rawValue, forKey: AppSettings.notesSortKey)
         }
         save()
     }

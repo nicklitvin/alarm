@@ -16,17 +16,21 @@ const FULL_SWIPE = 210
  * slide right to reveal `leading` (e.g. Pin or Done). A long swipe performs the action.
  * Works with mouse drag and touch.
  */
-export function SwipeRow({ children, trailing, leading, onClick, className = '' }: {
+export function SwipeRow({ children, trailing, leading, onClick, onHold, dataId, className = '' }: {
   children: ReactNode
   trailing?: SwipeAction
   leading?: SwipeAction
   onClick?: () => void
+  /** Press and hold (without moving) to pick the row up, e.g. to reorder. */
+  onHold?: () => void
+  dataId?: string
   className?: string
 }) {
   const [offset, setOffset] = useState(0)
   const [dragging, setDragging] = useState(false)
   const start = useRef<{ x: number; y: number; base: number } | null>(null)
   const moved = useRef(false)
+  const holdTimer = useRef<number | undefined>(undefined)
   const root = useRef<HTMLDivElement>(null)
 
   // Tapping anywhere else closes an open row.
@@ -43,11 +47,19 @@ export function SwipeRow({ children, trailing, leading, onClick, className = '' 
     if ((e.target as HTMLElement).closest('button, input, a')) return // let inner buttons work normally
     start.current = { x: e.clientX, y: e.clientY, base: offset }
     moved.current = false
+    if (onHold && offset === 0) {
+      holdTimer.current = window.setTimeout(() => {
+        start.current = null
+        moved.current = true // the release that follows isn't a tap
+        onHold()
+      }, 450)
+    }
   }
   const onPointerMove = (e: React.PointerEvent) => {
     if (!start.current) return
     const dx = e.clientX - start.current.x
     const dy = e.clientY - start.current.y
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) window.clearTimeout(holdTimer.current) // moving: not a hold
     if (!moved.current) {
       if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return // vertical scroll, or not a swipe yet
       moved.current = true
@@ -57,6 +69,7 @@ export function SwipeRow({ children, trailing, leading, onClick, className = '' 
     setOffset(clamp(start.current.base + dx))
   }
   const onPointerUp = () => {
+    window.clearTimeout(holdTimer.current)
     if (!start.current) return
     start.current = null
     setDragging(false)
@@ -72,7 +85,7 @@ export function SwipeRow({ children, trailing, leading, onClick, className = '' 
   }
 
   return (
-    <div className="swipe" ref={root}>
+    <div className="swipe" ref={root} data-id={dataId}>
       {leading && offset > 0 && (
         <button className="swipe-action leading" style={{ background: leading.color, width: Math.max(ACTION_WIDTH, offset) }}
           onClick={() => { setOffset(0); leading.onAction() }}>{leading.label}</button>

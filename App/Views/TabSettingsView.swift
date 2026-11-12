@@ -238,8 +238,8 @@ private struct NotesSettingsSection: View {
             Text("Sort By")
         } footer: {
             Text(notes.sort == .manual
-                 ? "Tap Reorder in Notes to drag notes into any order. Pinned notes always stay on top."
-                 : "Pinned notes always stay on top. Choose Manual to arrange notes yourself.")
+                 ? "Press and hold a note, then drag it onto another to move it. Pinned notes always stay on top."
+                 : "Pinned notes always stay on top. Press and hold a note and drag it to arrange notes yourself (switches to Manual).")
         }
     }
 }

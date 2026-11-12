@@ -359,5 +359,17 @@ check(recents.map(\.title) == ["5 minutes", "Pasta"], "recents newest first, no 
 for i in 1...20 { recents = RecentTimer.adding(RecentTimer(duration: TimeInterval(i * 60), label: "T\(i)"), to: recents) }
 check(recents.count == 12 && recents.first?.label == "T20", "recents capped at 12")
 
+// Press-and-hold note reordering.
+let r1 = Note(title: "One", sortIndex: 0), r2 = Note(title: "Two", sortIndex: 1), r3 = Note(title: "Three", sortIndex: 2)
+let rPin = Note(title: "Pinned", isPinned: true, sortIndex: 9)
+func order(_ notes: [Note]) -> [String] { NotesSort.manual.sorted(notes).map(\.title) }
+check(order([r1, r2, r3].reordered(moving: r1.id, onto: r3.id, currentSort: .manual)) == ["Two", "Three", "One"], "drag down lands after target")
+check(order([r1, r2, r3].reordered(moving: r3.id, onto: r1.id, currentSort: .manual)) == ["Three", "One", "Two"], "drag up lands before target")
+let crossed = [rPin, r1, r2].reordered(moving: r2.id, onto: rPin.id, currentSort: .manual)
+check(order(crossed) == ["Two", "Pinned", "One"] && crossed.first { $0.id == r2.id }?.isPinned == true, "dropping on a pinned note pins it")
+let byTitle = [r1, r2, r3].reordered(moving: r2.id, onto: r1.id, currentSort: .title)  // title order: One, Three, Two
+check(order(byTitle) == ["Two", "One", "Three"], "starts from the order on screen when switching to Manual → \(order(byTitle))")
+check(order([r1, r2].reordered(moving: r1.id, onto: r1.id, currentSort: .manual)) == ["One", "Two"], "dropping on itself does nothing")
+
 print(failures == 0 ? "\nALL PASSED" : "\n\(failures) FAILED")
 exit(failures == 0 ? 0 : 1)
