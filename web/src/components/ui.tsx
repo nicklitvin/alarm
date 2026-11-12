@@ -175,11 +175,11 @@ export function DeadlineInputs({ value, onChange }: { value: number; onChange: (
   return (
     <>
       <div className="row"><span className="grow">Date</span>
-        <input type="date" value={dateStr} className="input right" style={{ width: 160 }}
+        <input type="date" value={dateStr} className="input right date-input" style={{ width: 170 }}
           onChange={(e) => { const [y, m, day] = e.target.value.split('-').map(Number); if (!y) return; const n = new Date(value); n.setFullYear(y, m - 1, day); onChange(n.getTime()) }} />
       </div>
       <div className="row"><span className="grow">Time</span>
-        <input type="time" step={300} value={timeStr} className="input right" style={{ width: 130 }}
+        <input type="time" step={300} value={timeStr} className="input right date-input" style={{ width: 140 }}
           onChange={(e) => { const [h, m] = e.target.value.split(':').map(Number); if (Number.isNaN(h)) return; const n = new Date(value); n.setHours(h, Math.round(m / 5) * 5, 0, 0); onChange(n.getTime()) }} />
       </div>
     </>
@@ -234,6 +234,11 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
           <div className="row"><span className="grow">Notify Me</span>{choice(s.alarmHeadsUpMinutes, [15, 30, 60, 120], (v) => set('alarmHeadsUpMinutes', v))}</div>
         </Section>
       )}
+      {tab === 'alarms' && (
+        <Section header="Up Next Widget" footer="Whether alarms appear in the Up Next widget. The Next Alarm widget always shows them.">
+          <div className="row"><span className="grow">Show Alarms</span><Switch label="Show alarms in widget" on={s.widgetShowsAlarms} onChange={(v) => set('widgetShowsAlarms', v)} /></div>
+        </Section>
+      )}
       {tab === 'timers' && (
         <Section header="Notifications" footer={s.timerWarningMinutes === 0 ? 'Timers ring when they finish, even in Silent mode.' : `You'll get a notification ${leadTimeName(s.timerWarningMinutes)} before a timer finishes.`}>
           <div className="row"><span className="grow">Before a Timer Ends</span>{choice(s.timerWarningMinutes, [0, 1, 5], (v) => set('timerWarningMinutes', v))}</div>
@@ -243,6 +248,12 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
         <Section header="Notifications" footer="Deadlines also show in the app and widget.">
           <div className="row"><span className="grow">At the Deadline</span><Switch label="At the deadline" on={s.todoDueAlertEnabled} onChange={(v) => set('todoDueAlertEnabled', v)} /></div>
           <div className="row"><span className="grow">Early Reminder</span>{choice(s.todoEarlyReminderMinutes, [0, 5, 15, 30, 60, 1440], (v) => set('todoEarlyReminderMinutes', v), 'None')}</div>
+        </Section>
+      )}
+      {tab === 'todos' && (
+        <Section header="Up Next Widget" footer="Choose which to-dos appear in the Up Next widget.">
+          <div className="row"><span className="grow">To-Dos with a Deadline</span><Switch label="To-dos with a deadline" on={s.widgetShowsTimedTodos} onChange={(v) => set('widgetShowsTimedTodos', v)} /></div>
+          <div className="row"><span className="grow">To-Dos without a Deadline</span><Switch label="To-dos without a deadline" on={s.widgetShowsUntimedTodos} onChange={(v) => set('widgetShowsUntimedTodos', v)} /></div>
         </Section>
       )}
       {tab === 'notes' && (
@@ -265,7 +276,7 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
             <div className="row"><span className="grow">Speak Replies</span><Switch label="Speak replies" on={s.speakReplies} onChange={(v) => set('speakReplies', v)} /></div>
           </Section>
           <Section footer="In the app everything runs on your iPhone with Apple's on-device model. This preview uses simple canned replies.">
-            <button className="row tappable red" style={{ width: '100%' }} onClick={() => { update((d) => ({ ...d, chat: [] })); onClose() }}>Clear Conversation</button>
+            <button className="row tappable red" style={{ width: '100%' }} onClick={() => { update((d) => ({ ...d, chat: [] })); onClose() }}>🗑︎ Clear Conversation</button>
           </Section>
         </>
       )}
@@ -280,8 +291,8 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
           : tab === 'todos' ? { ...d, todos: [] } : { ...d, notes: [] })
         return (
           <Section footer={tab === 'timers' ? 'Cancels any running timers and clears the Recents list.' : 'Removes everything on this tab.'}>
-            <button className="row tappable red" style={{ width: '100%', opacity: info.count ? 1 : 0.4 }} disabled={!info.count}
-              onClick={() => { if (confirm(`${info.ask}\nThis can't be undone.`)) clear() }}>🗑︎ {info.label}</button>
+            <button className="row tappable red" style={{ width: '100%' }}
+              onClick={() => { if (info.count && confirm(`${info.ask}\nThis can't be undone.`)) clear() }}>🗑︎ {info.label}</button>
           </Section>
         )
       })()}

@@ -1,6 +1,22 @@
 {
   "releases": [
     {
+      "version": "1.12.0",
+      "build": 19,
+      "date": "2026-11-12",
+      "title": "Edit To-Dos in Place",
+      "notes": [
+        "Edit to-dos right in the list, like Reminders: tap one to change its title or details, and tap the calendar button for the deadline and more.",
+        "To-do details save on their own. No Save button, and the trash icon deletes.",
+        "The deadline screen keeps the Morning, Noon, Afternoon, Evening and Night times under Due, without the suggestions above it, and the date and time are no longer cut off.",
+        "Checking off a to-do in the widget shows a checkmark before it disappears.",
+        "Choose what the Up Next widget shows: alarms, to-dos with a deadline and to-dos without one (in Alarm and To-Do settings).",
+        "Dismissing an alarm early no longer adds a \"Skipping\" line to it.",
+        "Delete All buttons look the same on every tab.",
+        "Removed the Ask Assistant button from Control Center. Live Talk is still there, and you can still ask through Siri."
+      ]
+    },
+    {
       "version": "1.11.1",
       "build": 18,
       "date": "2026-11-12",

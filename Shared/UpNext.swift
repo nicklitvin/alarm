@@ -29,9 +29,29 @@ enum UpNext {
     /// Show the next alarm when it's within this long.
     static let nextAlarmWindow: TimeInterval = 24 * 3600
 
-    static func items(alarms: [AlarmItem], todos: [TodoItem], timers: [TimerItem], now: Date) -> [UpNextItem] {
+    /// What the widget shows (Alarm and To-Do settings → Widget).
+    struct Options: Sendable {
+        var alarms = true
+        var todosWithDeadline = true
+        var todosWithoutDeadline = true
+
+        static var current: Options {
+            Options(alarms: AppSettings.widgetShowsAlarms,
+                    todosWithDeadline: AppSettings.widgetShowsTimedTodos,
+                    todosWithoutDeadline: AppSettings.widgetShowsUntimedTodos)
+        }
+    }
+
+    /// A to-do checked off this recently stays (shown checked) so the widget can show the check
+    /// before the item goes away.
+    static let completedLinger: TimeInterval = 2
+
+    static func items(alarms: [AlarmItem], todos: [TodoItem], timers: [TimerItem], now: Date,
+                      options: Options = Options()) -> [UpNextItem] {
         var result: [UpNextItem] = []
         let headsUp = AlarmItem.headsUpInterval
+        let alarms = options.alarms ? alarms : []
+        let todos = todos.filter { $0.due == nil ? options.todosWithoutDeadline : options.todosWithDeadline }
 
         // 1. Alarms ringing within the hour. A dismissed ring is skipped, so it simply disappears.
         var soonAlarmIDs = Set<UUID>()
@@ -54,14 +74,22 @@ enum UpNext {
         }
         result += timers.sorted { timerRank($0) < timerRank($1) }.map { UpNextItem(kind: .timer($0)) }
 
-        // 3–4. Overdue to-dos, then ones due soon.
-        let open = todos.filter { !$0.isDone }.sortedForDisplay
+        // 3–4. Overdue to-dos, then ones due soon. Just-checked-off ones keep their place for a moment.
+        let justDone = Set(todos.filter { todo in
+            guard todo.isDone, let completed = todo.completedAt else { return false }
+            return now.timeIntervalSince(completed) < completedLinger
+        }.map(\.id))
+        let original = Dictionary(uniqueKeysWithValues: todos.map { ($0.id, $0) })
+        let open = todos.filter { !$0.isDone || justDone.contains($0.id) }
+            .map { todo -> TodoItem in var t = todo; t.isDone = false; return t } // sort as if still open
+            .sortedForDisplay
         let overdue = open.filter { $0.isOverdue(at: now) }
         let dueSoon = open.filter { todo in
             guard let due = todo.due, due > now else { return false }
             return due.timeIntervalSince(now) <= todoSoonWindow
         }
-        result += (overdue + dueSoon).map { UpNextItem(kind: .todo($0)) }
+        func item(_ todo: TodoItem) -> UpNextItem { UpNextItem(kind: .todo(original[todo.id] ?? todo)) }
+        result += (overdue + dueSoon).map(item)
 
         // 5. The next alarm, if it isn't already shown above.
         if let next = alarms.filter({ !soonAlarmIDs.contains($0.id) }).nextFire(after: now),
@@ -71,7 +99,7 @@ enum UpNext {
 
         // 6. Everything else on the to-do list.
         let shownTodoIDs = Set((overdue + dueSoon).map(\.id))
-        result += open.filter { !shownTodoIDs.contains($0.id) }.map { UpNextItem(kind: .todo($0)) }
+        result += open.filter { !shownTodoIDs.contains($0.id) }.map(item)
         return result
     }
 
@@ -86,8 +114,10 @@ enum UpNext {
         for timer in timers where timer.state == .running {
             dates.append(timer.fireDate)
         }
-        for todo in todos where !todo.isDone {
-            if let due = todo.due { dates += [due.addingTimeInterval(-todoSoonWindow), due] }
+        for todo in todos {
+            if !todo.isDone, let due = todo.due { dates += [due.addingTimeInterval(-todoSoonWindow), due] }
+            // A just-checked-off to-do leaves the widget after its check has shown.
+            if todo.isDone, let completed = todo.completedAt { dates.append(completed.addingTimeInterval(completedLinger)) }
         }
         let future = Set(dates.filter { $0 > now }.map { $0.timeIntervalSince1970.rounded() })
         return Array(future.sorted().prefix(limit)).map(Date.init(timeIntervalSince1970:))

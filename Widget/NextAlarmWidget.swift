@@ -223,7 +223,6 @@ struct AlarmWidgetBundle: WidgetBundle {
         NextAlarmWidget()
         UpNextWidget()
         TimerLiveActivity()
-        AskAssistantControl()
         LiveTalkControl()
     }
 }

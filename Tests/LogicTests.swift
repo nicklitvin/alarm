@@ -383,5 +383,18 @@ do {
 let lookupURL = AppStoreLookup.url(bundleID: "com.example.alarm", countryCode: "US")?.absoluteString ?? ""
 check(lookupURL.hasPrefix("https://itunes.apple.com/lookup?bundleId=com.example.alarm&country=us"), "lookup URL → \(lookupURL)")
 
+// Up Next: widget settings and the just-completed check.
+let withDue = TodoItem(title: "Has deadline", due: d(2026, 11, 12, 8, 0)), noDue = TodoItem(title: "No deadline")
+func todoTitles(_ items: [UpNextItem]) -> [String] { items.compactMap { if case .todo(let t) = $0.kind { return t.title } else { return nil } } }
+check(todoTitles(UpNext.items(alarms: [], todos: [withDue, noDue], timers: [], now: unNow, options: .init(todosWithoutDeadline: false))) == ["Has deadline"], "hide to-dos without a deadline")
+check(todoTitles(UpNext.items(alarms: [], todos: [withDue, noDue], timers: [], now: unNow, options: .init(todosWithDeadline: false))) == ["No deadline"], "hide to-dos with a deadline")
+check(UpNext.items(alarms: [wakeAlarm], todos: [], timers: [], now: unNow, options: .init(alarms: false)).isEmpty, "hide alarms")
+var checkedOff = withDue; checkedOff.setDone(true, at: unNow)
+let lingering = UpNext.items(alarms: [], todos: [checkedOff, noDue], timers: [], now: unNow.addingTimeInterval(1))
+check(todoTitles(lingering) == ["Has deadline", "No deadline"], "just-completed to-do stays in its place for a moment")
+if case .todo(let t)? = lingering.first?.kind { check(t.isDone, "…shown as done (checkmark)") } else { check(false, "…shown as done (checkmark)") }
+check(todoTitles(UpNext.items(alarms: [], todos: [checkedOff, noDue], timers: [], now: unNow.addingTimeInterval(3))) == ["No deadline"], "then it leaves")
+check(UpNext.changeDates(alarms: [], todos: [checkedOff], timers: [], now: unNow).contains(unNow.addingTimeInterval(UpNext.completedLinger)), "widget refreshes when the check is done showing")
+
 print(failures == 0 ? "\nALL PASSED" : "\n\(failures) FAILED")
 exit(failures == 0 ? 0 : 1)

@@ -128,13 +128,6 @@ private struct AlarmRow: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
 
-                if let skipped = alarm.skippedOccurrence, skipped > now {
-                    Label("Skipping \(TimeFormat.dayDescription(for: skipped, relativeTo: now).lowercasedIfRelative)",
-                          systemImage: "bell.slash.fill")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.orange)
-                        .padding(.top, 2)
-                }
             }
 
             Spacer(minLength: 0)
@@ -160,13 +153,6 @@ private struct AlarmRow: View {
             parts.append("Alarm")
         }
         return parts.joined(separator: ", ")
-    }
-}
-
-private extension String {
-    /// "Skipping today" / "Skipping tomorrow" read better lowercased; weekday names stay capitalized.
-    var lowercasedIfRelative: String {
-        (self == "Today" || self == "Tomorrow") ? lowercased() : self
     }
 }
 

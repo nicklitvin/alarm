@@ -9,7 +9,7 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 - **Heads-up notification before each alarm** (1 hour by default; change it in Alarm settings). Touch and hold it and tap **Dismiss Alarm** to cancel that ring. The next one still rings as normal.
 - **Dismiss in the app.** If you open the app within an hour of an alarm, a card at the top has a **Dismiss** button. Once dismissed, the card goes away and the alarm shows "Skipping today".
 - **Timers tab.** Running timers and **Recents**: tap ▶ to start a timer you've used before. **New Timer** opens a sheet with hour, minute and second wheels, one-tap presets and a label. Timers ring through Silent mode and show a countdown on the lock screen and in the Dynamic Island, with Pause and Cancel buttons.
-- **To-Do tab.** Add a to-do and tap a suggested time ("In 1 hour", "Tonight", "Tomorrow morning", …) or pick a custom time and date. You get a notification at the deadline with **Mark as Done** and **Remind Me in 1 Hour** buttons. Items are grouped into Overdue, Today, Tomorrow, Later and No Deadline.
+- **To-Do tab.** Add a to-do and tap a suggested time ("In 1 hour", "Tonight", "Tomorrow morning", …) or pick a custom time and date. Edit a to-do right in the list, like Reminders: tap it to change the title or details, and tap 📅 for the deadline. You get a notification at the deadline with **Mark as Done** and **Remind Me in 1 Hour** buttons. Items are grouped into Overdue, Today, Tomorrow and Later, then to-dos without a deadline.
 - **Notes tab.** Searchable notes with a **Copy All** button on every note. Pin notes to the top (swipe right), press and hold a note to drag it somewhere else, or sort by date or title. The assistant can read them ("what's on my packing note?") and write to them ("add charger to my packing note").
 - **Widgets.**
   - **Up Next:** home screen (small, medium, large) and lock screen. Shows what's relevant now: an alarm within the hour with a **Dismiss** button, running timers, overdue and soon-due to-dos, the next alarm, then the rest of your to-dos. Tap an item to open it in the app, or tap a to-do's circle to check it off. The ✦ button in the bottom-right corner (medium and large sizes) opens Talk.
@@ -19,10 +19,9 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
   - The app checks the App Store for a newer version and offers to open it there. A copy installed from Xcode isn't on the App Store, so it just says so.
   - Open any tab's settings → **About & Updates** to see your version and the patch notes for every release.
   - A "What's New" screen appears the first time you open a new version.
-- **Control Center buttons.**
-  - **Ask Assistant:** a prompt drops down from the top of the screen. Type or dictate a request, like "wake me at 7 tomorrow", and the reply appears right there without opening the app.
+- **Control Center button.**
   - **Live Talk:** opens the app and starts listening hands-free.
-  - Both also work from Siri ("Ask Alarm"), Spotlight, Shortcuts and the Action button.
+  - You can also ask the assistant through Siri ("Ask Alarmie"), Spotlight, Shortcuts and the Action button.
 - **Talk tab.** A private assistant that runs entirely on your iPhone using Apple's on-device model:
   - Tap the waveform for hands-free **Live Talk**: it listens, replies out loud and listens again. You can still type at any time.
   - It can manage almost everything in the app:
@@ -56,7 +55,7 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 5. To add widgets:
    - **Home screen:** long-press an empty spot → **Edit** → **Add Widget** → **Alarm**.
    - **Lock screen:** long-press the lock screen → **Customize** → **Lock Screen** → tap the widget area → **Alarm**.
-   - **Control Center:** swipe down from the top-right corner → tap **+** (top left) → **Add a Control** → search "Alarm" → pick **Ask Assistant** and/or **Live Talk**.
+   - **Control Center:** swipe down from the top-right corner → tap **+** (top left) → **Add a Control** → search "Alarm" → pick **Live Talk**.
 
 ## How it works
 
@@ -81,7 +80,7 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 | Up Next widget (what's relevant now) | `Shared/UpNext.swift`, `Widget/UpNextWidget.swift` |
 | Notes tab | `App/Notes/` |
 | Version check, What's New, patch notes | `App/About/`, `CHANGELOG.json` |
-| Control Center buttons, Siri and Shortcuts | `Shared/AssistantIntents.swift`, `Widget/AssistantControls.swift`, `App/Talk/AssistantShortcuts.swift` |
+| Control Center button, Siri and Shortcuts | `Shared/AssistantIntents.swift`, `Widget/AssistantControls.swift`, `App/Talk/AssistantShortcuts.swift` |
 | Lock screen widget | `Widget/NextAlarmWidget.swift` |
 
 **Dismissing one ring of a repeating alarm.** Each weekday of an alarm is its own weekly system alarm. AlarmKit can't skip a single occurrence, so when you dismiss Friday's ring, only Friday is touched: it's swapped for a one-time alarm next Friday, and Mon–Thu are left alone. The weekly Friday alarm comes back the first time any app code runs after the dismissed time:

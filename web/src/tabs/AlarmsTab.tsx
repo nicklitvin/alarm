@@ -66,9 +66,6 @@ export function AlarmsTab() {
                   <div className="grow">
                     <div className="alarm-time">{p.time}<small>{p.period}</small></div>
                     <div className="sub ellipsis">{sub}</div>
-                    {alarm.skippedOccurrence && alarm.skippedOccurrence > now && (
-                      <div className="skip">🔕 Skipping {dayDescription(alarm.skippedOccurrence, now).toLowerCase()}</div>
-                    )}
                   </div>
                   <span onClick={(e) => e.stopPropagation()}>
                     <Switch label="Enabled" on={alarm.isEnabled} onChange={(v) => setAlarm(alarm.id, (a) => ({ ...a, isEnabled: v, skippedOccurrence: undefined }))} />

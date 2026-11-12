@@ -16,7 +16,7 @@ export function Widgets() {
   const { data, update, now, open } = useStore()
   const next = nextAlarm(data.alarms, now)
   const within24h = next && next.date - now <= 24 * 3600_000 ? next : undefined
-  const items = upNext(data.alarms, data.todos, data.timers, now, data.settings.alarmHeadsUpMinutes)
+  const items = upNext(data.alarms, data.todos, data.timers, now, data.settings)
   const d = new Date(now)
 
   const dismiss = (id: string, date: number) => update((s) => ({ ...s, alarms: s.alarms.map((a) => (a.id === id ? (a.weekdays.length ? { ...a, skippedOccurrence: date } : { ...a, isEnabled: false }) : a)) }))
@@ -49,10 +49,11 @@ export function Widgets() {
     return (
       <div className="widget-row" key={key} onClick={(e) => { e.stopPropagation(); open(linkFor(item)) }}>
         {item.kind === 'todo'
-          ? <button className={`check ${subRed ? 'overdue' : ''}`} style={{ width: 20, height: 20 }} aria-label="Complete" onClick={(e) => { e.stopPropagation(); complete(item.todo.id) }} />
+          ? <button className={`check ${item.todo.isDone ? 'done' : subRed ? 'overdue' : ''}`} style={{ width: 20, height: 20, fontSize: 11 }} aria-label="Complete"
+              onClick={(e) => { e.stopPropagation(); complete(item.todo.id) }}>{item.todo.isDone ? '✓' : ''}</button>
           : <span style={{ width: 20, textAlign: 'center' }}>{icon}</span>}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="t ellipsis" style={{ fontSize: compact ? 13 : 14 }}>{title}</div>
+          <div className="t ellipsis" style={{ fontSize: compact ? 13 : 14, textDecoration: item.kind === 'todo' && item.todo.isDone ? 'line-through' : undefined, opacity: item.kind === 'todo' && item.todo.isDone ? 0.6 : 1 }}>{title}</div>
           {sub && <div className={`s ellipsis ${subRed ? 'red' : ''}`}>{sub}</div>}
         </div>
         {!compact && trailing}

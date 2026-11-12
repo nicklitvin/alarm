@@ -41,6 +41,7 @@ final class TodoController {
         guard let index = todos.firstIndex(where: { $0.id == todo.id }) else { return }
         var todo = todo
         todo.title = todo.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard todos[index] != todo else { return } // nothing changed
         todos[index] = todo
         commit()
     }

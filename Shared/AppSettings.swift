@@ -36,6 +36,15 @@ enum AppSettings {
     /// An extra reminder this long before the deadline (0 = off).
     static var todoEarlyReminderMinutes: Int { int(todoEarlyReminderMinutesKey, default: 0) }
 
+    // MARK: Widget (Up Next)
+
+    static let widgetShowsAlarmsKey = "settings.widget.alarms"
+    static let widgetShowsTimedTodosKey = "settings.widget.timedTodos"
+    static let widgetShowsUntimedTodosKey = "settings.widget.untimedTodos"
+    static var widgetShowsAlarms: Bool { bool(widgetShowsAlarmsKey, default: true) }
+    static var widgetShowsTimedTodos: Bool { bool(widgetShowsTimedTodosKey, default: true) }
+    static var widgetShowsUntimedTodos: Bool { bool(widgetShowsUntimedTodosKey, default: true) }
+
     // MARK: Notes
 
     static let notesSortKey = "settings.notes.sort"

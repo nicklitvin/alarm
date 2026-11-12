@@ -30,14 +30,14 @@ struct UpNextProvider: TimelineProvider {
         let alarms = AlarmStorage.load(), todos = TodoStorage.load(), timers = TimerStorage.load()
         let changes = UpNext.changeDates(alarms: alarms, todos: todos, timers: timers, now: now)
         let entries = ([now] + changes).map { date in
-            UpNextEntry(date: date, items: UpNext.items(alarms: alarms, todos: todos, timers: timers, now: date))
+            UpNextEntry(date: date, items: UpNext.items(alarms: alarms, todos: todos, timers: timers, now: date, options: .current))
         }
         let refresh = changes.last.map { $0.addingTimeInterval(60) } ?? now.addingTimeInterval(6 * 3600)
         completion(Timeline(entries: entries, policy: .after(refresh)))
     }
 
     private static func items(at date: Date) -> [UpNextItem] {
-        UpNext.items(alarms: AlarmStorage.load(), todos: TodoStorage.load(), timers: TimerStorage.load(), now: date)
+        UpNext.items(alarms: AlarmStorage.load(), todos: TodoStorage.load(), timers: TimerStorage.load(), now: date, options: .current)
     }
 }
 
@@ -89,6 +89,7 @@ struct UpNextWidgetView: View {
             } else {
                 ForEach(entry.items.prefix(maxRows)) { item in
                     UpNextRow(item: item, now: entry.date)
+                        .transition(.opacity.combined(with: .move(edge: .trailing)))
                 }
                 Spacer(minLength: 0)
             }
@@ -234,13 +235,16 @@ private struct UpNextRow: View {
     @ViewBuilder private var leading: some View {
         switch item.kind {
         case .todo(let todo):
+            // Tapping checks it off: the circle turns into a checkmark, then the row leaves
+            // (UpNext keeps a just-completed to-do for a moment so the check is seen).
             Button(intent: ToggleTodoIntent(todoID: todo.id)) {
-                Image(systemName: "circle")
+                Image(systemName: todo.isDone ? "checkmark.circle.fill" : "circle")
                     .font(prominent ? .title3 : .body)
                     .foregroundStyle(todo.isOverdue(at: now) ? Color.red : Color.orange)
+                    .contentTransition(.symbolEffect(.replace))
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Mark \(todo.title) as done")
+            .accessibilityLabel(todo.isDone ? "Mark \(todo.title) as not done" : "Mark \(todo.title) as done")
         case .alarmSoon:
             icon("alarm.fill")
         case .timer(let timer):
@@ -266,6 +270,8 @@ private struct UpNextRow: View {
             Text(timer.title)
         case .todo(let todo):
             Text(todo.title)
+                .strikethrough(todo.isDone)
+                .foregroundStyle(todo.isDone ? Color.secondary : Color.primary)
         case .nextAlarm(let alarm, let date):
             Text("\(alarm.title) · \(TimeFormat.dueDescription(date, relativeTo: now))")
         }

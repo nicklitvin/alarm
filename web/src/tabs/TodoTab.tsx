@@ -32,22 +32,10 @@ export function TodoTab() {
     ...d, todos: d.todos.map((t) => (t.id === id ? { ...t, isDone: !t.isDone, completedAt: t.isDone ? undefined : Date.now() } : t)),
   }))
 
-  const row = (t: Todo) => {
-    const late = isOverdue(t, now)
-    return (
-      <SwipeRow key={t.id} onClick={() => setEditing(t)}
-        leading={{ label: t.isDone ? 'Undo' : 'Done', color: 'var(--orange)', onAction: () => toggle(t.id) }}
-        trailing={{ label: 'Delete', color: 'var(--red)', onAction: () => update((d) => ({ ...d, todos: d.todos.filter((x) => x.id !== t.id) })) }}>
-        <button className={`check ${t.isDone ? 'done' : late ? 'overdue' : ''}`} aria-label={t.isDone ? 'Mark as not done' : 'Mark as done'}
-          onClick={(e) => { e.stopPropagation(); toggle(t.id) }}>{t.isDone ? '✓' : ''}</button>
-        <div className="grow">
-          <div style={{ textDecoration: t.isDone ? 'line-through' : undefined, color: t.isDone ? 'var(--secondary)' : undefined }}>{t.title}</div>
-          {t.details.trim() && <div className="sub">{t.details}</div>}
-          {t.due && !t.isDone && <div className={`sub due ${late ? 'red' : ''}`} style={{ fontSize: 12 }}><span>{late ? '⚠︎' : '🕒'}</span>{dueDescription(t.due, now)}</div>}
-        </div>
-      </SwipeRow>
-    )
-  }
+  const row = (t: Todo) => (
+    <TodoRow key={t.id} todo={t} now={now} onToggle={() => toggle(t.id)} onDetails={() => setEditing(t)}
+      onDelete={() => update((d) => ({ ...d, todos: d.todos.filter((x) => x.id !== t.id) }))} />
+  )
 
   return (
     <>
@@ -102,44 +90,84 @@ function CustomDeadline({ value, onPick, onClose }: { value: number; onPick: (v:
   )
 }
 
-function TodoEditor({ todo, onClose }: { todo: Todo; onClose: () => void }) {
-  const { update, now } = useStore()
-  const [draft, setDraft] = useState(todo)
-  const [hasDeadline, setHasDeadline] = useState(todo.due !== undefined)
-  const [deadline, setDeadline] = useState(todo.due ?? dueSuggestions(now)[0].date)
-  const save = (changes: Partial<Todo> = {}) => {
-    const saved = { ...draft, ...changes, due: hasDeadline ? deadline : undefined, details: draft.details.trim() }
-    update((d) => ({ ...d, todos: d.todos.map((t) => (t.id === saved.id ? saved : t)) }))
-    onClose()
+/** Edit right in the list, like Reminders: tap to type, details underneath, 📅 opens the deadline sheet. */
+function TodoRow({ todo, now, onToggle, onDelete, onDetails }: {
+  todo: Todo; now: number; onToggle: () => void; onDelete: () => void; onDetails: () => void
+}) {
+  const { update } = useStore()
+  const [editing, setEditing] = useState(false)
+  const [title, setTitle] = useState(todo.title)
+  const [details, setDetails] = useState(todo.details)
+  const late = isOverdue(todo, now)
+
+  useEffect(() => { if (!editing) { setTitle(todo.title); setDetails(todo.details) } }, [todo.title, todo.details, editing])
+
+  const commit = () => {
+    const t = title.trim()
+    if (t && (t !== todo.title || details.trim() !== todo.details.trim())) {
+      update((d) => ({ ...d, todos: d.todos.map((x) => (x.id === todo.id ? { ...x, title: t, details: details.trim() } : x)) }))
+    } else if (!t) setTitle(todo.title)
+    setEditing(false)
   }
+
   return (
-    <Sheet title="Edit To-Do" onClose={onClose} left={<button onClick={onClose}>Cancel</button>}
-      right={<button disabled={!draft.title.trim()} onClick={() => save()}>Save</button>}>
-      <Section>
-        <div className="row"><input className="input" style={{ fontWeight: 500 }} value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} /></div>
-        <div className="row"><input className="input" style={{ fontSize: 15, color: 'var(--secondary)' }} placeholder="Details (optional)" value={draft.details} onChange={(e) => setDraft({ ...draft, details: e.target.value })} /></div>
-      </Section>
-      <Section footer={hasDeadline ? `You'll get a notification at ${dueDescription(deadline, now)}.` : undefined}>
-        <div className="row"><span className="grow">Deadline</span><Switch label="Deadline" on={hasDeadline} onChange={setHasDeadline} /></div>
-        {hasDeadline && (
+    <SwipeRow onClick={() => !editing && setEditing(true)}
+      leading={{ label: todo.isDone ? 'Undo' : 'Done', color: 'var(--orange)', onAction: onToggle }}
+      trailing={{ label: 'Delete', color: 'var(--red)', onAction: onDelete }}>
+      <button className={`check ${todo.isDone ? 'done' : late ? 'overdue' : ''}`} aria-label={todo.isDone ? 'Mark as not done' : 'Mark as done'}
+        onClick={(e) => { e.stopPropagation(); onToggle() }}>{todo.isDone ? '✓' : ''}</button>
+      <div className="grow" onBlur={(e) => { if (editing && !e.currentTarget.parentElement?.contains(e.relatedTarget as Node)) commit() }}>
+        {editing ? (
           <>
-            <div className="row" style={{ display: 'block' }}><SuggestionChips value={deadline} onChange={(v) => v && setDeadline(v)} /></div>
-            <DeadlineInputs value={deadline} onChange={setDeadline} />
-            <div className="row" style={{ display: 'block' }}><TimeOfDayChips value={deadline} onChange={setDeadline} /></div>
+            <input className="todo-input" autoFocus value={title} placeholder="To-Do"
+              onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()} />
+            <input className="todo-input details" value={details} placeholder="Add details"
+              onChange={(e) => setDetails(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()} />
+          </>
+        ) : (
+          <>
+            <div style={{ textDecoration: todo.isDone ? 'line-through' : undefined, color: todo.isDone ? 'var(--secondary)' : undefined }}>{todo.title}</div>
+            {todo.details.trim() && <div className="sub">{todo.details}</div>}
           </>
         )}
-      </Section>
-      <Section>
-        {/* Both actions on one line */}
-        <div className="row" style={{ padding: 0, gap: 0 }}>
-          <button className="tappable orange" style={{ flex: 1, padding: 12 }}
-            onClick={() => save({ isDone: !draft.isDone, completedAt: draft.isDone ? undefined : Date.now() })}>
-            {draft.isDone ? '↺ Not Done' : '✓ Mark as Done'}
+        {todo.due && !todo.isDone && (
+          <button className={`sub due ${late ? 'red' : ''}`} style={{ fontSize: 12 }} onClick={(e) => { e.stopPropagation(); onDetails() }}>
+            <span>{late ? '⚠︎' : '🕒'}</span>{dueDescription(todo.due, now)}
           </button>
-          <span style={{ width: 0.5, alignSelf: 'stretch', margin: '8px 0', background: 'var(--separator)' }} />
-          <button className="tappable red" style={{ flex: 1, padding: 12 }}
-            onClick={() => { update((d) => ({ ...d, todos: d.todos.filter((t) => t.id !== todo.id) })); onClose() }}>🗑 Delete</button>
-        </div>
+        )}
+      </div>
+      {editing && (
+        <button className="cal-btn" aria-label="Deadline and more" onMouseDown={(e) => e.preventDefault()}
+          onClick={(e) => { e.stopPropagation(); commit(); onDetails() }}>📅</button>
+      )}
+    </SwipeRow>
+  )
+}
+
+/** The 📅 sheet: deadline and the rest. Saves as you go; the trash icon deletes the to-do. */
+function TodoEditor({ todo, onClose }: { todo: Todo; onClose: () => void }) {
+  const { data, update, now } = useStore()
+  const live = data.todos.find((t) => t.id === todo.id) ?? todo
+  const [deadline, setDeadline] = useState(live.due ?? dueSuggestions(now)[0].date)
+  const change = (changes: Partial<Todo>) => update((d) => ({ ...d, todos: d.todos.map((t) => (t.id === todo.id ? { ...t, ...changes } : t)) }))
+  const setDue = (v: number) => { setDeadline(v); change({ due: v }) }
+  return (
+    <Sheet title="Details" onClose={onClose}
+      left={<button className="red" aria-label="Delete To-Do" onClick={() => { update((d) => ({ ...d, todos: d.todos.filter((t) => t.id !== todo.id) })); onClose() }}>🗑︎</button>}
+      right={<button onClick={onClose}>Done</button>}>
+      <Section>
+        <div className="row"><input className="input" style={{ fontWeight: 500 }} value={live.title} onChange={(e) => change({ title: e.target.value })} /></div>
+        <div className="row"><input className="input" style={{ fontSize: 15, color: 'var(--secondary)' }} placeholder="Details (optional)" value={live.details} onChange={(e) => change({ details: e.target.value })} /></div>
+      </Section>
+      <Section footer={live.due ? `You'll get a notification at ${dueDescription(live.due, now)}.` : undefined}>
+        <div className="row"><span className="grow">Deadline</span>
+          <Switch label="Deadline" on={live.due !== undefined} onChange={(on) => change({ due: on ? deadline : undefined })} /></div>
+        {live.due !== undefined && (
+          <>
+            <DeadlineInputs value={live.due} onChange={setDue} />
+            <div className="row" style={{ display: 'block' }}><TimeOfDayChips value={live.due} onChange={setDue} /></div>
+          </>
+        )}
       </Section>
     </Sheet>
   )

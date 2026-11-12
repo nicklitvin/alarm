@@ -67,6 +67,9 @@ export interface Settings {
   wakeWordEnabled: boolean
   wakeWord: string
   speakReplies: boolean
+  widgetShowsAlarms: boolean
+  widgetShowsTimedTodos: boolean
+  widgetShowsUntimedTodos: boolean
 }
 
 export const defaultSettings: Settings = {
@@ -79,6 +82,9 @@ export const defaultSettings: Settings = {
   wakeWordEnabled: false,
   wakeWord: 'Hey Alarm',
   speakReplies: true,
+  widgetShowsAlarms: true,
+  widgetShowsTimedTodos: true,
+  widgetShowsUntimedTodos: true,
 }
 
 export const uid = () => Math.random().toString(36).slice(2, 10)
@@ -341,8 +347,13 @@ export type UpNextItem =
   | { kind: 'todo'; todo: Todo }
   | { kind: 'nextAlarm'; alarm: Alarm; date: number }
 
-export function upNext(alarms: Alarm[], todos: Todo[], timers: TimerItem[], now: number, headsUpMinutes: number): UpNextItem[] {
-  const headsUp = headsUpMinutes * 60_000
+/** A to-do checked off this recently stays (shown checked) before leaving the widget. */
+export const COMPLETED_LINGER = 2000
+
+export function upNext(allAlarms: Alarm[], allTodos: Todo[], timers: TimerItem[], now: number, settings: Settings): UpNextItem[] {
+  const headsUp = settings.alarmHeadsUpMinutes * 60_000
+  const alarms = settings.widgetShowsAlarms ? allAlarms : []
+  const todos = allTodos.filter((t) => (t.due === undefined ? settings.widgetShowsUntimedTodos : settings.widgetShowsTimedTodos))
   const result: UpNextItem[] = []
   const soonIDs = new Set<string>()
   const urgent: { date: number; item: UpNextItem }[] = []
@@ -366,15 +377,20 @@ export function upNext(alarms: Alarm[], todos: Todo[], timers: TimerItem[], now:
     return ra !== rb ? ra - rb : va - vb
   }).map((timer) => ({ kind: 'timer' as const, timer })))
 
-  const open = sortTodos(todos.filter((t) => !t.isDone))
+  const justDone = (t: Todo) => t.isDone && t.completedAt !== undefined && now - t.completedAt < COMPLETED_LINGER
+  const byID = new Map(todos.map((t) => [t.id, t]))
+  // Just-checked-off to-dos keep their place (sorted as if open) and show their check for a moment.
+  // Classify as if still open; show the real (checked) to-do.
+  const open = sortTodos(todos.filter((t) => !t.isDone || justDone(t)).map((t) => ({ ...t, isDone: false })))
+  const real = (t: Todo) => ({ kind: 'todo' as const, todo: byID.get(t.id)! })
   const overdue = open.filter((t) => isOverdue(t, now))
   const dueSoon = open.filter((t) => t.due !== undefined && t.due > now && t.due - now <= 3 * 3600_000)
-  result.push(...[...overdue, ...dueSoon].map((todo) => ({ kind: 'todo' as const, todo })))
+  result.push(...[...overdue, ...dueSoon].map(real))
 
   const next = nextAlarm(alarms.filter((a) => !soonIDs.has(a.id)), now)
   if (next && next.date - now <= DAY) result.push({ kind: 'nextAlarm', alarm: next.alarm, date: next.date })
 
   const shown = new Set([...overdue, ...dueSoon].map((t) => t.id))
-  result.push(...open.filter((t) => !shown.has(t.id)).map((todo) => ({ kind: 'todo' as const, todo })))
+  result.push(...open.filter((t) => !shown.has(t.id)).map(real))
   return result
 }

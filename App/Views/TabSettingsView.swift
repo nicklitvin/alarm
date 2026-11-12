@@ -1,4 +1,5 @@
 import SwiftUI
+import WidgetKit
 
 /// Settings for one tab (mostly when to notify), plus About & Updates.
 struct TabSettingsView: View {
@@ -74,11 +75,11 @@ private struct DeleteAllSection: View {
     var body: some View {
         Section {
             Button(role: .destructive) {
-                confirming = true
+                if count > 0 { confirming = true }
             } label: {
                 Label(title, systemImage: "trash")
             }
-            .disabled(count == 0)
+            .foregroundStyle(.red) // same red on every tab, even when there's nothing to delete
         } footer: {
             Text(footer)
         }
@@ -161,6 +162,43 @@ private struct AlarmSettingsSection: View {
         }
         .onChange(of: headsUpEnabled) { AlarmController.shared.refresh() }
         .onChange(of: headsUpMinutes) { AlarmController.shared.refresh() }
+
+        WidgetToggles(rows: [
+            ("Show Alarms", AppSettings.widgetShowsAlarmsKey),
+        ], footer: "Whether alarms appear in the Up Next widget. The Next Alarm widget always shows them.")
+    }
+}
+
+/// "Widget" section: what the Up Next widget includes.
+private struct WidgetToggles: View {
+    let rows: [(title: String, key: String)]
+    let footer: String
+
+    var body: some View {
+        Section {
+            ForEach(rows, id: \.key) { row in
+                WidgetToggleRow(title: row.title, key: row.key)
+            }
+        } header: {
+            Text("Up Next Widget")
+        } footer: {
+            Text(footer)
+        }
+    }
+}
+
+private struct WidgetToggleRow: View {
+    let title: String
+    @AppStorage private var isOn: Bool
+
+    init(title: String, key: String) {
+        self.title = title
+        _isOn = AppStorage(wrappedValue: true, key, store: AppSettings.store)
+    }
+
+    var body: some View {
+        Toggle(title, isOn: $isOn)
+            .onChange(of: isOn) { WidgetCenter.shared.reloadAllTimelines() }
     }
 }
 
@@ -208,6 +246,11 @@ private struct TodoSettingsSection: View {
         }
         .onChange(of: dueAlert) { TodoController.shared.refreshReminders() }
         .onChange(of: earlyMinutes) { TodoController.shared.refreshReminders() }
+
+        WidgetToggles(rows: [
+            ("To-Dos with a Deadline", AppSettings.widgetShowsTimedTodosKey),
+            ("To-Dos without a Deadline", AppSettings.widgetShowsUntimedTodosKey),
+        ], footer: "Choose which to-dos appear in the Up Next widget.")
     }
 
     private var footer: String {
@@ -280,10 +323,13 @@ private struct TalkSettingsSection: View {
         }
 
         Section {
-            Button("Clear Conversation", role: .destructive) {
+            Button(role: .destructive) {
                 TalkModel.shared.clear()
                 onCleared()
+            } label: {
+                Label("Clear Conversation", systemImage: "trash")
             }
+            .foregroundStyle(.red)
         } footer: {
             Text("Everything runs on your iPhone with Apple's on-device model. Nothing you say is sent anywhere.")
         }

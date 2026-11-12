@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// The calendar-button sheet for a to-do: deadline and the rest. Everything saves on its own;
+/// the trash icon deletes the to-do.
 struct TodoEditorView: View {
     @Environment(TodoController.self) private var controller
     @Environment(\.dismiss) private var dismiss
@@ -7,7 +9,7 @@ struct TodoEditorView: View {
     @State private var draft: TodoItem
     @State private var hasDeadline: Bool
     @State private var deadline: Date
-    @State private var showCustom = false
+    @State private var deleted = false
 
     init(todo: TodoItem) {
         _draft = State(initialValue: todo)
@@ -30,74 +32,61 @@ struct TodoEditorView: View {
                 Section {
                     Toggle("Deadline", isOn: $hasDeadline.animation(.snappy))
                     if hasDeadline {
-                        SuggestionChips(selection: Binding(
-                            get: { deadline },
-                            set: { if let date = $0 { deadline = date } }
-                        )) { showCustom = true }
-                        .padding(.vertical, 4)
                         HStack {
                             Text("Due")
                             Spacer()
                             IntervalDatePicker(selection: $deadline, mode: .dateAndTime, style: .compact, minuteInterval: 5)
+                                .fixedSize() // its natural size, so it isn't clipped top and bottom
                         }
+                        .frame(minHeight: 44)
                         TimeOfDayChips(date: $deadline)
-                            .padding(.vertical, 2)
+                            .padding(.vertical, 4)
                     }
                 } footer: {
                     if hasDeadline {
                         Text("You'll get a notification \(TimeFormat.dueDescription(deadline, relativeTo: .now).asDeadlinePhrase).")
                     }
                 }
-
-                // Done is an action next to Delete, not a switch.
-                Section {
-                    // Both actions on one line.
-                    HStack(spacing: 0) {
-                        Button {
-                            draft.setDone(!draft.isDone)
-                            save()
-                        } label: {
-                            Label(draft.isDone ? "Not Done" : "Mark as Done",
-                                  systemImage: draft.isDone ? "arrow.uturn.backward.circle" : "checkmark.circle")
-                                .frame(maxWidth: .infinity)
-                        }
-                        Divider().frame(height: 22)
-                        Button(role: .destructive) {
-                            controller.delete(draft.id)
-                            dismiss()
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                                .frame(maxWidth: .infinity)
-                        }
-                    }
-                    .buttonStyle(.borderless) // two separate buttons in one row
-                }
             }
-            .navigationTitle("Edit To-Do")
+            .navigationTitle("Details")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(role: .destructive) {
+                        deleted = true
+                        controller.delete(draft.id)
+                        dismiss()
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                    .tint(.red)
+                    .accessibilityLabel("Delete To-Do")
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", action: save)
+                    Button("Done") { dismiss() }
                         .fontWeight(.semibold)
-                        .disabled(draft.title.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
-            .sheet(isPresented: $showCustom) {
-                DeadlinePickerSheet(date: deadline) { deadline = $0 }
-                    .presentationDetents([.medium])
-            }
+            // Saves as you go: deadline changes right away, typing when the sheet closes.
+            .onChange(of: hasDeadline) { save() }
+            .onChange(of: deadline) { save() }
+            .onDisappear { if !deleted { save() } }
         }
         .tint(.orange)
     }
 
     private func save() {
-        draft.due = hasDeadline ? deadline : nil
-        draft.details = draft.details.trimmingCharacters(in: .whitespacesAndNewlines)
-        controller.update(draft)
-        dismiss()
+        var updated = draft
+        let title = updated.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        updated.title = title.isEmpty ? (controller.todos.first { $0.id == draft.id }?.title ?? title) : title
+        updated.details = updated.details.trimmingCharacters(in: .whitespacesAndNewlines)
+        updated.due = hasDeadline ? deadline : nil
+        // Keep done/undone as it is now (it may have been toggled elsewhere).
+        if let current = controller.todos.first(where: { $0.id == draft.id }) {
+            updated.isDone = current.isDone
+            updated.completedAt = current.completedAt
+        }
+        controller.update(updated)
     }
 }
 

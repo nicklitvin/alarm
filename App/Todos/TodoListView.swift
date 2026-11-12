@@ -89,9 +89,7 @@ struct TodoListView: View {
     }
 
     private func row(_ todo: TodoItem, now: Date) -> some View {
-        TodoRow(todo: todo, now: now)
-            .contentShape(Rectangle())
-            .onTapGesture { editing = todo }
+        TodoRow(todo: todo, now: now) { editing = todo }
             .swipeActions(edge: .trailing) {
                 Button("Delete", systemImage: "trash", role: .destructive) { controller.delete(todo.id) }
             }
@@ -134,14 +132,33 @@ struct TodoListView: View {
 
 // MARK: - Row
 
+/// A to-do you edit right in the list, like Reminders: tap the title to type, the details line
+/// sits underneath, and while editing a calendar button opens the deadline settings.
 private struct TodoRow: View {
     @Environment(TodoController.self) private var controller
     let todo: TodoItem
     let now: Date
+    let onShowDetails: () -> Void
+
+    @State private var title: String
+    @State private var details: String
+    @FocusState private var focus: Field?
+
+    private enum Field { case title, details }
+
+    init(todo: TodoItem, now: Date, onShowDetails: @escaping () -> Void) {
+        self.todo = todo
+        self.now = now
+        self.onShowDetails = onShowDetails
+        _title = State(initialValue: todo.title)
+        _details = State(initialValue: todo.details)
+    }
+
+    private var isEditing: Bool { focus != nil }
 
     var body: some View {
         let overdue = todo.isOverdue(at: now)
-        HStack(alignment: .center, spacing: 12) {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
             Button {
                 Task { await controller.toggle(todo.id) }
             } label: {
@@ -150,33 +167,85 @@ private struct TodoRow: View {
                     .foregroundStyle(todo.isDone ? Color.orange : (overdue ? Color.red : Color.secondary))
                     .contentTransition(.symbolEffect(.replace))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderless)
+            .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 5 }
             .sensoryFeedback(.success, trigger: todo.isDone) { _, done in done }
             .accessibilityLabel(todo.isDone ? "Mark as not done" : "Mark as done")
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(todo.title)
+                TextField("To-Do", text: $title, axis: .vertical)
                     .strikethrough(todo.isDone)
                     .foregroundStyle(todo.isDone ? .secondary : .primary)
-                if !todo.trimmedDetails.isEmpty {
-                    Text(todo.trimmedDetails)
+                    .focused($focus, equals: .title)
+                    .submitLabel(.done)
+                    .onSubmit { focus = nil }
+
+                if isEditing || !todo.trimmedDetails.isEmpty {
+                    TextField("Add details", text: $details, axis: .vertical)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                        .lineLimit(1...4)
+                        .focused($focus, equals: .details)
                 }
+
                 if let due = todo.due, !todo.isDone {
-                    // Icon right next to the time (a Label leaves a wide gap).
-                    HStack(spacing: 3) {
-                        Image(systemName: overdue ? "exclamationmark.circle.fill" : "clock")
-                        Text(TimeFormat.dueDescription(due, relativeTo: now))
+                    Button(action: onShowDetails) {
+                        // Icon right next to the time (a Label leaves a wide gap).
+                        HStack(spacing: 3) {
+                            Image(systemName: overdue ? "exclamationmark.circle.fill" : "clock")
+                            Text(TimeFormat.dueDescription(due, relativeTo: now))
+                        }
+                        .font(.caption)
+                        .foregroundStyle(overdue ? Color.red : Color.secondary)
                     }
-                    .font(.caption)
-                    .foregroundStyle(overdue ? Color.red : Color.secondary)
+                    .buttonStyle(.borderless)
                 }
             }
+
             Spacer(minLength: 0)
+
+            if isEditing {
+                Button {
+                    commit()
+                    focus = nil
+                    onShowDetails()
+                } label: {
+                    Image(systemName: "calendar")
+                        .font(.title3)
+                        .foregroundStyle(.orange)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Deadline and more")
+                .transition(.opacity)
+            }
         }
         .padding(.vertical, 2)
+        .animation(.snappy, value: isEditing)
+        .onChange(of: focus) { _, newFocus in
+            if newFocus == nil { commit() }
+        }
+        .onChange(of: todo) { _, updated in
+            // Changes from elsewhere (widget, assistant, the details sheet) while not typing here.
+            if !isEditing {
+                title = updated.title
+                details = updated.details
+            }
+        }
+    }
+
+    /// Saves typed changes. An emptied title puts the old one back.
+    private func commit() {
+        let newTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let newDetails = details.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !newTitle.isEmpty else {
+            title = todo.title
+            return
+        }
+        guard newTitle != todo.title || newDetails != todo.trimmedDetails else { return }
+        var updated = todo
+        updated.title = newTitle
+        updated.details = newDetails
+        controller.update(updated)
     }
 }
 
