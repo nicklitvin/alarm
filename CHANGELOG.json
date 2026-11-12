@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.8.1",
+      "build": 10,
+      "date": "2026-11-12",
+      "title": "Cleaner Note Editor",
+      "notes": [
+        "Copy All and Delete are now simple icons at the top of a note. Delete asks before removing the note."
+      ]
+    },
+    {
       "version": "1.8.0",
       "build": 9,
       "date": "2026-11-11",

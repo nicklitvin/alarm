@@ -112,8 +112,12 @@ function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
       <div className="header plain" style={{ background: 'var(--bg)', justifyContent: 'space-between' }}>
         <button className="text-btn" style={{ fontSize: 17 }} onClick={onBack}>‹ Notes</button>
         <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-          <button className="text-btn" onClick={() => copy(note)}>{copied === note.id ? '✓ Copied' : '⧉ Copy All'}</button>
-          <button className="text-btn red" onClick={() => { update((d) => ({ ...d, notes: d.notes.filter((n) => n.id !== note.id) })); onBack() }}>Delete</button>
+          <button className="icon-btn" aria-label={copied === note.id ? 'Copied' : 'Copy All'} title="Copy All" onClick={() => copy(note)}>{copied === note.id ? '✓' : '⧉'}</button>
+          <button className="icon-btn red" aria-label="Delete Note" title="Delete Note" onClick={() => {
+            if (!confirm('Delete this note?')) return
+            update((d) => ({ ...d, notes: d.notes.filter((n) => n.id !== note.id) }))
+            onBack()
+          }}>🗑︎</button>
         </div>
       </div>
       <div className="note-editor" style={{ background: 'var(--bg)', minHeight: '100%' }}>

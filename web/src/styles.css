@@ -181,6 +181,8 @@ select.ios { border: 0; background: transparent; color: var(--secondary); font-s
 .note-editor input { font-size: 28px; font-weight: 700; border: 0; outline: 0; background: transparent; }
 .note-editor textarea { border: 0; outline: 0; background: transparent; resize: none; font-size: 17px; line-height: 1.4; min-height: 420px; }
 .copy-btn { width: 36px; height: 36px; border-radius: 18px; background: color-mix(in srgb, var(--orange) 12%, transparent); color: var(--orange); display: grid; place-items: center; font-size: 15px; flex: none; }
+.icon-btn { width: 36px; height: 36px; border-radius: 18px; background: var(--fill); color: var(--orange); display: grid; place-items: center; font-size: 17px; }
+.icon-btn.red { color: var(--red); }
 .drag { color: var(--tertiary); font-size: 18px; cursor: grab; }
 
 /* ---------- Talk ---------- */

@@ -11,6 +11,7 @@ struct NoteEditorView: View {
     @State private var text = ""
     @State private var loaded = false
     @State private var copied = false
+    @State private var confirmDelete = false
     @FocusState private var focus: Field?
 
     private enum Field { case title, body }
@@ -41,26 +42,40 @@ struct NoteEditorView: View {
         .scrollDismissesKeyboard(.interactively)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            // Copy All and Delete as plain icons.
             ToolbarItem(placement: .topBarTrailing) {
-                CopyButton(copied: $copied, label: "Copy All") {
+                Button {
                     UIPasteboard.general.string = Note(title: title, body: text).copyText
+                    copied = true
+                    Task {
+                        try? await Task.sleep(for: .seconds(1.5))
+                        copied = false
+                    }
+                } label: {
+                    Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                        .contentTransition(.symbolEffect(.replace))
                 }
-                .labelStyle(.titleAndIcon)
+                .sensoryFeedback(.success, trigger: copied) { _, now in now }
+                .accessibilityLabel(copied ? "Copied" : "Copy All")
                 .disabled(title.isEmpty && text.isEmpty)
             }
             ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button("Delete Note", systemImage: "trash", role: .destructive) {
-                        controller.delete(noteID)
-                        dismiss()
-                    }
+                Button(role: .destructive) {
+                    confirmDelete = true
                 } label: {
-                    Image(systemName: "ellipsis.circle")
+                    Image(systemName: "trash")
                 }
+                .accessibilityLabel("Delete Note")
             }
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
                 Button("Done") { focus = nil }.fontWeight(.semibold)
+            }
+        }
+        .confirmationDialog("Delete this note?", isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button("Delete Note", role: .destructive) {
+                controller.delete(noteID)
+                dismiss()
             }
         }
         .onAppear(perform: load)
