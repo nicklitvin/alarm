@@ -56,7 +56,7 @@ export function TimersTab() {
       )}
 
       {data.recents.length > 0 && (
-        <Section header="Recents">
+        <Section>
           {data.recents.map((r) => (
             <SwipeRow key={recentID(r)} trailing={{ label: 'Remove', color: 'var(--red)', onAction: () => removeRecent(r) }}>
               <div className="grow">

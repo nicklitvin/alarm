@@ -21,7 +21,7 @@ struct TimersView: View {
                 }
 
                 if !controller.recents.isEmpty {
-                    Section("Recents") {
+                    Section {
                         ForEach(controller.recents) { recent in
                             RecentRow(recent: recent) { start(recent.duration, label: recent.label) }
                                 .swipeActions {
