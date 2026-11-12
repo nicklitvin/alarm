@@ -17,29 +17,35 @@ struct NoteEditorView: View {
     private enum Field { case title, body }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 8) {
-                TextField("Title", text: $title, axis: .vertical)
-                    .font(.title.weight(.bold))
-                    .focused($focus, equals: .title)
-                    .submitLabel(.next)
-                    .onSubmit { focus = .body }
+        VStack(alignment: .leading, spacing: 14) {
+            TextField("Title", text: $title, axis: .vertical)
+                .font(.title.weight(.bold))
+                .focused($focus, equals: .title)
+                .submitLabel(.next)
+                .onSubmit { focus = .body }
 
-                if let note = controller.note(noteID) {
-                    Text("Edited \(note.updatedAt.formatted(date: .abbreviated, time: .shortened))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+            // A real text editor: it fills the rest of the screen (tap anywhere below the text to
+            // keep writing), scrolls to follow the cursor, and leaves room at the bottom so the
+            // keyboard's Done bar never covers the last lines.
+            ZStack(alignment: .topLeading) {
+                if text.isEmpty {
+                    Text("Start writing…")
+                        .foregroundStyle(.tertiary)
+                        .padding(.top, 8)
+                        .allowsHitTesting(false)
                 }
-
-                TextField("Start writing…", text: $text, axis: .vertical)
+                TextEditor(text: $text)
                     .font(.body)
                     .focused($focus, equals: .body)
-                    .frame(maxWidth: .infinity, minHeight: 300, alignment: .topLeading)
+                    .scrollContentBackground(.hidden)
+                    .contentMargins(.bottom, 120, for: .scrollContent)
+                    .scrollDismissesKeyboard(.interactively)
+                    .padding(.leading, -5) // the editor's built-in inset, so text lines up with the title
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 8)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .scrollDismissesKeyboard(.interactively)
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             // Copy All and Delete as plain icons.

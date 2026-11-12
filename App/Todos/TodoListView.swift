@@ -51,8 +51,10 @@ struct TodoListView: View {
                         row(todo, now: now)
                     }
                 } header: {
-                    Text(group.title)
-                        .foregroundStyle(group.isOverdue ? Color.red : Color.secondary)
+                    if !group.title.isEmpty {
+                        Text(group.title)
+                            .foregroundStyle(group.isOverdue ? Color.red : Color.secondary)
+                    }
                 }
             }
 
@@ -125,7 +127,7 @@ struct TodoListView: View {
             TodoGroup(title: "Today", items: today),
             TodoGroup(title: "Tomorrow", items: tomorrow),
             TodoGroup(title: "Later", items: later),
-            TodoGroup(title: "No Deadline", items: someday),
+            TodoGroup(title: "", items: someday), // no heading: no deadline needs no label
         ].filter { !$0.items.isEmpty }
     }
 }
@@ -163,10 +165,13 @@ private struct TodoRow: View {
                         .lineLimit(2)
                 }
                 if let due = todo.due, !todo.isDone {
-                    Label(TimeFormat.dueDescription(due, relativeTo: now), systemImage: overdue ? "exclamationmark.circle.fill" : "clock")
-                        .font(.caption)
-                        .foregroundStyle(overdue ? Color.red : Color.secondary)
-                        .labelStyle(.titleAndIcon)
+                    // Icon right next to the time (a Label leaves a wide gap).
+                    HStack(spacing: 3) {
+                        Image(systemName: overdue ? "exclamationmark.circle.fill" : "clock")
+                        Text(TimeFormat.dueDescription(due, relativeTo: now))
+                    }
+                    .font(.caption)
+                    .foregroundStyle(overdue ? Color.red : Color.secondary)
                 }
             }
             Spacer(minLength: 0)
@@ -198,8 +203,8 @@ private struct TodoComposer: View {
                 TextField("New To-Do", text: $title)
                     .font(.body.weight(.medium))
                     .focused($focus, equals: .title)
-                    .submitLabel(.next)
-                    .onSubmit { focus = .details }
+                    .submitLabel(.done)
+                    .onSubmit(add)
                 TextField("Details (optional)", text: $details, axis: .vertical)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -243,13 +248,12 @@ private struct TodoComposer: View {
         }
     }
 
+    /// Adds the to-do and closes the panel.
     private func add() {
         guard canAdd else { return }
         controller.add(title: title, details: details, due: due)
-        title = ""
-        details = ""
-        due = nil
-        focus = .title
+        focus = nil
+        onClose()
     }
 }
 

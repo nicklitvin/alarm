@@ -201,7 +201,7 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
       <Sheet title="About & Updates" onClose={onClose} left={<button onClick={() => setAbout(false)}>‹ Back</button>}>
         <div style={{ textAlign: 'center', padding: '8px 0 20px' }}>
           <img src="/icon.png" width={72} height={72} style={{ borderRadius: 17 }} alt="" />
-          <div style={{ fontSize: 22, fontWeight: 600, marginTop: 8 }}>Alarm</div>
+          <div style={{ fontSize: 22, fontWeight: 600, marginTop: 8 }}>Alarmie</div>
           <div className="muted">Version {appVersion} · Web preview</div>
         </div>
         <Section header="Patch Notes">

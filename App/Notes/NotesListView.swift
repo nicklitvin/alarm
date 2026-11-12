@@ -63,7 +63,8 @@ struct NotesListView: View {
                     path.append(controller.add().id)
                 }
             }
-            .animation(.snappy, value: controller.notes)
+            // No list-wide animation: notes re-sort while you edit one, and animating that
+            // on the way back made the edited note flicker into place.
             .task(id: AppNavigation.shared.pendingNoteID) {
                 // Opened from a chat event: show that note.
                 guard let id = AppNavigation.shared.pendingNoteID else { return }
@@ -80,7 +81,7 @@ struct NotesListView: View {
         }
         .swipeActions(edge: .leading) {
             Button(note.isPinned ? "Unpin" : "Pin", systemImage: note.isPinned ? "pin.slash" : "pin") {
-                controller.setPinned(!note.isPinned, for: note.id)
+                withAnimation(.snappy) { controller.setPinned(!note.isPinned, for: note.id) }
             }
             .tint(.orange)
         }

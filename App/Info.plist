@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>NSAlarmKitUsageDescription</key>
-	<string>Alarm needs permission to ring your alarms on time, even when your iPhone is in Silent mode or a Focus.</string>
+	<string>Alarmie needs permission to ring your alarms on time, even when your iPhone is in Silent mode or a Focus.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Live Talk listens to your voice so you can talk to the assistant hands-free.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

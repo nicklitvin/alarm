@@ -32,6 +32,9 @@ struct TimersView: View {
                 }
             }
             .listStyle(.insetGrouped)
+            // Always the same light gray as the other tabs (an empty list would otherwise be white).
+            .scrollContentBackground(.hidden)
+            .background(Color(.systemGroupedBackground))
             .overlay {
                 if controller.timers.isEmpty && controller.recents.isEmpty {
                     ContentUnavailableView {

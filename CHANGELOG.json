@@ -1,6 +1,24 @@
 {
   "releases": [
     {
+      "version": "1.11.0",
+      "build": 17,
+      "date": "2026-11-12",
+      "title": "Meet Alarmie",
+      "notes": [
+        "The app is now called Alarmie.",
+        "Writing notes is smoother: the page follows your typing, you can tap below the text to keep writing, and the last lines are never hidden behind the keyboard's Done button.",
+        "Notes no longer show when they were last edited, and there's more space under the title.",
+        "Leaving a note no longer makes the list jump around.",
+        "More space under each tab's title, and the text next to the settings button is centered.",
+        "Timers always use the same light gray background as the other tabs.",
+        "In a to-do, Mark as Done and Delete now sit side by side.",
+        "The clock icon sits right next to a to-do's time.",
+        "The New To-Do panel closes after you add a to-do.",
+        "To-dos without a deadline no longer say \"No deadline\"."
+      ]
+    },
+    {
       "version": "1.10.2",
       "build": 16,
       "date": "2026-11-12",

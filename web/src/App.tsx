@@ -59,7 +59,7 @@ export default function App() {
 
       <aside className="panel">
         <div>
-          <h1>Alarm · UI Preview</h1>
+          <h1>Alarmie · UI Preview</h1>
           <p>
             A browser copy of the iOS app (version {appVersion}) for reviewing design without building in Xcode.
             Nothing here rings or sends notifications, and the assistant only fakes a few requests.
@@ -92,7 +92,7 @@ function AskPrompt() {
   }
   return (
     <div className="system-prompt" role="dialog" aria-label="Ask Assistant">
-      <div className="app-line"><img src="/icon.png" alt="" />ALARM</div>
+      <div className="app-line"><img src="/icon.png" alt="" />ALARMIE</div>
       {answer === null ? (
         <>
           <div className="q">What can I do for you?</div>

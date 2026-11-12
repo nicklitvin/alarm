@@ -25,7 +25,7 @@ export function TodoTab() {
     { title: 'Today', items: open.filter((t) => t.due && !isOverdue(t, now) && day(t.due) === day(now)) },
     { title: 'Tomorrow', items: open.filter((t) => t.due && day(t.due) === tomorrow) },
     { title: 'Later', items: open.filter((t) => t.due && !isOverdue(t, now) && day(t.due) !== day(now) && day(t.due) !== tomorrow) },
-    { title: 'No Deadline', items: open.filter((t) => !t.due) },
+    { title: '', items: open.filter((t) => !t.due) }, // no heading for to-dos without a deadline
   ].filter((g) => g.items.length)
   const overdue = open.filter((t) => isOverdue(t, now)).length
   const toggle = (id: string) => update((d) => ({
@@ -43,7 +43,7 @@ export function TodoTab() {
         <div className="grow">
           <div style={{ textDecoration: t.isDone ? 'line-through' : undefined, color: t.isDone ? 'var(--secondary)' : undefined }}>{t.title}</div>
           {t.details.trim() && <div className="sub">{t.details}</div>}
-          {t.due && !t.isDone && <div className={`sub ${late ? 'red' : ''}`} style={{ fontSize: 12 }}>{late ? '⚠︎' : '🕒'} {dueDescription(t.due, now)}</div>}
+          {t.due && !t.isDone && <div className={`sub due ${late ? 'red' : ''}`} style={{ fontSize: 12 }}><span>{late ? '⚠︎' : '🕒'}</span>{dueDescription(t.due, now)}</div>}
         </div>
       </SwipeRow>
     )
@@ -53,7 +53,7 @@ export function TodoTab() {
     <>
       <TabHeader title="To-Do" tab="todos" detail={open.length ? (overdue ? `${overdue} overdue · ${open.length} left` : `${open.length} left`) : null} />
       {data.todos.length === 0 && !composing && <div className="talk-empty"><div className="big">☑︎</div><h3>Nothing To Do</h3>Tap New To-Do below.</div>}
-      {groups.map((g) => <Section key={g.title} header={g.title} headerClass={g.red ? 'red' : ''}>{g.items.map(row)}</Section>)}
+      {groups.map((g) => <Section key={g.title || 'none'} header={g.title || undefined} headerClass={g.red ? 'red' : ''}>{g.items.map(row)}</Section>)}
       {done.length > 0 && (
         <Section header={<><span>Completed</span><button className="text-btn" style={{ fontSize: 13, textTransform: 'none' }} onClick={() => update((d) => ({ ...d, todos: d.todos.filter((t) => !t.isDone) }))}>Clear</button></>}>
           {done.map(row)}
@@ -74,7 +74,7 @@ function Composer({ onClose }: { onClose: () => void }) {
   const add = () => {
     if (!title.trim()) return
     update((d) => ({ ...d, todos: [...d.todos, { id: uid(), title: title.trim(), details: details.trim(), due, isDone: false, createdAt: Date.now() }] }))
-    setTitle(''); setDetails(''); setDue(undefined)
+    onClose() // the panel closes once the to-do is added
   }
   return (
     <div className="composer">
@@ -130,12 +130,16 @@ function TodoEditor({ todo, onClose }: { todo: Todo; onClose: () => void }) {
         )}
       </Section>
       <Section>
-        <button className="row tappable orange" style={{ width: '100%', justifyContent: 'center' }}
-          onClick={() => save({ isDone: !draft.isDone, completedAt: draft.isDone ? undefined : Date.now() })}>
-          {draft.isDone ? '↺ Mark as Not Done' : '✓ Mark as Done'}
-        </button>
-        <button className="row tappable red" style={{ width: '100%', justifyContent: 'center' }}
-          onClick={() => { update((d) => ({ ...d, todos: d.todos.filter((t) => t.id !== todo.id) })); onClose() }}>🗑 Delete To-Do</button>
+        {/* Both actions on one line */}
+        <div className="row" style={{ padding: 0, gap: 0 }}>
+          <button className="tappable orange" style={{ flex: 1, padding: 12 }}
+            onClick={() => save({ isDone: !draft.isDone, completedAt: draft.isDone ? undefined : Date.now() })}>
+            {draft.isDone ? '↺ Not Done' : '✓ Mark as Done'}
+          </button>
+          <span style={{ width: 0.5, alignSelf: 'stretch', margin: '8px 0', background: 'var(--separator)' }} />
+          <button className="tappable red" style={{ flex: 1, padding: 12 }}
+            onClick={() => { update((d) => ({ ...d, todos: d.todos.filter((t) => t.id !== todo.id) })); onClose() }}>🗑 Delete</button>
+        </div>
       </Section>
     </Sheet>
   )

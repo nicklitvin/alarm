@@ -38,7 +38,7 @@ struct AskAssistantIntent: AppIntent, LiveActivityIntent {
         if let ask = await AssistantBridge.ask {
             reply = await ask(text)
         } else {
-            reply = "Open the Alarm app once, then try again."
+            reply = "Open Alarmie once, then try again."
         }
         return .result(dialog: IntentDialog(stringLiteral: reply))
     }

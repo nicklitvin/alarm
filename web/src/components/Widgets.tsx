@@ -39,7 +39,7 @@ export function Widgets() {
       case 'todo': {
         const t = item.todo
         icon = ''; title = t.title; subRed = isOverdue(t, now)
-        sub = t.due ? `${subRed ? 'Overdue · ' : 'Due '}${dueDescription(t.due, now)}` : t.details || 'No deadline'
+        sub = t.due ? `${subRed ? 'Overdue · ' : 'Due '}${dueDescription(t.due, now)}` : t.details
         break
       }
       case 'nextAlarm':
@@ -53,7 +53,7 @@ export function Widgets() {
           : <span style={{ width: 20, textAlign: 'center' }}>{icon}</span>}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="t ellipsis" style={{ fontSize: compact ? 13 : 14 }}>{title}</div>
-          <div className={`s ellipsis ${subRed ? 'red' : ''}`}>{sub}</div>
+          {sub && <div className={`s ellipsis ${subRed ? 'red' : ''}`}>{sub}</div>}
         </div>
         {!compact && trailing}
       </div>

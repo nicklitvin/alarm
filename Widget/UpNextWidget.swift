@@ -284,8 +284,6 @@ private struct UpNextRow: View {
                                              : "Due \(TimeFormat.dueDescription(due, relativeTo: now))")
             } else if !todo.trimmedDetails.isEmpty {
                 Text(todo.trimmedDetails)
-            } else {
-                Text("No deadline")
             }
         case .nextAlarm(_, let date):
             Text("in \(date, style: .relative)")

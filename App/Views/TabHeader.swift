@@ -23,24 +23,23 @@ struct TabHeader<Accessory: View>: View {
     }
 
     var body: some View {
+        // Everything vertically centered, so the status text sits level with the gear.
         HStack(alignment: .center, spacing: 10) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                if let title {
-                    Text(title)
-                        .font(.largeTitle.weight(.bold))
-                        .lineLimit(1)
-                        .accessibilityAddTraits(.isHeader)
-                }
-                Spacer(minLength: 8)
-                if let detail {
-                    TimelineView(.everyMinute) { context in
-                        if let text = detail(context.date) {
-                            Text(text)
-                                .font(.subheadline.weight(.medium))
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                                .contentTransition(.numericText())
-                        }
+            if let title {
+                Text(title)
+                    .font(.largeTitle.weight(.bold))
+                    .lineLimit(1)
+                    .accessibilityAddTraits(.isHeader)
+            }
+            Spacer(minLength: 8)
+            if let detail {
+                TimelineView(.everyMinute) { context in
+                    if let text = detail(context.date) {
+                        Text(text)
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .contentTransition(.numericText())
                     }
                 }
             }
@@ -49,7 +48,7 @@ struct TabHeader<Accessory: View>: View {
         }
         .padding(.horizontal, 20)
         .padding(.top, 6)
-        .padding(.bottom, 8)
+        .padding(.bottom, 16) // room between the title and the content below
         .background(background)
         .sheet(isPresented: $showSettings) {
             TabSettingsView(tab: tab)

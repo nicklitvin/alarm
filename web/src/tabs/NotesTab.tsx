@@ -130,6 +130,23 @@ export function NotesTab() {
 function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
   const { update } = useStore()
   const { copied, copy } = useCopy()
+  const body = useRef<HTMLTextAreaElement>(null)
+
+  // The text area grows with its text, so the page scrolls along as you type (instead of the text
+  // scrolling inside a small box), and the caret is kept in view.
+  useEffect(() => {
+    const t = body.current
+    if (!t) return
+    t.style.height = 'auto'
+    t.style.height = `${t.scrollHeight}px`
+    if (document.activeElement === t) {
+      const scroller = t.closest('.app-body')
+      const caretBottom = t.getBoundingClientRect().bottom
+      const visibleBottom = (scroller?.getBoundingClientRect().bottom ?? window.innerHeight) - 120
+      if (scroller && caretBottom > visibleBottom && t.selectionEnd === t.value.length) scroller.scrollTop += caretBottom - visibleBottom
+    }
+  }, [note.body])
+
   const edit = (changes: Partial<Note>) =>
     update((d) => ({ ...d, notes: d.notes.map((n) => (n.id === note.id ? { ...n, ...changes, updatedAt: Date.now() } : n)) }))
   return (
@@ -145,10 +162,11 @@ function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
           }}>🗑︎</button>
         </div>
       </div>
-      <div className="note-editor" style={{ background: 'var(--bg)', minHeight: '100%' }}>
+      {/* Tapping the empty space below the text keeps writing at the end. */}
+      <div className="note-editor" style={{ background: 'var(--bg)', minHeight: '100%' }}
+        onClick={(e) => { if (e.target === e.currentTarget) { const t = body.current; t?.focus(); t?.setSelectionRange(t.value.length, t.value.length) } }}>
         <input autoFocus={!note.title && !note.body} placeholder="Title" value={note.title} onChange={(e) => edit({ title: e.target.value })} />
-        <div className="muted" style={{ fontSize: 12 }}>Edited {new Date(note.updatedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</div>
-        <textarea placeholder="Start writing…" value={note.body} onChange={(e) => edit({ body: e.target.value })} />
+        <textarea ref={body} placeholder="Start writing…" value={note.body} onChange={(e) => edit({ body: e.target.value })} />
       </div>
     </>
   )

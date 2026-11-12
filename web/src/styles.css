@@ -64,9 +64,9 @@ input, textarea, select { font: inherit; color: var(--label); }
 .tabbar .glyph { font-size: 20px; line-height: 22px; }
 
 /* ---------- Header ---------- */
-.header { display: flex; align-items: center; gap: 10px; padding: 4px 20px 8px; position: sticky; top: 0; z-index: 20; background: var(--bg-grouped); }
+.header { display: flex; align-items: center; gap: 10px; padding: 4px 20px 16px; position: sticky; top: 0; z-index: 20; background: var(--bg-grouped); }
 .header.plain { background: var(--bg); }
-.header .titles { display: flex; align-items: baseline; gap: 8px; flex: 1; min-width: 0; }
+.header .titles { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
 .header h1 { font-size: 34px; font-weight: 700; margin: 0; letter-spacing: 0.2px; white-space: nowrap; }
 .header .detail { margin-left: auto; color: var(--secondary); font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gear { width: 36px; height: 36px; border-radius: 18px; background: var(--fill); color: var(--orange); display: grid; place-items: center; font-size: 18px; position: relative; flex: none; }
@@ -187,11 +187,12 @@ select.ios { border: 0; background: transparent; color: var(--secondary); font-s
 .composer .box input.details { font-size: 15px; color: var(--secondary); }
 
 /* ---------- Notes ---------- */
-.note-editor { padding: 8px 20px; display: flex; flex-direction: column; gap: 8px; }
+.due { display: inline-flex; align-items: center; gap: 3px; }
+.note-editor { padding: 8px 20px 140px; display: flex; flex-direction: column; gap: 14px; cursor: text; }
 /* No built-in field padding, so title, date and text share one left edge. */
 .note-editor input, .note-editor textarea { padding: 0; margin: 0; }
 .note-editor input { font-size: 28px; font-weight: 700; border: 0; outline: 0; background: transparent; }
-.note-editor textarea { border: 0; outline: 0; background: transparent; resize: none; font-size: 17px; line-height: 1.4; min-height: 420px; }
+.note-editor textarea { border: 0; outline: 0; background: transparent; resize: none; overflow: hidden; font-size: 17px; line-height: 1.4; min-height: 300px; }
 .copy-btn { width: 36px; height: 36px; border-radius: 18px; background: color-mix(in srgb, var(--orange) 12%, transparent); color: var(--orange); display: grid; place-items: center; font-size: 15px; flex: none; }
 .icon-btn { width: 36px; height: 36px; border-radius: 18px; background: var(--fill); color: var(--orange); display: grid; place-items: center; font-size: 17px; }
 .icon-btn.red { color: var(--red); }

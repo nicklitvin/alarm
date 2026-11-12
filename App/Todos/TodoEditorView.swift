@@ -51,21 +51,26 @@ struct TodoEditorView: View {
 
                 // Done is an action next to Delete, not a switch.
                 Section {
-                    Button {
-                        draft.setDone(!draft.isDone)
-                        save()
-                    } label: {
-                        Label(draft.isDone ? "Mark as Not Done" : "Mark as Done",
-                              systemImage: draft.isDone ? "arrow.uturn.backward.circle" : "checkmark.circle")
-                            .frame(maxWidth: .infinity)
+                    // Both actions on one line.
+                    HStack(spacing: 0) {
+                        Button {
+                            draft.setDone(!draft.isDone)
+                            save()
+                        } label: {
+                            Label(draft.isDone ? "Not Done" : "Mark as Done",
+                                  systemImage: draft.isDone ? "arrow.uturn.backward.circle" : "checkmark.circle")
+                                .frame(maxWidth: .infinity)
+                        }
+                        Divider().frame(height: 22)
+                        Button(role: .destructive) {
+                            controller.delete(draft.id)
+                            dismiss()
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                                .frame(maxWidth: .infinity)
+                        }
                     }
-                    Button(role: .destructive) {
-                        controller.delete(draft.id)
-                        dismiss()
-                    } label: {
-                        Label("Delete To-Do", systemImage: "trash")
-                            .frame(maxWidth: .infinity)
-                    }
+                    .buttonStyle(.borderless) // two separate buttons in one row
                 }
             }
             .navigationTitle("Edit To-Do")

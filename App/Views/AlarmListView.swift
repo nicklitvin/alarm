@@ -68,7 +68,7 @@ struct AlarmListView: View {
                     Section {
                         PermissionBanner(
                             title: "Notifications Are Off",
-                            message: "Turn on notifications for Alarm in Settings to get the heads-up an hour before each alarm."
+                            message: "Turn on notifications for Alarmie in Settings to get the heads-up an hour before each alarm."
                         )
                     }
                 }

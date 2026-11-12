@@ -18,7 +18,7 @@ struct AboutView: View {
                                     .fill(LinearGradient(colors: [.orange, Color(red: 1, green: 0.37, blue: 0.23)],
                                                          startPoint: .top, endPoint: .bottom))
                             )
-                        Text("Alarm")
+                        Text("Alarmie")
                             .font(.title2.weight(.semibold))
                         Text("Version \(updates.installedVersionString) (\(updates.buildNumber))")
                             .font(.subheadline)

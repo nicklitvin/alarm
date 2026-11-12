@@ -1,4 +1,4 @@
-# Alarm
+# Alarmie
 
 A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms ring like the built-in Clock app: full screen on the lock screen, even in Silent mode or a Focus.
 
