@@ -310,7 +310,6 @@ export function sortNotes(notes: Note[], sort: NotesSort) {
 
 export type UpNextItem =
   | { kind: 'alarmSoon'; alarm: Alarm; date: number }
-  | { kind: 'alarmDismissed'; alarm: Alarm; date: number }
   | { kind: 'timer'; timer: TimerItem }
   | { kind: 'todo'; todo: Todo }
   | { kind: 'nextAlarm'; alarm: Alarm; date: number }
@@ -321,10 +320,8 @@ export function upNext(alarms: Alarm[], todos: Todo[], timers: TimerItem[], now:
   const soonIDs = new Set<string>()
   const urgent: { date: number; item: UpNextItem }[] = []
   for (const a of alarms.filter((x) => x.isEnabled)) {
-    if (a.skippedOccurrence && a.skippedOccurrence > now && a.skippedOccurrence - now <= headsUp) {
-      urgent.push({ date: a.skippedOccurrence, item: { kind: 'alarmDismissed', alarm: a, date: a.skippedOccurrence } })
-      soonIDs.add(a.id)
-    } else {
+    {
+      // A dismissed ring is skipped by nextFire, so it simply disappears.
       const t = nextFire(a, now)
       if (t !== undefined && t - now <= headsUp) {
         urgent.push({ date: t, item: { kind: 'alarmSoon', alarm: a, date: t } })

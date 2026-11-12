@@ -148,7 +148,6 @@ select.ios { border: 0; background: transparent; color: var(--secondary); font-s
 .alarm-row.off .alarm-time { color: var(--secondary); }
 .skip { color: var(--orange); font-size: 12px; font-weight: 600; margin-top: 4px; }
 .soon-icon { width: 44px; height: 44px; border-radius: 22px; display: grid; place-items: center; background: color-mix(in srgb, var(--orange) 15%, transparent); font-size: 20px; flex: none; }
-.soon-icon.dim { background: var(--fill); filter: grayscale(1); }
 .banner { padding: 12px 16px; }
 .banner b { color: var(--orange); }
 
@@ -242,7 +241,6 @@ select.ios { border: 0; background: transparent; color: var(--secondary); font-s
 .widget-row .t { font-size: 14px; font-weight: 500; }
 .widget-row .s { font-size: 11px; color: var(--secondary); }
 .widget-row .mini { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--orange); color: #fff; }
-.widget-row .mini.ghost { background: color-mix(in srgb, var(--orange) 15%, transparent); color: var(--orange); }
 .widget .foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--secondary); }
 .ask { width: 34px; height: 34px; border-radius: 17px; background: linear-gradient(var(--orange), #ff6a00); color: #fff; display: grid; place-items: center; font-size: 15px; }
 

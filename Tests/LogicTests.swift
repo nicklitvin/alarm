@@ -290,7 +290,6 @@ func kinds(_ items: [UpNextItem]) -> [String] {
     items.map {
         switch $0.kind {
         case .alarmSoon(let a, _): "soon:\(a.label)"
-        case .alarmDismissed(let a, _): "dismissed:\(a.label)"
         case .timer(let t): "timer:\(t.label)"
         case .todo(let t): "todo:\(t.title)"
         case .nextAlarm(let a, _): "next:\(a.label)"
@@ -302,7 +301,8 @@ let upNext = UpNext.items(alarms: [evening, wakeAlarm], todos: [somedayTodo, lat
 check(kinds(upNext) == ["soon:Wake", "timer:Tea", "timer:Bread", "todo:Pay bill", "todo:Leave for train", "next:Wind down", "todo:Dentist", "todo:Read book"],
       "up next order → \(kinds(upNext))")
 var skippedWake = wakeAlarm; skippedWake.skippedOccurrence = d(2026, 11, 12, 7, 0)
-check(kinds(UpNext.items(alarms: [skippedWake], todos: [], timers: [], now: unNow)) == ["dismissed:Wake"], "dismissed alarm shows with undo")
+check(kinds(UpNext.items(alarms: [skippedWake], todos: [], timers: [], now: unNow)).isEmpty,
+      "dismissed ring disappears (next ring is Fri 7:00, beyond the 24h next-alarm window)")
 check(kinds(UpNext.items(alarms: [wakeAlarm], todos: [], timers: [], now: d(2026, 11, 12, 5, 0))) == ["next:Wake"], "alarm 2h away → next alarm, not dismissable")
 check(kinds(UpNext.items(alarms: [], todos: [], timers: [], now: unNow)).isEmpty, "nothing → empty")
 let changes = UpNext.changeDates(alarms: [wakeAlarm], todos: [soonTodo], timers: [runningTimer], now: unNow)

@@ -168,7 +168,6 @@ struct UpNextWidgetView: View {
         if let first = entry.items.first {
             switch first.kind {
             case .alarmSoon(_, let date): Label("Alarm \(TimeFormat.string(for: date))", systemImage: "alarm.fill")
-            case .alarmDismissed(_, let date): Label("\(TimeFormat.string(for: date)) dismissed", systemImage: "bell.slash")
             case .timer(let timer): Label(timer.title, systemImage: "timer")
             case .todo(let todo): Label(todo.due.map { "\(todo.title) · \(TimeFormat.dueDescription($0, relativeTo: entry.date))" } ?? todo.title,
                                         systemImage: "checklist")
@@ -238,8 +237,6 @@ private struct UpNextRow: View {
             .accessibilityLabel("Mark \(todo.title) as done")
         case .alarmSoon:
             icon("alarm.fill")
-        case .alarmDismissed:
-            icon("bell.slash.fill", tint: .secondary)
         case .timer(let timer):
             icon(timer.state == .ringing ? "bell.fill" : "timer")
         case .nextAlarm:
@@ -259,8 +256,6 @@ private struct UpNextRow: View {
         switch item.kind {
         case .alarmSoon(let alarm, let date):
             Text("\(alarm.title) · \(TimeFormat.string(for: date))")
-        case .alarmDismissed(_, let date):
-            Text("\(TimeFormat.string(for: date)) dismissed")
         case .timer(let timer):
             Text(timer.title)
         case .todo(let todo):
@@ -274,8 +269,6 @@ private struct UpNextRow: View {
         switch item.kind {
         case .alarmSoon(_, let date):
             Text("Rings in \(date, style: .relative)")
-        case .alarmDismissed:
-            Text("Won't ring this time")
         case .timer(let timer):
             switch timer.state {
             case .running where timer.fireDate > now:
@@ -314,16 +307,6 @@ private struct UpNextRow: View {
                     .padding(.vertical, 5)
                     .background(Capsule().fill(Color.orange))
                     .foregroundStyle(.white)
-            }
-            .buttonStyle(.plain)
-        case .alarmDismissed(let alarm, _):
-            Button(intent: UndoDismissAlarmIntent(alarmID: alarm.id)) {
-                Text("Undo")
-                    .font(.caption.weight(.semibold))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(Capsule().fill(Color.orange.opacity(0.15)))
-                    .foregroundStyle(.orange)
             }
             .buttonStyle(.plain)
         default:

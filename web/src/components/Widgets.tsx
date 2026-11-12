@@ -5,7 +5,7 @@ import { useStore, type Link } from '../logic/store'
 
 const linkFor = (item: UpNextItem): Link => {
   switch (item.kind) {
-    case 'alarmSoon': case 'alarmDismissed': case 'nextAlarm': return { tab: 'alarms', id: item.alarm.id }
+    case 'alarmSoon': case 'nextAlarm': return { tab: 'alarms', id: item.alarm.id }
     case 'timer': return { tab: 'timers' }
     case 'todo': return { tab: 'todos', id: item.todo.id }
   }
@@ -20,7 +20,6 @@ export function Widgets() {
   const d = new Date(now)
 
   const dismiss = (id: string, date: number) => update((s) => ({ ...s, alarms: s.alarms.map((a) => (a.id === id ? (a.weekdays.length ? { ...a, skippedOccurrence: date } : { ...a, isEnabled: false }) : a)) }))
-  const undo = (id: string) => update((s) => ({ ...s, alarms: s.alarms.map((a) => (a.id === id ? { ...a, skippedOccurrence: undefined } : a)) }))
   const complete = (id: string) => update((s) => ({ ...s, todos: s.todos.map((t) => (t.id === id ? { ...t, isDone: true, completedAt: Date.now() } : t)) }))
 
   const row = (item: UpNextItem, compact = false) => {
@@ -30,10 +29,6 @@ export function Widgets() {
       case 'alarmSoon':
         title = `${alarmTitle(item.alarm)} · ${timeOf(item.date)}`; sub = `Rings in ${Math.max(1, Math.ceil((item.date - now) / 60000))} min`
         trailing = <button className="mini" onClick={(e) => { e.stopPropagation(); dismiss(item.alarm.id, item.date) }}>Dismiss</button>
-        break
-      case 'alarmDismissed':
-        icon = '🔕'; title = `${timeOf(item.date)} dismissed`; sub = "Won't ring this time"
-        trailing = <button className="mini ghost" onClick={(e) => { e.stopPropagation(); undo(item.alarm.id) }}>Undo</button>
         break
       case 'timer': {
         const t = item.timer

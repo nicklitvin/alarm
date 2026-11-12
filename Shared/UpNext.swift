@@ -5,8 +5,6 @@ struct UpNextItem: Identifiable, Hashable, Sendable {
     enum Kind: Hashable, Sendable {
         /// Rings within the hour; can be dismissed.
         case alarmSoon(AlarmItem, Date)
-        /// Its next ring was dismissed; can be undone until then.
-        case alarmDismissed(AlarmItem, Date)
         case timer(TimerItem)
         case todo(TodoItem)
         /// The next alarm, when it's more than an hour away.
@@ -18,7 +16,6 @@ struct UpNextItem: Identifiable, Hashable, Sendable {
     var id: String {
         switch kind {
         case .alarmSoon(let a, _): "soon-\(a.id)"
-        case .alarmDismissed(let a, _): "dismissed-\(a.id)"
         case .timer(let t): "timer-\(t.id)"
         case .todo(let t): "todo-\(t.id)"
         case .nextAlarm(let a, _): "next-\(a.id)"
@@ -36,14 +33,11 @@ enum UpNext {
         var result: [UpNextItem] = []
         let headsUp = AlarmItem.headsUpInterval
 
-        // 1. Alarms ringing within the hour (or dismissed for this hour).
+        // 1. Alarms ringing within the hour. A dismissed ring is skipped, so it simply disappears.
         var soonAlarmIDs = Set<UUID>()
         var urgentAlarms: [(Date, UpNextItem)] = []
         for alarm in alarms where alarm.isEnabled {
-            if let skipped = alarm.skippedOccurrence, skipped > now, skipped.timeIntervalSince(now) <= headsUp {
-                urgentAlarms.append((skipped, UpNextItem(kind: .alarmDismissed(alarm, skipped))))
-                soonAlarmIDs.insert(alarm.id)
-            } else if let next = alarm.nextFireDate(after: now), next.timeIntervalSince(now) <= headsUp {
+            if let next = alarm.nextFireDate(after: now), next.timeIntervalSince(now) <= headsUp {
                 urgentAlarms.append((next, UpNextItem(kind: .alarmSoon(alarm, next))))
                 soonAlarmIDs.insert(alarm.id)
             }
@@ -87,9 +81,6 @@ enum UpNext {
         for alarm in alarms where alarm.isEnabled {
             for ring in alarm.upcomingFireDates(after: now, limit: 2) {
                 dates += [ring.addingTimeInterval(-AlarmItem.headsUpInterval), ring, ring.addingTimeInterval(-nextAlarmWindow)]
-            }
-            if let skipped = alarm.skippedOccurrence {
-                dates += [skipped.addingTimeInterval(-AlarmItem.headsUpInterval), skipped]
             }
         }
         for timer in timers where timer.state == .running {

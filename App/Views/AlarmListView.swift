@@ -181,43 +181,35 @@ private struct SoonAlarmCard: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            Image(systemName: item.isDismissed ? "bell.slash.fill" : "alarm.waves.left.and.right.fill")
+            Image(systemName: "alarm.waves.left.and.right.fill")
                 .font(.title3)
-                .foregroundStyle(item.isDismissed ? Color.secondary : Color.orange)
+                .foregroundStyle(.orange)
                 .frame(width: 44, height: 44)
-                .background(Circle().fill(item.isDismissed ? Color(.tertiarySystemFill) : Color.orange.opacity(0.15)))
-                .symbolEffect(.pulse, isActive: !item.isDismissed)
+                .background(Circle().fill(Color.orange.opacity(0.15)))
+                .symbolEffect(.pulse)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.isDismissed ? "Dismissed" : item.alarm.title)
+                Text(item.alarm.title)
                     .font(.headline)
                 Text(detail)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .strikethrough(item.isDismissed)
             }
 
             Spacer(minLength: 0)
 
-            if item.isDismissed {
-                Button("Undo") { controller.undoDismiss(of: item.alarm.id) }
-                    .buttonStyle(.bordered)
-                    .buttonBorderShape(.capsule)
-                    .tint(Color.secondary)
-            } else {
-                Button {
-                    isWorking = true
-                    Task {
-                        await controller.dismissNextRing(of: item.alarm.id)
-                        isWorking = false
-                    }
-                } label: {
-                    Text("Dismiss").fontWeight(.semibold)
+            Button {
+                isWorking = true
+                Task {
+                    await controller.dismissNextRing(of: item.alarm.id)
+                    isWorking = false
                 }
-                .buttonStyle(.borderedProminent)
-                .buttonBorderShape(.capsule)
-                .disabled(isWorking)
+            } label: {
+                Text("Dismiss").fontWeight(.semibold)
             }
+            .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.capsule)
+            .disabled(isWorking)
         }
         .padding(.vertical, 6)
     }

@@ -2,11 +2,10 @@ import Foundation
 import Observation
 import WidgetKit
 
-/// A ring that is less than an hour away (or was dismissed and would have been).
+/// A ring within the heads-up window, which can still be dismissed.
 struct SoonAlarm: Identifiable, Hashable {
     let alarm: AlarmItem
     let date: Date
-    let isDismissed: Bool
     var id: UUID { alarm.id }
 }
 
@@ -40,15 +39,10 @@ final class AlarmController {
     /// Alarms ringing within the next hour — these get a Dismiss button in the app.
     func soonAlarms(now: Date) -> [SoonAlarm] {
         alarms.compactMap { alarm -> SoonAlarm? in
-            guard alarm.isEnabled else { return nil }
-            if let skipped = alarm.skippedOccurrence, skipped > now,
-               skipped.timeIntervalSince(now) <= AlarmItem.headsUpInterval {
-                return SoonAlarm(alarm: alarm, date: skipped, isDismissed: true)
-            }
-            if let next = alarm.nextFireDate(after: now), next.timeIntervalSince(now) <= AlarmItem.headsUpInterval {
-                return SoonAlarm(alarm: alarm, date: next, isDismissed: false)
-            }
-            return nil
+            // Once dismissed, the ring is gone from here (nextFireDate skips it).
+            guard alarm.isEnabled, let next = alarm.nextFireDate(after: now),
+                  next.timeIntervalSince(now) <= AlarmItem.headsUpInterval else { return nil }
+            return SoonAlarm(alarm: alarm, date: next)
         }
         .sorted { $0.date < $1.date }
     }
@@ -110,13 +104,6 @@ final class AlarmController {
         }
         await commit().value
         await NotificationScheduler.removeDelivered(for: id)
-    }
-
-    func undoDismiss(of id: UUID) {
-        guard let index = alarms.firstIndex(where: { $0.id == id }),
-              alarms[index].skippedOccurrence != nil else { return }
-        alarms[index].skippedOccurrence = nil
-        commit()
     }
 
     // MARK: - Housekeeping

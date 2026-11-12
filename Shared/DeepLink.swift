@@ -51,7 +51,7 @@ extension UpNextItem {
     /// Where tapping this item in the widget goes.
     var deepLink: DeepLink {
         switch kind {
-        case .alarmSoon(let alarm, _), .alarmDismissed(let alarm, _), .nextAlarm(let alarm, _): .alarm(alarm.id)
+        case .alarmSoon(let alarm, _), .nextAlarm(let alarm, _): .alarm(alarm.id)
         case .timer: .timers
         case .todo(let todo): .todo(todo.id)
         }

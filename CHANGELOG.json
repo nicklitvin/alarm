@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.8.2",
+      "build": 11,
+      "date": "2026-11-12",
+      "title": "Simpler Dismiss",
+      "notes": [
+        "Dismissing an alarm no longer leaves an Undo button behind. The card in the app and the row in the widget simply go away, and the alarm shows \"Skipping today\"."
+      ]
+    },
+    {
       "version": "1.8.1",
       "build": 10,
       "date": "2026-11-12",

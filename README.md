@@ -7,7 +7,7 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 - **Alarms for specific days and times.** Pick a time and any set of weekdays, or none for a one-time alarm.
 - **Lock screen widget** that shows when your next alarm will go off. It comes in three sizes: rectangular, circular and inline.
 - **Heads-up notification before each alarm** (1 hour by default; change it in Alarm settings). Touch and hold it and tap **Dismiss Alarm** to cancel that ring. The next one still rings as normal.
-- **Dismiss in the app.** If you open the app within an hour of an alarm, a card at the top has a **Dismiss** button, plus **Undo**.
+- **Dismiss in the app.** If you open the app within an hour of an alarm, a card at the top has a **Dismiss** button. Once dismissed, the card goes away and the alarm shows "Skipping today".
 - **Timers tab.** Hour, minute and second wheels plus one-tap presets. Timers ring through Silent mode and show a countdown on the lock screen and in the Dynamic Island, with Pause and Cancel buttons.
 - **To-Do tab.** Add a to-do and tap a suggested time ("In 1 hour", "Tonight", "Tomorrow morning", …) or pick a custom time and date. You get a notification at the deadline with **Mark as Done** and **Remind Me in 1 Hour** buttons. Items are grouped into Overdue, Today, Tomorrow, Later and No Deadline.
 - **Notes tab.** Searchable notes with a **Copy All** button on every note. Pin notes to the top, drag to rearrange, or sort by date or title. The assistant can read them ("what's on my packing note?") and write to them ("add charger to my packing note").

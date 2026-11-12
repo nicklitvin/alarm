@@ -26,11 +26,10 @@ export function AlarmsTab() {
   const setAlarm = (id: string, change: (a: Alarm) => Alarm) =>
     update((d) => ({ ...d, alarms: d.alarms.map((a) => (a.id === id ? change(a) : a)) }))
 
+  // Rings within the heads-up window. Once dismissed, a ring is skipped, so its card disappears.
   const soon = data.alarms.flatMap((a) => {
-    if (!a.isEnabled) return []
-    if (a.skippedOccurrence && a.skippedOccurrence > now && a.skippedOccurrence - now <= headsUp) return [{ alarm: a, date: a.skippedOccurrence, dismissed: true }]
-    const t = nextFire(a, now)
-    return t !== undefined && t - now <= headsUp ? [{ alarm: a, date: t, dismissed: false }] : []
+    const t = a.isEnabled ? nextFire(a, now) : undefined
+    return t !== undefined && t - now <= headsUp ? [{ alarm: a, date: t }] : []
   })
 
   return (
@@ -42,18 +41,14 @@ export function AlarmsTab() {
         <>
           {soon.length > 0 && (
             <Section>
-              {soon.map(({ alarm, date, dismissed }) => (
+              {soon.map(({ alarm, date }) => (
                 <div className="row" key={alarm.id}>
-                  <div className={`soon-icon ${dismissed ? 'dim' : ''}`}>{dismissed ? '🔕' : '⏰'}</div>
+                  <div className="soon-icon">⏰</div>
                   <div className="grow">
-                    <div style={{ fontWeight: 600 }}>{dismissed ? 'Dismissed' : alarmTitle(alarm)}</div>
-                    <div className="sub" style={{ textDecoration: dismissed ? 'line-through' : undefined }}>
-                      {timeOf(date)} · in {Math.max(1, Math.ceil((date - now) / 60000))} min
-                    </div>
+                    <div style={{ fontWeight: 600 }}>{alarmTitle(alarm)}</div>
+                    <div className="sub">{timeOf(date)} · in {Math.max(1, Math.ceil((date - now) / 60000))} min</div>
                   </div>
-                  {dismissed
-                    ? <button className="btn bordered small" onClick={() => setAlarm(alarm.id, (a) => ({ ...a, skippedOccurrence: undefined }))}>Undo</button>
-                    : <button className="btn prominent small" onClick={() => setAlarm(alarm.id, (a) => a.weekdays.length ? { ...a, skippedOccurrence: date } : { ...a, isEnabled: false })}>Dismiss</button>}
+                  <button className="btn prominent small" onClick={() => setAlarm(alarm.id, (a) => a.weekdays.length ? { ...a, skippedOccurrence: date } : { ...a, isEnabled: false })}>Dismiss</button>
                 </div>
               ))}
             </Section>
