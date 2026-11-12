@@ -188,6 +188,8 @@ select.ios { border: 0; background: transparent; color: var(--secondary); font-s
 
 /* ---------- Notes ---------- */
 .note-editor { padding: 8px 20px; display: flex; flex-direction: column; gap: 8px; }
+/* No built-in field padding, so title, date and text share one left edge. */
+.note-editor input, .note-editor textarea { padding: 0; margin: 0; }
 .note-editor input { font-size: 28px; font-weight: 700; border: 0; outline: 0; background: transparent; }
 .note-editor textarea { border: 0; outline: 0; background: transparent; resize: none; font-size: 17px; line-height: 1.4; min-height: 420px; }
 .copy-btn { width: 36px; height: 36px; border-radius: 18px; background: color-mix(in srgb, var(--orange) 12%, transparent); color: var(--orange); display: grid; place-items: center; font-size: 15px; flex: none; }
