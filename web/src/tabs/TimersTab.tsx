@@ -29,7 +29,7 @@ export function TimersTab() {
     <>
       <TabHeader title="Timers" tab="timers" detail={detail} />
       {timers.length > 0 && (
-        <Section header="Running" footer="Swipe left to cancel a timer.">
+        <Section header="Running">
           {timers.map((t) => {
             const left = t.state === 'running' ? Math.max(0, (t.fireDate - now) / 1000) : t.state === 'paused' ? t.remaining : 0
             const progress = t.duration ? left / t.duration : 0
@@ -56,7 +56,7 @@ export function TimersTab() {
       )}
 
       {data.recents.length > 0 && (
-        <Section header="Recents" footer="Tap ▶ to start a timer again. Swipe left to remove it.">
+        <Section header="Recents">
           {data.recents.map((r) => (
             <SwipeRow key={recentID(r)} trailing={{ label: 'Remove', color: 'var(--red)', onAction: () => removeRecent(r) }}>
               <div className="grow">
