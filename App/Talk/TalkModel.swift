@@ -34,6 +34,8 @@ final class TalkModel {
 
     @ObservationIgnored private var session: LanguageModelSession?
     @ObservationIgnored private var lastActivity = Date.distantPast
+    /// The custom instructions the current session was started with.
+    @ObservationIgnored private var sessionCustomInstructions = ""
     @ObservationIgnored private var queue: Task<Void, Never>?
     @ObservationIgnored private var followUpDeadline: Date?
     @ObservationIgnored private var hintTask: Task<Void, Never>?
@@ -171,7 +173,9 @@ final class TalkModel {
     }
 
     private func currentSession() -> LanguageModelSession {
-        if let session, Date().timeIntervalSince(lastActivity) < Self.sessionLifetime {
+        // A change to the custom instructions starts a fresh session so they apply right away.
+        if let session, Date().timeIntervalSince(lastActivity) < Self.sessionLifetime,
+           sessionCustomInstructions == TalkSettings.customInstructions {
             lastActivity = .now
             return session
         }
@@ -187,6 +191,7 @@ final class TalkModel {
             instructions: Self.instructions()
         )
         session = fresh
+        sessionCustomInstructions = TalkSettings.customInstructions
         lastActivity = .now
         return fresh
     }
@@ -208,6 +213,18 @@ final class TalkModel {
         - When the user mentions a note or asks about its contents, call readNote and answer from it.
         - Only say something was done if a tool's result confirms it. If a tool reports a problem, say so.
         The current date and time is \(now).
+        """ + customInstructionsBlock()
+    }
+
+    /// The user's custom instructions from Talk settings, if any.
+    private static func customInstructionsBlock() -> String {
+        let custom = TalkSettings.customInstructions
+        guard !custom.isEmpty else { return "" }
+        return """
+
+        The user's own instructions, for every conversation and reply. Follow them, as long as \
+        they don't stop you from using your tools correctly or from being truthful about what was done:
+        \(custom)
         """
     }
 

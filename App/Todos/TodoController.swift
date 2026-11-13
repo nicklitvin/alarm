@@ -58,7 +58,7 @@ final class TodoController {
         await commit().value
     }
 
-    /// "Remind Me in 1 Hour" from the notification.
+    /// "Remind Me in 1 Hour" / "Remind Me Tomorrow" from the notification.
     func snooze(_ id: UUID, by interval: TimeInterval = 3600) async {
         guard let index = todos.firstIndex(where: { $0.id == id }) else { return }
         todos[index].due = Date().addingTimeInterval(interval)

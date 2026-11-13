@@ -5,6 +5,7 @@ enum TalkSettings {
     static let wakeWordEnabledKey = "talk.wakeWordEnabled"
     static let wakeWordKey = "talk.wakeWord"
     static let speakRepliesKey = "talk.speakReplies"
+    static let customInstructionsKey = "talk.customInstructions"
 
     static let defaultWakeWord = "Hey Alarm"
 
@@ -26,5 +27,10 @@ enum TalkSettings {
 
     static var speakReplies: Bool {
         UserDefaults.standard.object(forKey: speakRepliesKey) as? Bool ?? true
+    }
+
+    /// The user's own instructions, applied to every conversation and reply (Talk settings).
+    static var customInstructions: String {
+        (UserDefaults.standard.string(forKey: customInstructionsKey) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

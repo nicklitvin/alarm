@@ -54,9 +54,12 @@ struct AlarmItem: Identifiable, Codable, Hashable, Sendable {
     /// Bumped whenever the time or days change. The system alarm is then a brand-new one, so an
     /// alarm that already rang (or was dismissed) today can ring again at its new time today.
     var revision: Int = 0
+    /// What it rings with.
+    var sound: AlarmSound = .default
 
     init(id: UUID = UUID(), hour: Int, minute: Int, label: String = "", weekdays: Set<Weekday> = [],
-         isEnabled: Bool = true, skippedOccurrence: Date? = nil, oneTimeDate: Date? = nil, revision: Int = 0) {
+         isEnabled: Bool = true, skippedOccurrence: Date? = nil, oneTimeDate: Date? = nil, revision: Int = 0,
+         sound: AlarmSound = .default) {
         self.id = id
         self.hour = hour
         self.minute = minute
@@ -66,6 +69,7 @@ struct AlarmItem: Identifiable, Codable, Hashable, Sendable {
         self.skippedOccurrence = skippedOccurrence
         self.oneTimeDate = oneTimeDate
         self.revision = revision
+        self.sound = sound
     }
 
     // Tolerates alarms saved by older versions (e.g. without `revision`).
@@ -80,6 +84,7 @@ struct AlarmItem: Identifiable, Codable, Hashable, Sendable {
         skippedOccurrence = try c.decodeIfPresent(Date.self, forKey: .skippedOccurrence)
         oneTimeDate = try c.decodeIfPresent(Date.self, forKey: .oneTimeDate)
         revision = try c.decodeIfPresent(Int.self, forKey: .revision) ?? 0
+        sound = (try? c.decodeIfPresent(AlarmSound.self, forKey: .sound)) ?? .default
     }
 
     /// How long before an alarm the heads-up notification and the Dismiss button appear (a setting).

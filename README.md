@@ -4,16 +4,16 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 
 ## Features
 
-- **Alarms for specific days and times.** Pick a time and any set of weekdays, or none for a one-time alarm.
+- **Alarms for specific days and times.** Pick a time and any set of weekdays, or none for a one-time alarm, and a sound (Default, Chime, Beacon, Pulse, Rise or Bells).
 - **Lock screen widget** that shows when your next alarm will go off. It comes in three sizes: rectangular, circular and inline.
-- **Heads-up notification before each alarm** (1 hour by default; change it in Alarm settings). Touch and hold it and tap **Dismiss Alarm** to cancel that ring, or turn on **Tap Notification to Dismiss** in Alarm settings to cancel it with a single tap. Swiping the notification away never cancels anything. The next ring still happens as normal.
+- **Heads-up notification before each alarm** (1 hour by default; change it in Alarm settings). It says when the alarm rings. Touch and hold it and tap **Dismiss Alarm** to cancel that ring, or turn on **Tap Notification to Dismiss** in Alarm settings to cancel it with a single tap. Swiping the notification away never cancels anything. The next ring still happens as normal.
 - **Dismiss in the app.** If you open the app within an hour of an alarm, a card at the top has a **Dismiss** button. Once dismissed, the card goes away and the alarm shows "Skipping today".
 - **Timers tab.** Running timers and **Recents**: tap ▶ to start a timer you've used before. **New Timer** opens a sheet with hour, minute and second wheels, one-tap presets and a label. Timers ring through Silent mode and show a countdown on the lock screen and in the Dynamic Island, with Pause and Cancel buttons.
-- **To-Do tab.** Add a to-do and tap a suggested time ("In 1 hour", "Tonight", "Tomorrow morning", …) or pick a custom time and date. Edit a to-do right in the list, like Reminders: tap it to change the title or details, and tap 📅 for the deadline. You get a notification at the deadline with **Mark as Done** and **Remind Me in 1 Hour** buttons. Items are grouped into Overdue, Today, Tomorrow and Later, then to-dos without a deadline.
-- **Notes tab.** Searchable notes with a **Copy All** button on every note. Pin notes to the top (swipe right), press and hold a note to drag it somewhere else, or sort by date or title. The assistant can read them ("what's on my packing note?") and write to them ("add charger to my packing note").
+- **To-Do tab.** Add a to-do and tap a suggested time ("In 1 hour", "Tonight", "Tomorrow morning", …) or pick a custom time and date. Under the deadline, one-tap quick times (9 AM, 3 PM and 9 PM to start) can be changed in To-Do settings. Edit a to-do right in the list, like Reminders: tap it to change the title or details, and tap 📅 for the deadline. You get a notification at the deadline with **Mark as Done**, **Remind Me in 1 Hour** and **Remind Me Tomorrow** buttons. Items are grouped into Overdue, Today, Tomorrow and Later, then to-dos without a deadline.
+- **Notes tab.** Searchable notes with **Copy All**, **Clear** (removes the text, keeps the title) and **Delete** buttons on every note. Pin notes to the top (swipe right), press and hold a note to drag it somewhere else, or sort by date or title. The assistant can read them ("what's on my packing note?") and write to them ("add charger to my packing note").
 - **Widgets.**
-  - **Up Next:** home screen (small, medium, large) and lock screen. Shows what's relevant now: an alarm within the hour with a **Dismiss** button, running timers, overdue and soon-due to-dos, the next alarm, then the rest of your to-dos. Tap an item to open it in the app, or tap a to-do's circle to check it off. The ✦ button in the bottom-right corner (medium and large sizes) opens Talk.
-  - **Next Alarm:** home screen (small) and lock screen. Tap it to open that alarm. On the lock screen it shows zzz when nothing rings in the next 24 hours.
+  - **Up Next:** home screen (small, medium, large) and lock screen. Shows what's relevant now: an alarm within the hour with a **Dismiss** button, running timers, overdue and soon-due to-dos, the next alarm, then the rest of your to-dos. Tap an alarm or timer to open its tab, a to-do to open that to-do, or tap a to-do's circle to check it off. The ✦ button in the bottom-right corner (medium and large sizes) opens Talk.
+  - **Next Alarm:** home screen (small) and lock screen. Tap it to open the Alarms tab. On the lock screen it shows zzz when nothing rings in the next 24 hours.
 - **Settings per tab.** The gear next to each tab's title opens that tab's settings: when to get alarm heads-ups, timer warnings and to-do reminders, how to sort notes, and Talk options. Each also has **Delete All** for that tab and **About & Updates**.
 - **Updates and patch notes.**
   - The app checks the App Store for a newer version and offers to open it there. A copy installed from Xcode isn't on the App Store, so it just says so.
@@ -30,6 +30,7 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
     - **Notes:** read, create, add to, replace, rename, delete ("add eggs to my grocery note").
     - **Timers:** start and cancel ("set a pasta timer for 9 minutes").
     - **Settings:** wake word and spoken replies ("turn on the wake word and set it to Jarvis").
+  - **Custom Instructions** (Talk settings): your own instructions, applied to every conversation and reply.
   - **Optional wake word**, off by default (Talk settings → Require Wake Word). When on, Live Talk ignores sentences that don't start with your wake word, e.g. "Hey Alarm, …". Say only the wake word and your next sentence counts. Typed messages always get a reply.
 
 ## Requirements
@@ -82,6 +83,7 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 | Version check, What's New, patch notes | `App/About/`, `CHANGELOG.json` |
 | Control Center button, Siri and Shortcuts | `Shared/AssistantIntents.swift`, `Widget/AssistantControls.swift`, `App/Talk/AssistantShortcuts.swift` |
 | Lock screen widget | `Widget/NextAlarmWidget.swift` |
+| Alarm sounds (made by `Tools/make_sounds.py`) | `Shared/AlarmSound.swift`, `App/Sounds/` |
 
 **Dismissing one ring of a repeating alarm.** Each weekday of an alarm is its own weekly system alarm. AlarmKit can't skip a single occurrence, so when you dismiss Friday's ring, only Friday is touched: it's swapped for a one-time alarm next Friday, and Mon–Thu are left alone. The weekly Friday alarm comes back the first time any app code runs after the dismissed time:
 

@@ -12,9 +12,11 @@ struct PlannedAlarm: Equatable {
     let item: AlarmItem
     let kind: Kind
 
-    /// Stable description of this system alarm. Any change (time, label, day) yields a new key → new ID.
+    /// Stable description of this system alarm. Any change (time, label, day, sound) yields a new key → new ID.
     var key: String {
-        let base = "\(item.id.uuidString)|r\(item.revision)|\(item.hour):\(item.minute)|\(item.title)"
+        // The sound is only part of the key when it isn't the default, so alarms from older versions keep their IDs.
+        let sound = item.sound == .default ? "" : "|s:\(item.sound.rawValue)"
+        let base = "\(item.id.uuidString)|r\(item.revision)|\(item.hour):\(item.minute)|\(item.title)\(sound)"
         switch kind {
         case .weekly(let day):
             return base + "|weekly|" + String(day.rawValue)

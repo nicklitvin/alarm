@@ -30,6 +30,11 @@ struct TalkView: View {
             .safeAreaInset(edge: .top, spacing: 0) {
                 TabHeader(title: nil, tab: .talk)
             }
+            // The message field sits on the outermost content view, which SwiftUI moves above the
+            // keyboard reliably (nested insets inside the scroll view sometimes stayed behind it).
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if model.unavailableReason == nil { inputBar }
+            }
         }
         .tint(.orange)
         .task { model.prepare() }
@@ -59,7 +64,7 @@ struct TalkView: View {
                 .animation(.snappy, value: model.messages)
             }
             .defaultScrollAnchor(.bottom)
-            .scrollDismissesKeyboard(.interactively)
+            .scrollDismissesKeyboard(.immediately)
             .overlay {
                 if model.messages.isEmpty && !model.isLive {
                     EmptyTalkView()
@@ -71,9 +76,10 @@ struct TalkView: View {
             .onChange(of: model.isResponding) { _, responding in
                 if responding { withAnimation { proxy.scrollTo("typing", anchor: .bottom) } }
             }
-        }
-        .safeAreaInset(edge: .bottom) {
-            inputBar
+            .onChange(of: inputFocused) { _, focused in
+                // Keep the latest message in view above the keyboard.
+                if focused { withAnimation { proxy.scrollTo(model.messages.last?.id, anchor: .bottom) } }
+            }
         }
     }
 

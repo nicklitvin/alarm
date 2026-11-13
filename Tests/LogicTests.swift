@@ -57,6 +57,9 @@ check(restored.nextFireDate(after: afterReplacementStopped) == d(2026, 11, 9, 7,
 
 // Stable IDs.
 check(Set(AlarmPlan.make(for: [a], now: now).keys) == Set(plan.keys), "IDs stable across syncs")
+var withSound = a
+withSound.sound = .chime
+check(Set(AlarmPlan.make(for: [withSound], now: now).keys).isDisjoint(with: Set(AlarmPlan.make(for: [a], now: now).keys)), "changing the sound reschedules the alarm")
 var renamed = a; renamed.label = "Run"
 check(Set(AlarmPlan.make(for: [renamed], now: now).keys).isDisjoint(with: plan.keys), "rename → new IDs")
 check(plan.keys.allSatisfy { $0.uuidString.dropFirst(14).first == "5" }, "UUID version nibble set")
@@ -312,10 +315,17 @@ check(changes == changes.sorted() && changes.allSatisfy { $0 > unNow }, "change 
 
 // Time-of-day deadline options.
 let tuesdayNoonish = d(2026, 11, 17, 12, 30)
-check(TimeOfDay.evening.apply(to: d(2026, 11, 20, 9, 0), now: tuesdayNoonish) == d(2026, 11, 20, 18, 0), "evening keeps the chosen day")
-check(TimeOfDay.afternoon.apply(to: tuesdayNoonish, now: tuesdayNoonish) == d(2026, 11, 17, 15, 0), "afternoon later today")
-check(TimeOfDay.morning.apply(to: tuesdayNoonish, now: tuesdayNoonish) == d(2026, 11, 18, 9, 0), "morning already passed today → tomorrow")
-check(TimeOfDay.matching(d(2026, 11, 17, 21, 0)) == .night && TimeOfDay.matching(d(2026, 11, 17, 21, 5)) == nil, "matching highlights exact times only")
+check(QuickTime(hour: 18).apply(to: d(2026, 11, 20, 9, 0), now: tuesdayNoonish) == d(2026, 11, 20, 18, 0), "quick time keeps the chosen day")
+check(QuickTime(hour: 15).apply(to: tuesdayNoonish, now: tuesdayNoonish) == d(2026, 11, 17, 15, 0), "afternoon later today")
+check(QuickTime(hour: 9).apply(to: tuesdayNoonish, now: tuesdayNoonish) == d(2026, 11, 18, 9, 0), "morning already passed today → tomorrow")
+check(QuickTime(hour: 21, minute: 30).apply(to: tuesdayNoonish, now: tuesdayNoonish) == d(2026, 11, 17, 21, 30), "quick times keep their minutes")
+let quick = [QuickTime(hour: 9), QuickTime(hour: 21)]
+check(QuickTime.matching(d(2026, 11, 17, 21, 0), in: quick) == QuickTime(hour: 21) && QuickTime.matching(d(2026, 11, 17, 21, 5), in: quick) == nil, "matching highlights exact times only")
+check(AppSettings.parseQuickTimes(nil) == [540, 900, 1260], "default quick times are 9 AM, 3 PM, 9 PM")
+check(AppSettings.parseQuickTimes("1260, 540,540,abc,9999") == [540, 1260], "quick times are sorted, unique and valid")
+check(QuickTime(hour: 21).label == "9 PM" && QuickTime(hour: 9, minute: 30).label == "9:30 AM", "quick time labels are just the time")
+check(AlarmSound(name: "chime") == .chime && AlarmSound(name: "Default") == .default && AlarmSound(name: "kazoo") == nil, "alarm sounds by name")
+check(AlarmSound.chime.fileName == "alarmie-chime.wav" && AlarmSound.default.fileName == nil, "bundled alarm sound files")
 
 // Deep links (widget taps).
 let someID = UUID()
@@ -324,7 +334,7 @@ for link in [DeepLink.alarms, .alarm(someID), .timers, .todos, .todo(someID), .n
 }
 check(DeepLink(url: URL(string: "https://example.com/alarm")!) == nil && DeepLink(url: URL(string: "alarmapp://bogus")!) == nil, "foreign/unknown links ignored")
 check(UpNextItem(kind: .todo(TodoItem(id: someID, title: "x"))).deepLink == .todo(someID), "widget to-do row opens that to-do")
-check(UpNextItem(kind: .nextAlarm(AlarmItem(id: someID, hour: 7, minute: 0), Date())).deepLink == .alarm(someID), "widget alarm row opens that alarm")
+check(UpNextItem(kind: .nextAlarm(AlarmItem(id: someID, hour: 7, minute: 0), Date())).deepLink == .alarms, "widget alarm row opens the Alarms tab")
 
 // Editing an alarm after it rang/was dismissed makes it a new system alarm.
 var rang = AlarmItem(hour: 7, minute: 0, weekdays: Weekday.workdays)

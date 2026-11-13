@@ -72,8 +72,8 @@ struct NextAlarmWidgetView: View {
             default: rectangular
             }
         }
-        // Tapping opens that alarm in the app (or the Alarms tab when there's none).
-        .widgetURL((entry.next.map { DeepLink.alarm($0.alarm.id) } ?? .alarms).url)
+        // Tapping opens the Alarms tab.
+        .widgetURL(DeepLink.alarms.url)
     }
 
     // Home screen: big time, day and countdown.

@@ -86,7 +86,7 @@ final class AlarmKitScheduler {
             attributes: attributes,
             stopIntent: StopAlarmIntent(alarmID: id),
             secondaryIntent: nil,
-            sound: .default
+            sound: item.sound.fileName.map { .named($0) } ?? .default
         )
     }
 }

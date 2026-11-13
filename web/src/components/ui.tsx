@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import changelog from '../../../CHANGELOG.json'
 import {
-  applyTimeOfDay, dueDescription, dueSuggestions, leadTimeName, TIMES_OF_DAY, timeOf, type NotesSort, type Settings,
+  applyQuickTime, cleanQuickTimes, DEFAULT_QUICK_TIMES, dueDescription, dueSuggestions, leadTimeName, MAX_QUICK_TIMES, quickTimeLabel, timeOf, type NotesSort, type Settings,
 } from '../logic/model'
 import { useStore, type Tab } from '../logic/store'
 
@@ -149,20 +149,63 @@ export function SuggestionChips({ value, onChange, onCustom }: { value?: number;
   )
 }
 
+/** The quick times from To-Do settings (9 AM · 3 PM · 9 PM by default), shown as just the time. */
 export function TimeOfDayChips({ value, onChange }: { value: number; onChange: (v: number) => void }) {
-  const { now } = useStore()
+  const { now, data } = useStore()
   const d = new Date(value)
   return (
     <div className="tod">
-      {TIMES_OF_DAY.map((t) => {
-        const selected = d.getHours() === t.hour && d.getMinutes() === 0
+      {cleanQuickTimes(data.settings.todoQuickTimes).map((m) => {
+        const selected = d.getHours() * 60 + d.getMinutes() === m
         return (
-          <button key={t.title} className={`chip ${selected ? 'selected' : ''}`} onClick={() => onChange(applyTimeOfDay(value, t.hour, now))}>
-            <b>{t.title}</b><span>{timeOf(new Date(2000, 0, 1, t.hour).getTime()).replace(':00', '')}</span>
+          <button key={m} className={`chip ${selected ? 'selected' : ''}`} onClick={() => onChange(applyQuickTime(value, m, now))}>
+            <b>{quickTimeLabel(m)}</b>
           </button>
         )
       })}
     </div>
+  )
+}
+
+/** A centered iOS alert (no popover arrow), for confirming destructive actions. */
+export function Alert({ title, message, action, onConfirm, onCancel }: {
+  title: string; message?: string; action: string; onConfirm: () => void; onCancel: () => void
+}) {
+  return (
+    <div className="alert-backdrop" onClick={onCancel}>
+      <div className="alert" role="alertdialog" aria-label={title} onClick={(e) => e.stopPropagation()}>
+        <div className="alert-text"><b>{title}</b>{message && <span>{message}</span>}</div>
+        <div className="alert-buttons">
+          <button onClick={onCancel}>Cancel</button>
+          <button className="red" onClick={onConfirm}>{action}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const pad2 = (n: number) => String(n).padStart(2, '0')
+
+/** To-Do settings → Quick Times. */
+function QuickTimesSection() {
+  const { data, update } = useStore()
+  const times = cleanQuickTimes(data.settings.todoQuickTimes)
+  const save = (list: number[]) => update((d) => ({ ...d, settings: { ...d.settings, todoQuickTimes: cleanQuickTimes(list) } }))
+  const nextFree = () => { let c = ((times[times.length - 1] ?? 540) + 60) % 1440; while (times.includes(c)) c = (c + 60) % 1440; return c }
+  const isDefault = times.join() === DEFAULT_QUICK_TIMES.join()
+  return (
+    <Section header="Quick Times" footer="One-tap times under a to-do's deadline.">
+      {times.map((m) => (
+        <div className="row" key={m}>
+          <span className="grow">Time</span>
+          <input className="time-pill" type="time" step={300} value={`${pad2(Math.floor(m / 60))}:${pad2(m % 60)}`}
+            onChange={(e) => { const [h, mm] = e.target.value.split(':').map(Number); if (!isNaN(h)) save(times.map((x) => (x === m ? h * 60 + mm : x))) }} />
+          {times.length > 1 && <button className="icon-btn red" aria-label="Remove time" style={{ marginLeft: 10 }} onClick={() => save(times.filter((x) => x !== m))}>⊖</button>}
+        </div>
+      ))}
+      {times.length < MAX_QUICK_TIMES && <button className="row tappable orange" style={{ width: '100%' }} onClick={() => save([...times, nextFree()])}>＋ Add Time</button>}
+      {!isDefault && <button className="row tappable orange" style={{ width: '100%' }} onClick={() => save(DEFAULT_QUICK_TIMES)}>Reset to 9 AM, 3 PM, 9 PM</button>}
+    </Section>
   )
 }
 
@@ -193,6 +236,7 @@ const TITLES: Record<Tab, string> = { alarms: 'Alarm Settings', timers: 'Timer S
 function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
   const { data, update } = useStore()
   const [about, setAbout] = useState(false)
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false)
   const s = data.settings
   const set = <K extends keyof Settings>(key: K, value: Settings[K]) => update((d) => ({ ...d, settings: { ...d.settings, [key]: value } }))
 
@@ -253,11 +297,12 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
         </Section>
       )}
       {tab === 'todos' && (
-        <Section header="Notifications" footer="Deadlines also show in the app and widget.">
+        <Section header="Notifications" footer="Touch and hold a to-do's notification to mark it done or be reminded in an hour or tomorrow.">
           <div className="row"><span className="grow">At the Deadline</span><Switch label="At the deadline" on={s.todoDueAlertEnabled} onChange={(v) => set('todoDueAlertEnabled', v)} /></div>
           <div className="row"><span className="grow">Early Reminder</span>{choice(s.todoEarlyReminderMinutes, [0, 5, 15, 30, 60, 1440], (v) => set('todoEarlyReminderMinutes', v), 'None')}</div>
         </Section>
       )}
+      {tab === 'todos' && <QuickTimesSection />}
       {tab === 'todos' && (
         <Section header="Up Next Widget" footer="Choose which to-dos appear in the Up Next widget.">
           <div className="row"><span className="grow">To-Dos with a Deadline</span><Switch label="To-dos with a deadline" on={s.widgetShowsTimedTodos} onChange={(v) => set('widgetShowsTimedTodos', v)} /></div>
@@ -283,6 +328,12 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
           <Section footer="Reads replies aloud during Live Talk.">
             <div className="row"><span className="grow">Speak Replies</span><Switch label="Speak replies" on={s.speakReplies} onChange={(v) => set('speakReplies', v)} /></div>
           </Section>
+          <Section header="Custom Instructions" footer="Applied to every conversation and reply.">
+            <div className="row">
+              <textarea className="instructions" rows={3} placeholder="e.g. Call me Sam. Keep answers very short." value={s.customInstructions}
+                onChange={(e) => set('customInstructions', e.target.value)} />
+            </div>
+          </Section>
           <Section footer="In the app everything runs on your iPhone with Apple's on-device model. This preview uses simple canned replies.">
             <button className="row tappable red" style={{ width: '100%' }} onClick={() => { update((d) => ({ ...d, chat: [] })); onClose() }}>🗑︎ Clear Conversation</button>
           </Section>
@@ -300,7 +351,9 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
         return (
           <Section footer={tab === 'timers' ? 'Cancels any running timers and clears the Recents list.' : 'Removes everything on this tab.'}>
             <button className="row tappable red" style={{ width: '100%' }}
-              onClick={() => { if (info.count && confirm(`${info.ask}\nThis can't be undone.`)) clear() }}>🗑︎ {info.label}</button>
+              onClick={() => { if (info.count) setConfirmDeleteAll(true) }}>🗑︎ {info.label}</button>
+            {confirmDeleteAll && <Alert title={info.ask} message="This can't be undone." action="Delete All"
+              onCancel={() => setConfirmDeleteAll(false)} onConfirm={() => { clear(); setConfirmDeleteAll(false) }} />}
           </Section>
         )
       })()}

@@ -11,7 +11,16 @@ export interface Alarm {
   weekdays: Weekday[]
   isEnabled: boolean
   skippedOccurrence?: number // epoch ms of a dismissed ring
+  sound?: AlarmSound
 }
+
+/** Shared/AlarmSound.swift: Default is the system sound, the rest are bundled tones. */
+export type AlarmSound = 'default' | 'chime' | 'beacon' | 'pulse' | 'rise' | 'bells'
+export const ALARM_SOUNDS: { id: AlarmSound; name: string }[] = [
+  { id: 'default', name: 'Default' }, { id: 'chime', name: 'Chime' }, { id: 'beacon', name: 'Beacon' },
+  { id: 'pulse', name: 'Pulse' }, { id: 'rise', name: 'Rise' }, { id: 'bells', name: 'Bells' },
+]
+export const soundName = (s?: AlarmSound) => ALARM_SOUNDS.find((x) => x.id === (s ?? 'default'))!.name
 
 export interface TimerItem {
   id: string
@@ -68,6 +77,8 @@ export interface Settings {
   wakeWordEnabled: boolean
   wakeWord: string
   speakReplies: boolean
+  customInstructions: string
+  todoQuickTimes: number[] // minutes after midnight
   widgetShowsAlarms: boolean
   widgetShowsTimedTodos: boolean
   widgetShowsUntimedTodos: boolean
@@ -84,6 +95,8 @@ export const defaultSettings: Settings = {
   wakeWordEnabled: false,
   wakeWord: 'Hey Alarm',
   speakReplies: true,
+  customInstructions: '',
+  todoQuickTimes: [9 * 60, 15 * 60, 21 * 60],
   widgetShowsAlarms: true,
   widgetShowsTimedTodos: true,
   widgetShowsUntimedTodos: true,
@@ -287,18 +300,25 @@ export function dueSuggestions(now: number): Suggestion[] {
   return result
 }
 
-export const TIMES_OF_DAY = [
-  { title: 'Morning', hour: 9 },
-  { title: 'Noon', hour: 12 },
-  { title: 'Afternoon', hour: 15 },
-  { title: 'Evening', hour: 18 },
-  { title: 'Night', hour: 21 },
-]
+export const DEFAULT_QUICK_TIMES = [9 * 60, 15 * 60, 21 * 60]
+export const MAX_QUICK_TIMES = 5
+
+/** Sorted, unique, valid; the defaults when empty (AppSettings.parseQuickTimes). */
+export function cleanQuickTimes(list: number[] | undefined) {
+  const unique = [...new Set((list ?? []).filter((m) => Number.isInteger(m) && m >= 0 && m < 1440))].sort((a, b) => a - b)
+  return unique.length ? unique.slice(0, MAX_QUICK_TIMES) : DEFAULT_QUICK_TIMES
+}
+
+/** "9 AM", "9:30 AM" (QuickTime.label). */
+export function quickTimeLabel(minutes: number) {
+  const { time, period } = timeParts(Math.floor(minutes / 60), minutes % 60)
+  return `${minutes % 60 === 0 ? time.replace(':00', '') : time} ${period}`
+}
 
 /** Keep the day, set the time; if that's already past, the next day. */
-export function applyTimeOfDay(date: number, hour: number, now: number) {
+export function applyQuickTime(date: number, minutes: number, now: number) {
   const d = new Date(date)
-  d.setHours(hour, 0, 0, 0)
+  d.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0)
   if (d.getTime() <= now) d.setDate(d.getDate() + 1)
   return d.getTime()
 }

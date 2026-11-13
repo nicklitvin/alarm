@@ -434,46 +434,36 @@ struct DeadlinePickerSheet: View {
     }
 }
 
-/// Morning · Noon · Afternoon · Evening · Night — one tap sets the deadline's time.
+/// The quick times from To-Do settings (9 AM · 3 PM · 9 PM by default): one tap sets the deadline's time.
 struct TimeOfDayChips: View {
     @Binding var date: Date
+    @AppStorage(AppSettings.todoQuickTimesKey, store: AppSettings.store) private var stored = ""
 
     var body: some View {
-        let selected = TimeOfDay.matching(date)
+        let options = AppSettings.parseQuickTimes(stored).map(QuickTime.init(minutes:))
+        let selected = QuickTime.matching(date, in: options)
         HStack(spacing: 6) {
-            ForEach(TimeOfDay.allCases) { option in
+            ForEach(options) { option in
                 let isSelected = option == selected
                 Button {
                     date = option.apply(to: date)
                 } label: {
-                    VStack(spacing: 1) {
-                        Text(option.title)
-                            .font(.caption.weight(.semibold))
-                        Text(Self.shortTime(option.hour))
-                            .font(.caption2)
-                            .opacity(0.8)
-                    }
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 7)
-                    .foregroundStyle(isSelected ? Color.white : Color.primary)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(isSelected ? Color.orange : Color(.tertiarySystemFill))
-                    )
+                    Text(option.label)
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .foregroundStyle(isSelected ? Color.white : Color.primary)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(isSelected ? Color.orange : Color(.tertiarySystemFill))
+                        )
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("\(option.title), \(TimeFormat.string(hour: option.hour, minute: 0))")
+                .accessibilityLabel(TimeFormat.string(hour: option.hour, minute: option.minute))
             }
         }
         .sensoryFeedback(.selection, trigger: date)
-    }
-
-    /// "9 AM" / "21:00".
-    private static func shortTime(_ hour: Int) -> String {
-        let parts = TimeFormat.parts(hour: hour, minute: 0)
-        guard let period = parts.period else { return parts.time }
-        return "\(parts.time.replacingOccurrences(of: ":00", with: "")) \(period)"
     }
 }

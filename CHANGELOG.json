@@ -1,6 +1,23 @@
 {
   "releases": [
     {
+      "version": "1.14.0",
+      "build": 21,
+      "date": "2026-11-13",
+      "title": "Alarm Sounds & Quick Times",
+      "notes": [
+        "Choose a sound for each alarm: Default, Chime, Beacon, Pulse, Rise or Bells. Tap one to hear it.",
+        "Pick your own quick times for to-do deadlines in To-Do settings. They're 9 AM, 3 PM and 9 PM to start, and show just the time.",
+        "Touch and hold a to-do's notification to be reminded in an hour or tomorrow.",
+        "The alarm heads-up notification simply says when it rings.",
+        "Tapping an alarm in a widget opens the Alarms tab, and tapping a to-do opens that to-do. Every part of a row now opens it.",
+        "The Up Next widget title no longer has an icon.",
+        "New Clear button in a note removes its text and keeps the title. Clear and Delete both ask first, in a centered alert.",
+        "Talk settings has Custom Instructions: tell the assistant how to talk to you, and it applies to every conversation.",
+        "The message field in Talk always stays above the keyboard."
+      ]
+    },
+    {
       "version": "1.13.0",
       "build": 20,
       "date": "2026-11-13",

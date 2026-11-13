@@ -69,6 +69,10 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
             guard let id = (userInfo[TodoReminders.todoIDKey] as? String).flatMap(UUID.init(uuidString:)) else { return }
             await TodoController.shared.snooze(id)
 
+        case TodoReminders.snoozeDayActionID:
+            guard let id = (userInfo[TodoReminders.todoIDKey] as? String).flatMap(UUID.init(uuidString:)) else { return }
+            await TodoController.shared.snooze(id, by: 24 * 3600)
+
         case UNNotificationDefaultActionIdentifier:
             // Tapping the alarm heads-up dismisses that ring when "Tap Notification to Dismiss" is on.
             // (Swiping a notification away is never reported to the app, so it never dismisses.)
@@ -76,8 +80,13 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
                let id = (userInfo[NotificationScheduler.alarmIDKey] as? String).flatMap(UUID.init(uuidString:)) {
                 await AlarmController.shared.dismissNextRing(of: id, referenceDate: response.notification.date)
             }
+            let todoID = (userInfo[TodoReminders.todoIDKey] as? String).flatMap(UUID.init(uuidString:))
             await MainActor.run {
-                AppNavigation.shared.tab = content.categoryIdentifier == TodoReminders.categoryID ? .todos : .alarms
+                if content.categoryIdentifier == TodoReminders.categoryID {
+                    AppNavigation.shared.open(todoID.map(DeepLink.todo) ?? .todos)
+                } else {
+                    AppNavigation.shared.open(.alarms)
+                }
             }
 
         default:

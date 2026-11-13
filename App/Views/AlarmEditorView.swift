@@ -1,3 +1,4 @@
+import AVFoundation
 import SwiftUI
 
 struct AlarmEditorView: View {
@@ -49,6 +50,11 @@ struct AlarmEditorView: View {
                             .multilineTextAlignment(.trailing)
                             .foregroundStyle(.secondary)
                             .submitLabel(.done)
+                    }
+                    NavigationLink {
+                        AlarmSoundPicker(selection: $draft.sound)
+                    } label: {
+                        LabeledContent("Sound", value: draft.sound.name)
                     }
                 }
 
@@ -121,6 +127,57 @@ struct WeekdayPicker: View {
                 .accessibilityLabel(day.fullName)
                 .accessibilityAddTraits(isOn ? .isSelected : [])
             }
+        }
+    }
+}
+
+/// Pick the sound an alarm rings with. Tapping a sound plays a few seconds of it.
+struct AlarmSoundPicker: View {
+    @Binding var selection: AlarmSound
+    @State private var player: AVAudioPlayer?
+
+    var body: some View {
+        List {
+            ForEach(AlarmSound.allCases) { sound in
+                Button {
+                    selection = sound
+                    preview(sound)
+                } label: {
+                    HStack {
+                        Text(sound.name)
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        if selection == sound {
+                            Image(systemName: "checkmark")
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.orange)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .sensoryFeedback(.selection, trigger: selection)
+            }
+        }
+        .navigationTitle("Sound")
+        .navigationBarTitleDisplayMode(.inline)
+        .onDisappear { player?.stop() }
+    }
+
+    /// Plays the first few seconds. The system's default alarm sound can't be played by apps,
+    /// so choosing Default just stops any preview.
+    private func preview(_ sound: AlarmSound) {
+        player?.stop()
+        player = nil
+        guard let file = sound.fileName,
+              let url = Bundle.main.url(forResource: file, withExtension: nil) else { return }
+        try? AVAudioSession.sharedInstance().setCategory(.playback, options: [.duckOthers])
+        try? AVAudioSession.sharedInstance().setActive(true)
+        let player = try? AVAudioPlayer(contentsOf: url)
+        player?.play()
+        self.player = player
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(4))
+            if self.player === player { player?.setVolume(0, fadeDuration: 0.5) }
         }
     }
 }

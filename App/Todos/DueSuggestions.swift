@@ -47,36 +47,34 @@ enum DueSuggestions {
     }
 }
 
-/// Quick times for a deadline: set the time, keep the chosen day.
-enum TimeOfDay: String, CaseIterable, Identifiable, Sendable {
-    case morning, noon, afternoon, evening, night
+/// A quick time for a deadline (To-Do settings → Quick Times): one tap sets the time and keeps
+/// the chosen day. Shown as just the time, e.g. "9 AM" or "21:00".
+struct QuickTime: Hashable, Identifiable, Sendable {
+    /// Minutes after midnight.
+    let minutes: Int
 
-    var id: String { rawValue }
+    init(minutes: Int) { self.minutes = ((minutes % 1440) + 1440) % 1440 }
+    init(hour: Int, minute: Int = 0) { self.init(minutes: hour * 60 + minute) }
 
-    var title: String {
-        switch self {
-        case .morning: "Morning"
-        case .noon: "Noon"
-        case .afternoon: "Afternoon"
-        case .evening: "Evening"
-        case .night: "Night"
-        }
+    var id: Int { minutes }
+    var hour: Int { minutes / 60 }
+    var minute: Int { minutes % 60 }
+
+    /// "9 AM", "9:30 AM" or "21:00", following the 12/24-hour system setting.
+    var label: String {
+        let parts = TimeFormat.parts(hour: hour, minute: minute)
+        guard let period = parts.period else { return parts.time }
+        let time = minute == 0 ? parts.time.replacingOccurrences(of: ":00", with: "") : parts.time
+        return "\(time) \(period)"
     }
 
-    var hour: Int {
-        switch self {
-        case .morning: 9
-        case .noon: 12
-        case .afternoon: 15
-        case .evening: 18
-        case .night: 21
-        }
-    }
+    /// The times the chips show: from settings, or the defaults (morning, afternoon, night).
+    static var current: [QuickTime] { AppSettings.todoQuickTimes.map(QuickTime.init(minutes:)) }
 
     /// `date`'s day at this time. If that's already past (only possible today), the next day.
     func apply(to date: Date, now: Date = Date(), calendar: Calendar = .current) -> Date {
         let day = calendar.startOfDay(for: date)
-        var result = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: day) ?? date
+        var result = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: day) ?? date
         if result <= now, let next = calendar.date(byAdding: .day, value: 1, to: result) {
             result = next
         }
@@ -84,9 +82,8 @@ enum TimeOfDay: String, CaseIterable, Identifiable, Sendable {
     }
 
     /// The option a deadline currently matches, for highlighting.
-    static func matching(_ date: Date, calendar: Calendar = .current) -> TimeOfDay? {
+    static func matching(_ date: Date, in options: [QuickTime], calendar: Calendar = .current) -> QuickTime? {
         let c = calendar.dateComponents([.hour, .minute], from: date)
-        guard c.minute == 0 else { return nil }
-        return allCases.first { $0.hour == c.hour }
+        return options.first { $0.hour == c.hour && $0.minute == c.minute }
     }
 }

@@ -154,9 +154,7 @@ enum NotificationScheduler {
         if !alarm.label.trimmingCharacters(in: .whitespaces).isEmpty {
             content.subtitle = alarm.title
         }
-        content.body = AppSettings.alarmTapToDismiss
-            ? "Rings at \(alarm.timeString). Tap to dismiss it."
-            : "Rings at \(alarm.timeString). Touch and hold to dismiss it."
+        content.body = "Rings at \(alarm.timeString)"
         content.sound = .default
         content.categoryIdentifier = categoryID
         content.threadIdentifier = "alarm-heads-up"

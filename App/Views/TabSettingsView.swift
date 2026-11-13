@@ -83,8 +83,9 @@ private struct DeleteAllSection: View {
         } footer: {
             Text(footer)
         }
-        .confirmationDialog(question, isPresented: $confirming, titleVisibility: .visible) {
-            Button(title, role: .destructive, action: deleteAll)
+        .alert(question, isPresented: $confirming) {
+            Button("Delete All", role: .destructive, action: deleteAll)
+            Button("Cancel", role: .cancel) {}
         } message: {
             Text("This can't be undone.")
         }
@@ -258,6 +259,8 @@ private struct TodoSettingsSection: View {
         .onChange(of: dueAlert) { TodoController.shared.refreshReminders() }
         .onChange(of: earlyMinutes) { TodoController.shared.refreshReminders() }
 
+        QuickTimesSection()
+
         WidgetToggles(rows: [
             ("To-Dos with a Deadline", AppSettings.widgetShowsTimedTodosKey),
             ("To-Dos without a Deadline", AppSettings.widgetShowsUntimedTodosKey),
@@ -267,9 +270,83 @@ private struct TodoSettingsSection: View {
     private var footer: String {
         switch (dueAlert, earlyMinutes) {
         case (false, 0): "No notifications for to-dos. Deadlines still show in the app and widget."
-        case (true, 0): "You'll get a notification when a to-do is due, with Mark as Done and Remind Me in 1 Hour."
+        case (true, 0): "You'll get a notification when a to-do is due. Touch and hold it to mark it done or be reminded in an hour or tomorrow."
         case (false, let m): "You'll get a reminder \(AppSettings.leadTimeName(m)) before each deadline."
         case (true, let m): "You'll get a reminder \(AppSettings.leadTimeName(m)) before each deadline, and another when it's due."
+        }
+    }
+}
+
+/// The quick times shown under a deadline (9 AM, 3 PM and 9 PM by default).
+private struct QuickTimesSection: View {
+    @AppStorage(AppSettings.todoQuickTimesKey, store: AppSettings.store) private var stored = ""
+
+    private var times: [Int] { AppSettings.parseQuickTimes(stored) }
+
+    var body: some View {
+        Section {
+            ForEach(times, id: \.self) { minutes in
+                QuickTimeRow(minutes: minutes) { newValue in
+                    save(times.map { $0 == minutes ? newValue : $0 })
+                }
+            }
+            .onDelete { offsets in
+                var list = times
+                list.remove(atOffsets: offsets)
+                save(list)
+            }
+            .deleteDisabled(times.count <= 1)
+
+            if times.count < AppSettings.maxTodoQuickTimes {
+                Button {
+                    save(times + [nextFreeTime()])
+                } label: {
+                    Label("Add Time", systemImage: "plus")
+                }
+            }
+            if times != AppSettings.defaultTodoQuickTimes {
+                Button("Reset to 9 AM, 3 PM, 9 PM") { stored = "" }
+            }
+        } header: {
+            Text("Quick Times")
+        } footer: {
+            Text("One-tap times under a to-do's deadline. Swipe left to remove one.")
+        }
+    }
+
+    private func save(_ list: [Int]) {
+        stored = AppSettings.formatQuickTimes(AppSettings.parseQuickTimes(AppSettings.formatQuickTimes(list)))
+    }
+
+    /// An hour after the last time that isn't taken yet.
+    private func nextFreeTime() -> Int {
+        var candidate = ((times.last ?? 540) + 60) % 1440
+        while times.contains(candidate) { candidate = (candidate + 60) % 1440 }
+        return candidate
+    }
+}
+
+private struct QuickTimeRow: View {
+    let minutes: Int
+    let onChange: (Int) -> Void
+    @State private var date: Date
+
+    init(minutes: Int, onChange: @escaping (Int) -> Void) {
+        self.minutes = minutes
+        self.onChange = onChange
+        _date = State(initialValue: Calendar.current.date(
+            bySettingHour: minutes / 60, minute: minutes % 60, second: 0, of: .now) ?? .now)
+    }
+
+    var body: some View {
+        HStack {
+            Text("Time")
+            Spacer()
+            IntervalDatePicker(selection: $date, mode: .time, style: .compact, minuteInterval: 5)
+        }
+        .onChange(of: date) { _, newDate in
+            let c = Calendar.current.dateComponents([.hour, .minute], from: newDate)
+            onChange((c.hour ?? 0) * 60 + (c.minute ?? 0))
         }
     }
 }
@@ -304,6 +381,7 @@ private struct TalkSettingsSection: View {
     @AppStorage(TalkSettings.wakeWordEnabledKey) private var wakeWordEnabled = false
     @AppStorage(TalkSettings.wakeWordKey) private var wakeWord = TalkSettings.defaultWakeWord
     @AppStorage(TalkSettings.speakRepliesKey) private var speakReplies = true
+    @AppStorage(TalkSettings.customInstructionsKey) private var customInstructions = ""
     let onCleared: () -> Void
 
     var body: some View {
@@ -331,6 +409,15 @@ private struct TalkSettingsSection: View {
             Toggle("Speak Replies", isOn: $speakReplies)
         } footer: {
             Text("Reads replies aloud during Live Talk.")
+        }
+
+        Section {
+            TextField("e.g. Call me Sam. Keep answers very short.", text: $customInstructions, axis: .vertical)
+                .lineLimit(3...8)
+        } header: {
+            Text("Custom Instructions")
+        } footer: {
+            Text("Applied to every conversation and reply.")
         }
 
         Section {

@@ -41,6 +41,26 @@ enum AppSettings {
     /// An extra reminder this long before the deadline (0 = off).
     static var todoEarlyReminderMinutes: Int { int(todoEarlyReminderMinutesKey, default: 0) }
 
+    /// Quick times for deadlines, as minutes after midnight, stored as "540,900,1260".
+    static let todoQuickTimesKey = "settings.todo.quickTimes"
+    /// 9 AM, 3 PM and 9 PM: morning, afternoon and night.
+    static let defaultTodoQuickTimes = [9 * 60, 15 * 60, 21 * 60]
+    static let maxTodoQuickTimes = 5
+    static var todoQuickTimes: [Int] { parseQuickTimes(store.string(forKey: todoQuickTimesKey)) }
+
+    /// Sorted, without duplicates; the defaults when empty or unreadable.
+    static func parseQuickTimes(_ text: String?) -> [Int] {
+        let values = (text ?? "").split(separator: ",")
+            .compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+            .filter { (0..<1440).contains($0) }
+        let unique = Array(Set(values)).sorted()
+        return unique.isEmpty ? defaultTodoQuickTimes : Array(unique.prefix(maxTodoQuickTimes))
+    }
+
+    static func formatQuickTimes(_ minutes: [Int]) -> String {
+        minutes.map(String.init).joined(separator: ",")
+    }
+
     // MARK: Widget (Up Next)
 
     static let widgetShowsAlarmsKey = "settings.widget.alarms"

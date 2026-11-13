@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { SwipeRow } from '../components/SwipeRow'
 import { BottomAction, Section, Sheet, Switch, TabHeader, TimeWheel } from '../components/ui'
 import {
-  alarmTitle, countdown, dayDescription, nextAlarm, nextFire, repeatSummary, roundTo5, timeOf, timeParts, uid,
+  ALARM_SOUNDS, alarmTitle, countdown, dayDescription, nextAlarm, nextFire, repeatSummary, roundTo5, soundName, timeOf, timeParts, uid,
   weekdayInitial, type Alarm, type Weekday,
 } from '../logic/model'
 import { useStore } from '../logic/store'
@@ -89,6 +89,7 @@ function AlarmEditor({ alarm, onClose }: { alarm?: Alarm; onClose: () => void })
     id: uid(), hour: start.getHours(), minute: start.getMinutes(), label: '', weekdays: [], isEnabled: true,
   })
 
+  const [pickingSound, setPickingSound] = useState(false)
   const save = () => {
     const changed = !alarm || alarm.hour !== draft.hour || alarm.minute !== draft.minute || alarm.weekdays.join() !== draft.weekdays.join() || !alarm.isEnabled
     // A changed alarm is a new alarm: it forgets today's dismissal and can ring again today.
@@ -115,7 +116,21 @@ function AlarmEditor({ alarm, onClose }: { alarm?: Alarm; onClose: () => void })
       </Section>
       <Section>
         <div className="row"><span>Label</span><input className="input right" placeholder="Alarm" value={draft.label} onChange={(e) => setDraft((d) => ({ ...d, label: e.target.value }))} /></div>
+        <button className="row tappable" style={{ width: '100%', textAlign: 'left' }} onClick={() => setPickingSound(true)}>
+          <span className="grow">Sound</span><span className="muted">{soundName(draft.sound)} ›</span>
+        </button>
       </Section>
+      {pickingSound && (
+        <Sheet title="Sound" medium onClose={() => setPickingSound(false)} right={<button onClick={() => setPickingSound(false)}>Done</button>}>
+          <Section footer="In the app, tapping a sound plays a few seconds of it. This preview stays silent.">
+            {ALARM_SOUNDS.map((s) => (
+              <button key={s.id} className="row tappable" style={{ width: '100%', textAlign: 'left' }} onClick={() => setDraft((d) => ({ ...d, sound: s.id }))}>
+                <span className="grow">{s.name}</span>{(draft.sound ?? 'default') === s.id && <span className="orange">✓</span>}
+              </button>
+            ))}
+          </Section>
+        </Sheet>
+      )}
       {alarm && (
         <Section>
           <button className="row tappable red" style={{ width: '100%', justifyContent: 'center' }}

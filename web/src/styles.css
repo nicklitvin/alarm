@@ -131,7 +131,7 @@ select.ios { border: 0; background: transparent; color: var(--secondary); font-s
 .chip b { display: block; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .chip span { font-size: 11px; opacity: 0.8; white-space: nowrap; }
 .chip.selected { background: var(--orange); color: #fff; }
-.tod { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.tod { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
 .tod .chip { text-align: center; padding: 7px 2px; }
 .preset-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px 16px; }
 .preset { background: color-mix(in srgb, var(--orange) 14%, transparent); color: var(--orange); border-radius: 12px; padding: 10px; font-weight: 600; font-size: 15px; }
@@ -334,3 +334,17 @@ button.due { padding: 0; margin-top: 2px; }
 .ring-stop { width: 100%; padding: 18px; border-radius: 999px; background: rgba(255, 255, 255, 0.92); color: #ff5e3a; font-size: 20px; font-weight: 700; }
 
 :root[data-theme='dark'] .notif-actions, :root[data-theme='dark'] .notif-actions button + button { border-color: rgba(255, 255, 255, 0.15); }
+
+/* Centered alert (confirmations) */
+.alert-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.3); z-index: 90; display: grid; place-items: center; animation: fade 0.15s; }
+.alert { width: 270px; border-radius: 14px; background: var(--card); color: var(--label); overflow: hidden; text-align: center; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); }
+.alert-text { display: flex; flex-direction: column; gap: 4px; padding: 18px 16px 16px; font-size: 13px; }
+.alert-text b { font-size: 17px; }
+.alert-buttons { display: grid; grid-template-columns: 1fr 1fr; border-top: 0.5px solid var(--separator, rgba(60, 60, 67, 0.29)); }
+.alert-buttons button { padding: 12px; font-size: 17px; color: var(--orange); }
+.alert-buttons button + button { border-left: 0.5px solid var(--separator, rgba(60, 60, 67, 0.29)); font-weight: 600; }
+.alert-buttons .red { color: var(--red); }
+textarea.instructions { width: 100%; border: none; outline: none; resize: vertical; background: transparent; font: inherit; color: inherit; }
+.icon-btn:disabled { opacity: 0.35; }
+.time-pill { -webkit-appearance: none; appearance: none; border: none; outline: none; background: var(--fill); color: var(--label); border-radius: 8px; padding: 6px 10px; font: inherit; font-size: 16px; }
+.time-pill::-webkit-calendar-picker-indicator { display: none; }

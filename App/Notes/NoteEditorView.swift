@@ -12,6 +12,7 @@ struct NoteEditorView: View {
     @State private var loaded = false
     @State private var copied = false
     @State private var confirmDelete = false
+    @State private var confirmClear = false
     @FocusState private var focus: Field?
 
     private enum Field { case title, body }
@@ -48,7 +49,7 @@ struct NoteEditorView: View {
         .padding(.top, 8)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            // Copy All and Delete as plain icons.
+            // Copy All, Clear and Delete as plain icons.
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     UIPasteboard.general.string = Note(title: title, body: text).copyText
@@ -66,6 +67,15 @@ struct NoteEditorView: View {
                 .disabled(title.isEmpty && text.isEmpty)
             }
             ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    confirmClear = true
+                } label: {
+                    Image(systemName: "eraser")
+                }
+                .accessibilityLabel("Clear Note")
+                .disabled(text.isEmpty)
+            }
+            ToolbarItem(placement: .topBarTrailing) {
                 Button(role: .destructive) {
                     confirmDelete = true
                 } label: {
@@ -78,11 +88,21 @@ struct NoteEditorView: View {
                 Button("Done") { focus = nil }.fontWeight(.semibold)
             }
         }
-        .confirmationDialog("Delete this note?", isPresented: $confirmDelete, titleVisibility: .visible) {
-            Button("Delete Note", role: .destructive) {
+        // Alerts (centered, no popover arrow) to confirm Clear and Delete.
+        .alert("Clear this note?", isPresented: $confirmClear) {
+            Button("Clear", role: .destructive) { text = "" }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Everything you wrote is removed. The title stays.")
+        }
+        .alert("Delete this note?", isPresented: $confirmDelete) {
+            Button("Delete", role: .destructive) {
                 controller.delete(noteID)
                 dismiss()
             }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This can't be undone.")
         }
         .onAppear(perform: load)
         .onChange(of: title) { save() }

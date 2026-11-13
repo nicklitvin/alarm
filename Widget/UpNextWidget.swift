@@ -80,16 +80,19 @@ struct UpNextWidgetView: View {
 
     // Medium / large: a list with the Ask button in the bottom-right corner.
     private var list: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 4) {
             header
             if entry.items.isEmpty {
                 Spacer(minLength: 0)
                 allClear
                 Spacer(minLength: 0)
             } else {
-                ForEach(entry.items.prefix(maxRows)) { item in
-                    UpNextRow(item: item, now: entry.date)
-                        .transition(.opacity.combined(with: .move(edge: .trailing)))
+                // No gaps between rows: every point of a row opens that row's item.
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(entry.items.prefix(maxRows)) { item in
+                        UpNextRow(item: item, now: entry.date, tapPadding: 4)
+                            .transition(.opacity.combined(with: .move(edge: .trailing)))
+                    }
                 }
                 Spacer(minLength: 0)
             }
@@ -114,7 +117,7 @@ struct UpNextWidgetView: View {
     }
 
     private var header: some View {
-        Label("Up Next", systemImage: "sparkles.rectangle.stack")
+        Text("Up Next")
             .font(.subheadline.weight(.semibold))
             .foregroundStyle(.orange)
     }
@@ -132,7 +135,6 @@ struct UpNextWidgetView: View {
         }
     }
 
-    /// "+N more" on the left, the Ask button in the bottom-right corner.
     /// "+N more" on the left, the ✦ (open Talk) button in the bottom-right corner. The small size
     /// skips ✦: iOS only lets a small widget have one tap target (the whole widget).
     private func footer(hidden: Int) -> some View {
@@ -158,7 +160,7 @@ struct UpNextWidgetView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         } else {
             VStack(alignment: .leading, spacing: 1) {
-                Label("Up Next", systemImage: "sparkles.rectangle.stack")
+                Text("Up Next")
                     .font(.system(size: 13, weight: .semibold))
                     .widgetAccentable()
                 Text("All clear")
@@ -185,7 +187,6 @@ struct UpNextWidgetView: View {
     }
 }
 
-/// Opens the system prompt at the top of the screen to ask the assistant.
 /// Opens Alarmie on the Talk tab. (Widgets can't show the system's type-a-request prompt,
 /// so the assistant is one tap away in the app instead.)
 private struct AskButton: View {
@@ -207,11 +208,13 @@ private struct UpNextRow: View {
     let now: Date
     var prominent = false
     var compactLockScreen = false
+    /// Extra tappable space above and below the text, so rows have no dead gaps between them.
+    var tapPadding: CGFloat = 0
 
     var body: some View {
-        HStack(alignment: .center, spacing: 8) {
+        HStack(alignment: .center, spacing: 0) {
             leading
-            // Tapping the text opens the item in the app; the circle and buttons do their own thing.
+            // Tapping the row opens the item in the app; the circle and buttons do their own thing.
             Link(destination: item.deepLink.url) {
                 HStack(spacing: 0) {
                     VStack(alignment: .leading, spacing: 0) {
@@ -225,10 +228,12 @@ private struct UpNextRow: View {
                     }
                     Spacer(minLength: 0)
                 }
+                .padding(.leading, 8)
+                .padding(.vertical, tapPadding)
                 .contentShape(Rectangle())
             }
             .foregroundStyle(.primary)
-            if !compactLockScreen { trailing }
+            if !compactLockScreen { trailing.padding(.leading, 8) }
         }
     }
 

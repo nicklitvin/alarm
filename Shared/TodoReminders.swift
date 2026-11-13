@@ -1,12 +1,13 @@
 import Foundation
 import UserNotifications
 
-/// A notification at each to-do's deadline, with "Done" and "Remind Me in 1 Hour" actions.
+/// A notification at each to-do's deadline, with "Done", "Remind Me in 1 Hour" and "Remind Me Tomorrow" actions.
 /// Shared so the widget can update a reminder when a to-do is checked off there.
 enum TodoReminders {
     static let categoryID = "TODO_DUE"
     static let doneActionID = "TODO_DONE"
     static let snoozeActionID = "TODO_SNOOZE"
+    static let snoozeDayActionID = "TODO_SNOOZE_DAY"
     static let todoIDKey = "todoID"
     private static let idPrefix = "todo."
     /// iOS allows 64 pending notifications per app; leave plenty of room for alarms.
@@ -20,6 +21,8 @@ enum TodoReminders {
                                      icon: UNNotificationActionIcon(systemImageName: "checkmark.circle")),
                 UNNotificationAction(identifier: snoozeActionID, title: "Remind Me in 1 Hour", options: [],
                                      icon: UNNotificationActionIcon(systemImageName: "clock.arrow.circlepath")),
+                UNNotificationAction(identifier: snoozeDayActionID, title: "Remind Me Tomorrow", options: [],
+                                     icon: UNNotificationActionIcon(systemImageName: "sunrise")),
             ],
             intentIdentifiers: [],
             options: []

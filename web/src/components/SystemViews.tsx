@@ -22,7 +22,7 @@ const VIEWS: { id: View; label: string }[] = [
 
 const linkFor = (item: UpNextItem): Link => {
   switch (item.kind) {
-    case 'alarmSoon': case 'nextAlarm': return { tab: 'alarms', id: item.alarm.id }
+    case 'alarmSoon': case 'nextAlarm': return { tab: 'alarms' }
     case 'timer': return { tab: 'timers' }
     case 'todo': return { tab: 'todos', id: item.todo.id }
   }
@@ -39,7 +39,7 @@ function useSystem() {
     ...s, alarms: s.alarms.map((a) => (a.id === id ? (a.weekdays.length ? { ...a, skippedOccurrence: date } : { ...a, isEnabled: false }) : a)),
   }))
   const complete = (id: string) => update((s) => ({ ...s, todos: s.todos.map((t) => (t.id === id ? { ...t, isDone: true, completedAt: Date.now() } : t)) }))
-  const snooze = (id: string) => update((s) => ({ ...s, todos: s.todos.map((t) => (t.id === id ? { ...t, due: Date.now() + 3600_000, isDone: false } : t)) }))
+  const snooze = (id: string, by: number) => update((s) => ({ ...s, todos: s.todos.map((t) => (t.id === id ? { ...t, due: Date.now() + by, isDone: false } : t)) }))
   const setTimer = (id: string, change: (t: TimerItem) => TimerItem | null) =>
     update((s) => ({ ...s, timers: s.timers.flatMap((t) => (t.id === id ? (change(t) ?? []) : [t])) }))
   return { ...store, next, within24h, items, dismiss, complete, snooze, setTimer }
@@ -122,7 +122,7 @@ function HomeScreen() {
     const rows = size === 'small' ? 1 : size === 'medium' ? 2 : 6
     return (
       <div className={`widget ${size}`} onClick={() => open(first ? linkFor(first) : { tab: 'todos' })}>
-        <div className="wh"><span>✦ Up Next</span></div>
+        <div className="wh"><span>Up Next</span></div>
         {items.length === 0 ? <div style={{ marginTop: 10 }}><b>All clear</b><div className="muted" style={{ fontSize: 12 }}>Nothing coming up.</div></div>
           : items.slice(0, rows).map((i) => <Row key={keyOf(i)} item={i} compact={size === 'small'} />)}
         <div className="foot"><span>{items.length > rows ? `+${items.length - rows} more` : ''}</span>
@@ -135,7 +135,7 @@ function HomeScreen() {
     <>
       <div className="home">
         <div className="widgets">
-          <div className="widget" onClick={() => open(next ? { tab: 'alarms', id: next.alarm.id } : { tab: 'alarms' })}>
+          <div className="widget" onClick={() => open(next ? { tab: 'alarms' } : { tab: 'alarms' })}>
             <div className="wh"><span>⏰</span><span className="muted" style={{ fontSize: 12 }}>{next ? dayDescription(next.date, now) : ''}</span></div>
             {next ? (
               <>
@@ -150,7 +150,7 @@ function HomeScreen() {
           {upNextWidget('large')}
         </div>
       </div>
-      <Caption>Next Alarm (small) and Up Next (small, medium, large). Tap an item to open it, tap a to-do's circle to check it off, ✦ opens Talk. Small widgets have one tap target, so they have no ✦.</Caption>
+      <Caption>Next Alarm (small) and Up Next (small, medium, large). Tapping an alarm or timer opens its tab, a to-do opens that to-do, tap a to-do's circle to check it off, ✦ opens Talk. Small widgets have one tap target, so they have no ✦.</Caption>
     </>
   )
 }
@@ -173,7 +173,7 @@ function LockScreen() {
         <div className="acc-inline">{soon ? `⏰ ${dayDescription(soon.date, now) === 'Today' ? '' : new Date(soon.date).toLocaleDateString([], { weekday: 'short' }) + ' '}${timeOf(soon.date)}` : 'zzz  No alarm today'}</div>
         <div className="big-time">{timeParts(d.getHours(), d.getMinutes()).time}</div>
         <div className="lock-row">
-          <button className="acc-circle" onClick={() => open(next ? { tab: 'alarms', id: next.alarm.id } : { tab: 'alarms' })} aria-label="Next alarm">
+          <button className="acc-circle" onClick={() => open(next ? { tab: 'alarms' } : { tab: 'alarms' })} aria-label="Next alarm">
             {soon ? <div><div style={{ fontSize: 11 }}>⏰</div><div style={{ fontSize: 17 }}>{bigTime(soon.date).time}</div><div style={{ fontSize: 9, opacity: 0.8 }}>{bigTime(soon.date).period}</div></div>
               : <div style={{ fontSize: 22 }}>zzz</div>}
           </button>
@@ -182,7 +182,7 @@ function LockScreen() {
           </button>
         </div>
         <div className="lock-row" style={{ marginTop: 10 }}>
-          <button className="acc-rect wide" onClick={() => open(next ? { tab: 'alarms', id: next.alarm.id } : { tab: 'alarms' })}>
+          <button className="acc-rect wide" onClick={() => open(next ? { tab: 'alarms' } : { tab: 'alarms' })}>
             {soon ? (
               <>
                 <b>⏰ {alarmTitle(soon.alarm)}</b>
@@ -237,7 +237,7 @@ function Notifications() {
             <div className="notif-text">
               <div className="notif-top"><b>Alarm in {ring - now < s.alarmHeadsUpMinutes * 60_000 ? `${Math.max(1, Math.ceil((ring - now) / 60_000))} min` : leadTimeName(s.alarmHeadsUpMinutes)}</b><span>now</span></div>
               {alarm?.label && <div className="notif-sub">{alarmTitle(alarm)}</div>}
-              <div>Rings at {timeOf(ring)}. {s.alarmTapToDismiss ? 'Tap to dismiss it.' : 'Touch and hold to dismiss it.'}</div>
+              <div>Rings at {timeOf(ring)}</div>
             </div>
           </button>
           {expanded === 'alarm' ? (
@@ -262,7 +262,8 @@ function Notifications() {
             {expanded === 'todo' ? (
               <div className="notif-actions">
                 <button onClick={() => { complete(todo.id); setExpanded(null) }}>✓ Mark as Done</button>
-                <button onClick={() => { snooze(todo.id); setExpanded(null) }}>↻ Remind Me in 1 Hour</button>
+                <button onClick={() => { snooze(todo.id, 3600_000); setExpanded(null) }}>↻ Remind Me in 1 Hour</button>
+                <button onClick={() => { snooze(todo.id, 24 * 3600_000); setExpanded(null) }}>☀︎ Remind Me Tomorrow</button>
               </div>
             ) : (
               <button className="notif-hint" onClick={() => setExpanded('todo')}>Touch and hold to see actions ›</button>

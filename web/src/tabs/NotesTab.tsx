@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { SwipeRow } from '../components/SwipeRow'
-import { BottomAction, Section, TabHeader } from '../components/ui'
+import { Alert, BottomAction, Section, TabHeader } from '../components/ui'
 import { noteCopyText, notePreview, noteTitle, reorderNotes, sortNotes, uid, type Note } from '../logic/model'
 import { useStore } from '../logic/store'
 
@@ -130,6 +130,7 @@ export function NotesTab() {
 function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
   const { update } = useStore()
   const { copied, copy } = useCopy()
+  const [confirm, setConfirm] = useState<'clear' | 'delete' | null>(null)
   const body = useRef<HTMLTextAreaElement>(null)
 
   // The text area grows with its text, so the page scrolls along as you type (instead of the text
@@ -155,13 +156,14 @@ function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
         <button className="text-btn" style={{ fontSize: 17 }} onClick={onBack}>‹ Notes</button>
         <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
           <button className="icon-btn" aria-label={copied === note.id ? 'Copied' : 'Copy All'} title="Copy All" onClick={() => copy(note)}>{copied === note.id ? '✓' : '⧉'}</button>
-          <button className="icon-btn red" aria-label="Delete Note" title="Delete Note" onClick={() => {
-            if (!confirm('Delete this note?')) return
-            update((d) => ({ ...d, notes: d.notes.filter((n) => n.id !== note.id) }))
-            onBack()
-          }}>🗑︎</button>
+          <button className="icon-btn" aria-label="Clear Note" title="Clear Note" disabled={!note.body} onClick={() => setConfirm('clear')}>⌫</button>
+          <button className="icon-btn red" aria-label="Delete Note" title="Delete Note" onClick={() => setConfirm('delete')}>🗑︎</button>
         </div>
       </div>
+      {confirm === 'clear' && <Alert title="Clear this note?" message="Everything you wrote is removed. The title stays." action="Clear"
+        onCancel={() => setConfirm(null)} onConfirm={() => { edit({ body: '' }); setConfirm(null) }} />}
+      {confirm === 'delete' && <Alert title="Delete this note?" message="This can't be undone." action="Delete"
+        onCancel={() => setConfirm(null)} onConfirm={() => { update((d) => ({ ...d, notes: d.notes.filter((n) => n.id !== note.id) })); onBack() }} />}
       {/* Tapping the empty space below the text keeps writing at the end. */}
       <div className="note-editor" style={{ background: 'var(--bg)', minHeight: '100%' }}
         onClick={(e) => { if (e.target === e.currentTarget) { const t = body.current; t?.focus(); t?.setSelectionRange(t.value.length, t.value.length) } }}>

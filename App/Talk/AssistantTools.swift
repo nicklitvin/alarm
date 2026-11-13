@@ -154,7 +154,7 @@ struct CreateAlarmTool: Tool {
 
 struct EditAlarmTool: Tool {
     let name = "editAlarm"
-    let description = "Changes an existing alarm (time, days, label), turns it on or off, or deletes it."
+    let description = "Changes an existing alarm (time, days, label, sound), turns it on or off, or deletes it."
 
     @Generable
     enum Action {
@@ -179,6 +179,8 @@ struct EditAlarmTool: Tool {
         var removeDays: String?
         @Guide(description: "New label")
         var newLabel: String?
+        @Guide(description: "New sound: Default, Chime, Beacon, Pulse, Rise or Bells")
+        var newSound: String?
     }
 
     func call(arguments: Arguments) async throws -> String {
@@ -241,10 +243,17 @@ struct EditAlarmTool: Tool {
                 if let label = arguments.newLabel?.trimmingCharacters(in: .whitespacesAndNewlines), !label.isEmpty {
                     updated.label = label
                 }
+                if let soundText = arguments.newSound?.trimmingCharacters(in: .whitespacesAndNewlines), !soundText.isEmpty {
+                    guard let sound = AlarmSound(name: soundText) else {
+                        return "Nothing changed: there's no sound called \"\(soundText)\". Sounds: "
+                            + AlarmSound.allCases.map(\.name).joined(separator: ", ") + "."
+                    }
+                    updated.sound = sound
+                }
 
-                guard updated.hour != alarm.hour || updated.minute != alarm.minute
-                        || updated.weekdays != alarm.weekdays || updated.label != alarm.label || !alarm.isEnabled else {
-                    return "Nothing to change. Say the new time, days or label."
+                guard updated.hour != alarm.hour || updated.minute != alarm.minute || updated.weekdays != alarm.weekdays
+                        || updated.label != alarm.label || updated.sound != alarm.sound || !alarm.isEnabled else {
+                    return "Nothing to change. Say the new time, days, label or sound."
                 }
                 controller.save(updated)
                 TalkModel.shared.addEvent("Alarm updated · \(updated.timeString) · \(updated.repeatSummary)", systemImage: "alarm", link: link)
@@ -521,6 +530,7 @@ enum AssistantText {
     static func describe(_ alarm: AlarmItem) -> String {
         var parts = [alarm.timeString, alarm.repeatSummary]
         if !alarm.label.isEmpty { parts.append("\"\(alarm.label)\"") }
+        if alarm.sound != .default { parts.append("sound \(alarm.sound.name)") }
         parts.append(alarm.isEnabled ? "on" : "off")
         return parts.joined(separator: ", ")
     }
