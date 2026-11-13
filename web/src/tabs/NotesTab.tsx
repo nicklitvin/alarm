@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { SwipeRow } from '../components/SwipeRow'
 import { Alert, BottomAction, Section, TabHeader } from '../components/ui'
-import { noteCopyText, notePreview, noteTitle, reorderNotes, sortNotes, uid, type Note } from '../logic/model'
+import { checklistProgress, checklistReturn, lineBounds, lineKind, noteCopyText, notePreview, noteTitle, reorderNotes, sortNotes, toggleChecklist, toggleItem, uid, type Note } from '../logic/model'
 import { useStore } from '../logic/store'
+
+const progressLabel = (n: Note) => {
+  const p = checklistProgress(n.body)
+  return p ? <span style={{ color: p.done === p.total ? 'var(--orange)' : undefined }}> · ☑ {p.done}/{p.total}</span> : null
+}
 
 const ago = (ms: number, now: number) => {
   const m = Math.round((now - ms) / 60000)
@@ -88,7 +93,7 @@ export function NotesTab() {
   const info = (n: Note) => (
     <div className="grow">
       <div className="ellipsis" style={{ fontWeight: 600 }}>{noteTitle(n)}</div>
-      <div className="sub ellipsis">{ago(n.updatedAt, now)} <span style={{ color: 'var(--tertiary)' }}>{notePreview(n)}</span></div>
+      <div className="sub ellipsis">{ago(n.updatedAt, now)}{progressLabel(n)} <span style={{ color: 'var(--tertiary)' }}>{notePreview(n)}</span></div>
     </div>
   )
 
@@ -151,6 +156,20 @@ function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
 
   const edit = (changes: Partial<Note>) =>
     update((d) => ({ ...d, notes: d.notes.map((n) => (n.id === note.id ? { ...n, ...changes, updatedAt: Date.now() } : n)) }))
+  const setBody = (text: string, caret: number) => {
+    edit({ body: text })
+    requestAnimationFrame(() => { const t = body.current; if (t) { t.focus(); t.setSelectionRange(caret, caret) } })
+  }
+  const checklist = () => {
+    const t = body.current
+    if (!t) return
+    const focused = document.activeElement === t
+    let text = t.value
+    let start = t.selectionStart, end = t.selectionEnd
+    if (!focused) { if (text && !text.endsWith('\n')) text += '\n'; start = end = text.length }
+    const r = toggleChecklist(text, start, end)
+    setBody(r.text, r.caret)
+  }
   return (
     <>
       <div className="header plain" style={{ background: 'var(--bg)', justifyContent: 'space-between' }}>
@@ -170,15 +189,41 @@ function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
         onFocus={() => setTyping(true)} onBlur={() => setTyping(false)}
         onClick={(e) => { if (e.target === e.currentTarget) { const t = body.current; t?.focus(); t?.setSelectionRange(t.value.length, t.value.length) } }}>
         <input autoFocus={!note.title && !note.body} placeholder="Title" value={note.title} onChange={(e) => edit({ title: e.target.value })} />
-        <textarea ref={body} placeholder="Start writing…" value={note.body} onChange={(e) => edit({ body: e.target.value })} />
-      </div>
-      {/* While typing: a round checkmark that ends editing, floating well above the keyboard. */}
-      {typing && (
-        <div className="float-check-wrap">
-          <button className="float-check" aria-label="Done" onMouseDown={(e) => e.preventDefault()}
-            onClick={() => (document.activeElement as HTMLElement | null)?.blur()}>✓</button>
+        {/* Checklist boxes and strikethrough are drawn by a copy of the text behind the (transparent) textarea. */}
+        <div className="note-body">
+          <div className="note-backdrop" aria-hidden>
+            {note.body.split('\n').map((line, i) => {
+              const kind = lineKind(line)
+              return <div key={i}>{kind === 'plain' ? (line || '\u200b')
+                : <><span className="box">{line[0]}</span> <span className={kind === 'checked' ? 'done' : ''}>{line.slice(2) || '\u200b'}</span></>}</div>
+            })}
+          </div>
+          <textarea ref={body} placeholder="Start writing…" value={note.body} onChange={(e) => edit({ body: e.target.value })}
+            onKeyDown={(e) => {
+              const t = e.currentTarget
+              if (e.key !== 'Enter' || t.selectionStart !== t.selectionEnd) return
+              const r = checklistReturn(t.value, t.selectionStart)
+              if (!r) return
+              e.preventDefault()
+              setBody(r.text, r.caret)
+            }}
+            onClick={(e) => {
+              // A click on a box (the first character of an item) checks it off.
+              const t = e.currentTarget
+              const at = t.selectionStart
+              const [s] = lineBounds(t.value, at)
+              if (t.selectionStart !== t.selectionEnd || at - s > 1) return
+              const toggled = toggleItem(t.value, s)
+              if (toggled !== null) setBody(toggled, s + 2)
+            }} />
         </div>
-      )}
+      </div>
+      {/* Floating above the keyboard: the checklist button, and while typing a checkmark that finishes. */}
+      <div className="float-check-wrap">
+        <button className="float-list" aria-label="Checklist" onMouseDown={(e) => e.preventDefault()} onClick={checklist}>☑︎</button>
+        {typing && <button className="float-check" aria-label="Done" onMouseDown={(e) => e.preventDefault()}
+          onClick={() => (document.activeElement as HTMLElement | null)?.blur()}>✓</button>}
+      </div>
     </>
   )
 }

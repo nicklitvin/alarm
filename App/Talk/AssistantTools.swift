@@ -398,7 +398,7 @@ struct EditTodoTool: Tool {
 
 struct ReadNoteTool: Tool {
     let name = "readNote"
-    let description = "Returns the full text of one of the user's notes, to answer questions about it or use its contents."
+    let description = "Returns the full text of one of the user's notes, to answer questions about it or use its contents. Lines starting with ☐ are unchecked checklist items, ☑ are checked."
 
     @Generable
     struct Arguments {
@@ -437,7 +437,7 @@ struct WriteNoteTool: Tool {
         var action: Action
         @Guide(description: "For create: the new title. Otherwise: which note, by title or words from it.")
         var note: String
-        @Guide(description: "The text to write (create, append, replace) or the new title (rename)")
+        @Guide(description: "The text to write (create, append, replace) or the new title (rename). For a checklist or to-do list in a note, start each item's line with ☐ (or ☑ when done).")
         var text: String
     }
 
@@ -467,8 +467,8 @@ struct WriteNoteTool: Tool {
                 return ""
             case .append:
                 guard !text.isEmpty else { return "Nothing to add." }
-                let trimmedBody = note.body.trimmingCharacters(in: .whitespacesAndNewlines)
-                note.body = trimmedBody.isEmpty ? text : trimmedBody + "\n" + text
+                // Adding to a checklist adds checklist items.
+                note.body = NoteChecklist.appending(text, to: note.body)
             case .replace:
                 note.body = text
             case .rename:

@@ -153,6 +153,12 @@ private struct NoteRow: View {
                 HStack(spacing: 6) {
                     Text(note.updatedAt.formatted(.relative(presentation: .named)))
                         .foregroundStyle(.secondary)
+                    if let progress = NoteChecklist.progress(of: note.body) {
+                        // Notes with a checklist show how far along it is.
+                        Label("\(progress.done)/\(progress.total)", systemImage: "checklist")
+                            .labelStyle(.titleAndIcon)
+                            .foregroundStyle(progress.done == progress.total ? Color.orange : Color.secondary)
+                    }
                     if !note.preview.isEmpty {
                         Text(note.preview)
                             .foregroundStyle(.tertiary)

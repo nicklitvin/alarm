@@ -13,9 +13,13 @@ struct NoteEditorView: View {
     @State private var copied = false
     @State private var confirmDelete = false
     @State private var confirmClear = false
+    @State private var bodyEditing = false
+    @State private var commands = NoteEditorCommands()
     @FocusState private var focus: Field?
 
-    private enum Field { case title, body }
+    private enum Field { case title }
+
+    private var isTyping: Bool { focus != nil || bodyEditing }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -23,11 +27,13 @@ struct NoteEditorView: View {
                 .font(.title.weight(.bold))
                 .focused($focus, equals: .title)
                 .submitLabel(.next)
-                .onSubmit { focus = .body }
+                .onSubmit {
+                    focus = nil
+                    bodyEditing = true
+                }
 
-            // A real text editor: it fills the rest of the screen (tap anywhere below the text to
-            // keep writing), scrolls to follow the cursor, and leaves room at the bottom so the
-            // floating checkmark button never covers the last lines.
+            // The body fills the rest of the screen (tap anywhere below the text to keep writing),
+            // scrolls to follow the cursor, and draws checklist items as tappable boxes.
             ZStack(alignment: .topLeading) {
                 if text.isEmpty {
                     Text("Start writing…")
@@ -35,38 +41,49 @@ struct NoteEditorView: View {
                         .padding(.top, 8)
                         .allowsHitTesting(false)
                 }
-                TextEditor(text: $text)
-                    .font(.body)
-                    .focused($focus, equals: .body)
-                    .scrollContentBackground(.hidden)
-                    .contentMargins(.bottom, 120, for: .scrollContent)
-                    .scrollDismissesKeyboard(.interactively)
-                    .padding(.leading, -5) // the editor's built-in inset, so text lines up with the title
+                NoteBodyEditor(text: $text, isEditing: $bodyEditing, commands: commands)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .padding(.horizontal, 20)
         .padding(.top, 8)
-        // While typing: a round checkmark button, floating with room to spare above the keyboard.
+        // Floating above the keyboard: the checklist button, and while typing a round checkmark
+        // that finishes.
         .overlay(alignment: .bottomTrailing) {
-            if focus != nil {
+            HStack(spacing: 12) {
                 Button {
                     focus = nil
+                    commands.toggleChecklist()
                 } label: {
-                    Image(systemName: "checkmark")
+                    Image(systemName: "checklist")
                         .font(.title3.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.orange)
                         .frame(width: 50, height: 50)
-                        .background(Circle().fill(Color.orange.gradient))
-                        .shadow(color: .black.opacity(0.15), radius: 6, y: 2)
+                        .background(Circle().fill(.regularMaterial))
+                        .shadow(color: .black.opacity(0.12), radius: 6, y: 2)
                 }
-                .accessibilityLabel("Done")
-                .padding(.trailing, 20)
-                .padding(.bottom, 20)
-                .transition(.scale.combined(with: .opacity))
+                .accessibilityLabel("Checklist")
+
+                if isTyping {
+                    Button {
+                        focus = nil
+                        bodyEditing = false
+                    } label: {
+                        Image(systemName: "checkmark")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 50, height: 50)
+                            .background(Circle().fill(Color.orange.gradient))
+                            .shadow(color: .black.opacity(0.15), radius: 6, y: 2)
+                    }
+                    .accessibilityLabel("Done")
+                    .transition(.scale.combined(with: .opacity))
+                }
             }
+            .padding(.trailing, 20)
+            .padding(.bottom, 20)
         }
-        .animation(.snappy, value: focus != nil)
+        .animation(.snappy, value: isTyping)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             // Copy All, Clear and Delete as plain icons.

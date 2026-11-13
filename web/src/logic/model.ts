@@ -333,9 +333,59 @@ export function applyQuickTime(date: number, minutes: number, now: number) {
 export const noteTitle = (n: Note) => n.title.trim() || n.body.split('\n').find((l) => l.trim())?.trim() || 'New Note'
 
 export function notePreview(n: Note) {
-  const lines = n.body.split('\n').map((l) => l.trim()).filter(Boolean)
+  const lines = n.body.split('\n').map((l) => (l.startsWith('☐ ') || l.startsWith('☑ ') ? l.slice(2) : l).trim()).filter(Boolean)
   if (!n.title.trim() && lines.length) lines.shift()
   return lines.join(' ')
+}
+
+// Checklists in notes (NoteChecklist in App/Notes/Note.swift): "☐ " to do, "☑ " done.
+export const UNCHECKED = '☐ '
+export const CHECKED = '☑ '
+export type LineKind = 'plain' | 'unchecked' | 'checked'
+export const lineKind = (line: string): LineKind => line.startsWith(UNCHECKED) ? 'unchecked' : line.startsWith(CHECKED) ? 'checked' : 'plain'
+
+/** [start, end) of the line containing `at`, without its line break. */
+export function lineBounds(text: string, at: number): [number, number] {
+  const start = text.lastIndexOf('\n', Math.max(0, at - 1)) + 1
+  const nl = text.indexOf('\n', at)
+  return [at === 0 ? 0 : start, nl === -1 ? text.length : nl]
+}
+
+export function toggleItem(text: string, at: number): string | null {
+  const [s, e] = lineBounds(text, at)
+  const kind = lineKind(text.slice(s, e))
+  if (kind === 'plain') return null
+  return text.slice(0, s) + (kind === 'unchecked' ? CHECKED : UNCHECKED) + text.slice(s + 2)
+}
+
+export function toggleChecklist(text: string, selStart: number, selEnd: number): { text: string; caret: number } {
+  const [s] = lineBounds(text, selStart)
+  const [, e] = lineBounds(text, selEnd)
+  const lines = text.slice(s, e).split('\n')
+  const allItems = lines.every((l) => lineKind(l) !== 'plain')
+  let delta = 0
+  const changed = lines.map((l) => {
+    if (allItems) { delta -= 2; return l.slice(2) }
+    if (lineKind(l) !== 'plain') return l
+    delta += 2
+    return UNCHECKED + l
+  })
+  const out = text.slice(0, s) + changed.join('\n') + text.slice(e)
+  return { text: out, caret: Math.min(out.length, Math.max(s, selEnd + delta)) }
+}
+
+/** Return on an item starts the next one; on an empty item it ends the checklist. */
+export function checklistReturn(text: string, at: number): { text: string; caret: number } | null {
+  const [s, e] = lineBounds(text, at)
+  const line = text.slice(s, e)
+  if (lineKind(line) === 'plain' || at < s + 2) return null
+  if (!line.slice(2).trim()) return { text: text.slice(0, s) + text.slice(e), caret: s }
+  return { text: text.slice(0, at) + '\n' + UNCHECKED + text.slice(at), caret: at + 3 }
+}
+
+export function checklistProgress(body: string) {
+  const kinds = body.split('\n').map(lineKind).filter((k) => k !== 'plain')
+  return kinds.length ? { done: kinds.filter((k) => k === 'checked').length, total: kinds.length } : null
 }
 
 export const noteCopyText = (n: Note) => [n.title.trim(), n.body.trim()].filter(Boolean).join('\n\n')

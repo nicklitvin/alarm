@@ -406,5 +406,24 @@ if case .todo(let t)? = lingering.first?.kind { check(t.isDone, "…shown as don
 check(todoTitles(UpNext.items(alarms: [], todos: [checkedOff, noDue], timers: [], now: unNow.addingTimeInterval(3))) == ["No deadline"], "then it leaves")
 check(UpNext.changeDates(alarms: [], todos: [checkedOff], timers: [], now: unNow).contains(unNow.addingTimeInterval(UpNext.completedLinger)), "widget refreshes when the check is done showing")
 
+// Note checklists.
+let list = "Groceries\n☐ milk\n☑ eggs"
+check(NoteChecklist.toggleItem(in: list, at: 11) == "Groceries\n☑ milk\n☑ eggs", "tapping an item checks it")
+check(NoteChecklist.toggleItem(in: list, at: 18) == "Groceries\n☐ milk\n☐ eggs", "tapping a done item unchecks it")
+check(NoteChecklist.toggleItem(in: list, at: 2) == nil, "plain lines aren't items")
+let made = NoteChecklist.toggleChecklist(in: "a\nb", selection: NSRange(location: 0, length: 3))
+check(made.text == "☐ a\n☐ b" && made.selection.location == 7, "checklist button turns lines into items")
+check(NoteChecklist.toggleChecklist(in: "☐ a\n☑ b", selection: NSRange(location: 0, length: 7)).text == "a\nb", "and back into plain text")
+check(NoteChecklist.toggleChecklist(in: "", selection: NSRange(location: 0, length: 0)).text == "☐ ", "checklist button on an empty note")
+let afterReturn = NoteChecklist.handleReturn(in: "☐ milk", at: 6)
+check(afterReturn?.text == "☐ milk\n☐ " && afterReturn?.caret == 9, "Return on an item starts the next one")
+check(NoteChecklist.handleReturn(in: "☐ milk\n☐ ", at: 9)?.text == "☐ milk\n", "Return on an empty item ends the checklist")
+check(NoteChecklist.handleReturn(in: "plain", at: 5) == nil, "Return on plain text is a normal line break")
+check(NoteChecklist.appending("bread", to: "☐ milk") == "☐ milk\n☐ bread", "adding to a checklist note adds an item")
+check(NoteChecklist.appending("- bread", to: "☐ milk") == "☐ milk\n☐ bread", "list dashes become items")
+check(NoteChecklist.appending("bread", to: "Shopping") == "Shopping\nbread", "adding to plain text stays plain")
+check(NoteChecklist.progress(of: list).map { "\($0.done)/\($0.total)" } == "1/2", "checklist progress")
+check(NoteChecklist.lines(in: list).map(\.kind) == [.plain, .unchecked, .checked], "line kinds for styling")
+
 print(failures == 0 ? "\nALL PASSED" : "\n\(failures) FAILED")
 exit(failures == 0 ? 0 : 1)

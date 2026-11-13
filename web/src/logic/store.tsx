@@ -49,7 +49,7 @@ export function seedData(now = Date.now()): AppData {
       { id: uid(), title: 'Buy groceries', details: '', isDone: true, completedAt: now - hour, createdAt: now - 20 * hour },
     ],
     notes: [
-      { id: uid(), title: 'Packing list', body: 'Socks\nCharger\nPassport\nToothbrush', createdAt: now - 50 * hour, updatedAt: now - hour, isPinned: true, sortIndex: 0 },
+      { id: uid(), title: 'Packing list', body: '☑ Socks\n☐ Charger\n☐ Passport\n☐ Toothbrush', createdAt: now - 50 * hour, updatedAt: now - hour, isPinned: true, sortIndex: 0 },
       { id: uid(), title: '', body: 'Groceries\nMilk\nEggs\nCoffee', createdAt: now - 30 * hour, updatedAt: now - 5 * hour, isPinned: false, sortIndex: 1 },
       { id: uid(), title: 'Meeting with Sam', body: 'Budget review and hiring plan.\nFollow up next week.', createdAt: now - 80 * hour, updatedAt: now - 26 * hour, isPinned: false, sortIndex: 2 },
     ],

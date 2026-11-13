@@ -1,6 +1,19 @@
 {
   "releases": [
     {
+      "version": "1.16.0",
+      "build": 23,
+      "date": "2026-11-13",
+      "title": "Checklists in Notes",
+      "notes": [
+        "Make to-do lists inside notes: tap the checklist button to turn lines into checklist items.",
+        "Tap a box to check an item off. Done items are crossed out.",
+        "Press Return on an item to start the next one, or Return on an empty item to finish the list.",
+        "The Notes list shows how many items are checked off, like 2/5.",
+        "Ask the assistant to add to a checklist (\"add sunscreen to my packing list\") and it adds a new item."
+      ]
+    },
+    {
       "version": "1.15.0",
       "build": 22,
       "date": "2026-11-13",
