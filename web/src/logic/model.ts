@@ -315,6 +315,11 @@ export function quickTimeLabel(minutes: number) {
   return `${minutes % 60 === 0 ? time.replace(':00', '') : time} ${period}`
 }
 
+/** The next of your quick times from now (QuickTime.nextDefault). */
+export function nextQuickTime(now: number, times: number[] | undefined) {
+  return Math.min(...cleanQuickTimes(times).map((m) => applyQuickTime(now, m, now)))
+}
+
 /** Keep the day, set the time; if that's already past, the next day. */
 export function applyQuickTime(date: number, minutes: number, now: number) {
   const d = new Date(date)

@@ -1,6 +1,24 @@
 {
   "releases": [
     {
+      "version": "1.15.0",
+      "build": 22,
+      "date": "2026-11-13",
+      "title": "Simpler To-Dos & Talk Popup",
+      "notes": [
+        "New To-Do adds an empty row to the list, ready to type, with no pop-up. Press Return or tap anywhere else when you're done.",
+        "The To-Do list is now a simple list on the gray background, without sections. Completed to-dos sit in a compact list at the bottom.",
+        "Pressing Return or tapping elsewhere now always finishes editing a to-do.",
+        "Deadlines use your quick times from To-Do settings, and you can still pick any date and time.",
+        "Fixed the deadline date and time not showing and not responding to taps.",
+        "Quick times in settings sit on one row and are never cut off. Tap one to change or remove it.",
+        "The Live Talk button in Control Center opens a pop-up at the top of the screen with your conversation, where you can type to the assistant without opening the app.",
+        "The Up Next widget shows how many to-dos you have next to its title and uses its full height. The ✦ button stays in the corner.",
+        "In a note, Done is now a round checkmark button with more space above the keyboard.",
+        "Notes no longer jump up when you open the Notes tab."
+      ]
+    },
+    {
       "version": "1.14.0",
       "build": 21,
       "date": "2026-11-13",

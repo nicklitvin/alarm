@@ -184,27 +184,37 @@ export function Alert({ title, message, action, onConfirm, onCancel }: {
   )
 }
 
-const pad2 = (n: number) => String(n).padStart(2, '0')
 
-/** To-Do settings → Quick Times. */
+/** To-Do settings → Quick Times: all on one row. Tap one to change or remove it, + to add. */
 function QuickTimesSection() {
   const { data, update } = useStore()
   const times = cleanQuickTimes(data.settings.todoQuickTimes)
+  const [editing, setEditing] = useState<{ original?: number; value: number } | null>(null)
   const save = (list: number[]) => update((d) => ({ ...d, settings: { ...d.settings, todoQuickTimes: cleanQuickTimes(list) } }))
-  const nextFree = () => { let c = ((times[times.length - 1] ?? 540) + 60) % 1440; while (times.includes(c)) c = (c + 60) % 1440; return c }
   const isDefault = times.join() === DEFAULT_QUICK_TIMES.join()
+  const done = (value: number | null) => {
+    if (!editing) return
+    const rest = times.filter((x) => x !== editing.original)
+    save(value === null ? rest : [...rest, value])
+    setEditing(null)
+  }
   return (
-    <Section header="Quick Times" footer="One-tap times under a to-do's deadline.">
-      {times.map((m) => (
-        <div className="row" key={m}>
-          <span className="grow">Time</span>
-          <input className="time-pill" type="time" step={300} value={`${pad2(Math.floor(m / 60))}:${pad2(m % 60)}`}
-            onChange={(e) => { const [h, mm] = e.target.value.split(':').map(Number); if (!isNaN(h)) save(times.map((x) => (x === m ? h * 60 + mm : x))) }} />
-          {times.length > 1 && <button className="icon-btn red" aria-label="Remove time" style={{ marginLeft: 10 }} onClick={() => save(times.filter((x) => x !== m))}>⊖</button>}
-        </div>
-      ))}
-      {times.length < MAX_QUICK_TIMES && <button className="row tappable orange" style={{ width: '100%' }} onClick={() => save([...times, nextFree()])}>＋ Add Time</button>}
+    <Section header="Quick Times" footer="One-tap times under a to-do's deadline. Tap one to change or remove it.">
+      <div className="row quick-times">
+        {times.map((m) => <button key={m} className="qt-chip" onClick={() => setEditing({ original: m, value: m })}>{quickTimeLabel(m)}</button>)}
+        {times.length < MAX_QUICK_TIMES && <button className="qt-chip add" aria-label="Add Time" onClick={() => setEditing({ value: 12 * 60 })}>＋</button>}
+      </div>
       {!isDefault && <button className="row tappable orange" style={{ width: '100%' }} onClick={() => save(DEFAULT_QUICK_TIMES)}>Reset to 9 AM, 3 PM, 9 PM</button>}
+      {editing && (
+        <Sheet title={editing.original === undefined ? 'Add Time' : 'Quick Time'} medium onClose={() => setEditing(null)}
+          left={<button onClick={() => setEditing(null)}>Cancel</button>}
+          right={<button onClick={() => done(editing.value)}>{editing.original === undefined ? 'Add' : 'Save'}</button>}>
+          <TimeWheel hour={Math.floor(editing.value / 60)} minute={editing.value % 60} onChange={(h, mm) => setEditing({ ...editing, value: h * 60 + mm })} />
+          {editing.original !== undefined && times.length > 1 && (
+            <Section><button className="row tappable red" style={{ width: '100%', justifyContent: 'center' }} onClick={() => done(null)}>Remove Time</button></Section>
+          )}
+        </Sheet>
+      )}
     </Section>
   )
 }

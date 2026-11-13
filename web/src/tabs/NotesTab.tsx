@@ -131,6 +131,7 @@ function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
   const { update } = useStore()
   const { copied, copy } = useCopy()
   const [confirm, setConfirm] = useState<'clear' | 'delete' | null>(null)
+  const [typing, setTyping] = useState(false)
   const body = useRef<HTMLTextAreaElement>(null)
 
   // The text area grows with its text, so the page scrolls along as you type (instead of the text
@@ -166,10 +167,18 @@ function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
         onCancel={() => setConfirm(null)} onConfirm={() => { update((d) => ({ ...d, notes: d.notes.filter((n) => n.id !== note.id) })); onBack() }} />}
       {/* Tapping the empty space below the text keeps writing at the end. */}
       <div className="note-editor" style={{ background: 'var(--bg)', minHeight: '100%' }}
+        onFocus={() => setTyping(true)} onBlur={() => setTyping(false)}
         onClick={(e) => { if (e.target === e.currentTarget) { const t = body.current; t?.focus(); t?.setSelectionRange(t.value.length, t.value.length) } }}>
         <input autoFocus={!note.title && !note.body} placeholder="Title" value={note.title} onChange={(e) => edit({ title: e.target.value })} />
         <textarea ref={body} placeholder="Start writing…" value={note.body} onChange={(e) => edit({ body: e.target.value })} />
       </div>
+      {/* While typing: a round checkmark that ends editing, floating well above the keyboard. */}
+      {typing && (
+        <div className="float-check-wrap">
+          <button className="float-check" aria-label="Done" onMouseDown={(e) => e.preventDefault()}
+            onClick={() => (document.activeElement as HTMLElement | null)?.blur()}>✓</button>
+        </div>
+      )}
     </>
   )
 }

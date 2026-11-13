@@ -1,5 +1,11 @@
 import Foundation
 
+private extension Date {
+    func roundedDownToMinute(calendar: Calendar) -> Date {
+        calendar.date(bySetting: .second, value: 0, of: self) ?? self
+    }
+}
+
 /// Quick deadline choices that make sense for the current time of day.
 enum DueSuggestions {
     struct Suggestion: Identifiable, Hashable {
@@ -79,6 +85,12 @@ struct QuickTime: Hashable, Identifiable, Sendable {
             result = next
         }
         return result
+    }
+
+    /// The next of your quick times from now (later today, or tomorrow's first), for a new deadline.
+    static func nextDefault(now: Date = Date(), times: [QuickTime] = QuickTime.current, calendar: Calendar = .current) -> Date {
+        let candidates = times.map { $0.apply(to: now, now: now, calendar: calendar) }
+        return candidates.min() ?? now.addingTimeInterval(3600).roundedDownToMinute(calendar: calendar)
     }
 
     /// The option a deadline currently matches, for highlighting.

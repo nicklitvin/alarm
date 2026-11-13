@@ -14,7 +14,7 @@ struct TodoEditorView: View {
     init(todo: TodoItem) {
         _draft = State(initialValue: todo)
         _hasDeadline = State(initialValue: todo.due != nil)
-        _deadline = State(initialValue: todo.due ?? DueSuggestions.make().first?.date ?? Date().roundedToMinutes(5))
+        _deadline = State(initialValue: todo.due ?? QuickTime.nextDefault())
     }
 
     var body: some View {
@@ -32,13 +32,7 @@ struct TodoEditorView: View {
                 Section {
                     Toggle("Deadline", isOn: $hasDeadline.animation(.snappy))
                     if hasDeadline {
-                        HStack {
-                            Text("Due")
-                            Spacer()
-                            IntervalDatePicker(selection: $deadline, mode: .dateAndTime, style: .compact, minuteInterval: 5)
-                                .fixedSize() // its natural size, so it isn't clipped top and bottom
-                        }
-                        .frame(minHeight: 44)
+                        DeadlineDateTimeRows(date: $deadline)
                         TimeOfDayChips(date: $deadline)
                             .padding(.vertical, 4)
                     }

@@ -74,34 +74,52 @@ struct UpNextWidgetView: View {
         .widgetURL((entry.items.first?.deepLink ?? .todos).url)
     }
 
-    private var maxRows: Int {
-        family == .systemLarge ? 7 : 2
+    /// Open to-dos in the widget, shown next to the title.
+    private var todoCount: Int {
+        entry.items.filter { item in
+            if case .todo(let todo) = item.kind { return !todo.isDone }
+            return false
+        }.count
     }
 
-    // Medium / large: a list with the Ask button in the bottom-right corner.
+    /// Rows that fit in `height` (title included), so the list uses the widget's full height.
+    private func rowCapacity(height: CGFloat) -> Int {
+        max(1, Int((height - Self.headerHeight) / Self.rowHeight))
+    }
+    private static let headerHeight: CGFloat = 22
+    private static let rowHeight: CGFloat = 34
+
+    // Medium / large: as many rows as fit, with the ✦ (open Talk) button in the bottom-right corner.
     private var list: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            header
-            if entry.items.isEmpty {
-                Spacer(minLength: 0)
-                allClear
-                Spacer(minLength: 0)
-            } else {
-                // No gaps between rows: every point of a row opens that row's item.
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(entry.items.prefix(maxRows)) { item in
-                        UpNextRow(item: item, now: entry.date, tapPadding: 4)
-                            .transition(.opacity.combined(with: .move(edge: .trailing)))
+        GeometryReader { geometry in
+            let shown = Array(entry.items.prefix(rowCapacity(height: geometry.size.height)))
+            VStack(alignment: .leading, spacing: 2) {
+                header
+                if shown.isEmpty {
+                    Spacer(minLength: 0)
+                    allClear
+                    Spacer(minLength: 0)
+                } else {
+                    // No gaps between rows: every point of a row opens that row's item.
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(shown) { item in
+                            UpNextRow(item: item, now: entry.date, tapPadding: 1)
+                                // The last row leaves room for ✦.
+                                .padding(.trailing, item.id == shown.last?.id ? 40 : 0)
+                                .transition(.opacity.combined(with: .move(edge: .trailing)))
+                        }
                     }
+                    Spacer(minLength: 0)
                 }
-                Spacer(minLength: 0)
             }
-            footer(hidden: max(0, entry.items.count - maxRows))
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .overlay(alignment: .bottomTrailing) {
+                AskButton()
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    // Small: the single most relevant thing.
+    // Small: the single most relevant thing. (No ✦: iOS gives a small widget one tap target.)
     private var small: some View {
         VStack(alignment: .leading, spacing: 6) {
             header
@@ -111,15 +129,23 @@ struct UpNextWidgetView: View {
                 allClear
             }
             Spacer(minLength: 0)
-            footer(hidden: max(0, entry.items.count - 1))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
+    /// "Up Next" and how many to-dos there are.
     private var header: some View {
-        Text("Up Next")
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(.orange)
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Text("Up Next")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.orange)
+            if todoCount > 0 {
+                Text("\(todoCount) to-do\(todoCount == 1 ? "" : "s")")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(height: Self.headerHeight - 2, alignment: .leading)
     }
 
     private var allClear: some View {
@@ -133,23 +159,6 @@ struct UpNextWidgetView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-    }
-
-    /// "+N more" on the left, the ✦ (open Talk) button in the bottom-right corner. The small size
-    /// skips ✦: iOS only lets a small widget have one tap target (the whole widget).
-    private func footer(hidden: Int) -> some View {
-        HStack(alignment: .center) {
-            if hidden > 0 {
-                Text("+\(hidden) more")
-                    .font(.caption2.weight(.medium))
-                    .foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 0)
-            if family != .systemSmall {
-                AskButton()
-            }
-        }
-        .frame(minHeight: 34)
     }
 
     // Lock screen: the most relevant thing.

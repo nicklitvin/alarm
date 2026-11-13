@@ -4,6 +4,7 @@ import {
   timeOf, timeParts, upNext, type Alarm, type TimerItem, type Todo, type UpNextItem,
 } from '../logic/model'
 import { useStore, type Link } from '../logic/store'
+import { useAsk } from '../tabs/TalkTab'
 
 // Previews of everything the app shows outside itself: widgets, lock screen, notifications,
 // Live Activities, Control Center and the ringing alarm. They use the preview's real data and
@@ -118,16 +119,17 @@ function bigTime(date: number) {
 function HomeScreen() {
   const { now, next, items, open } = useSystem()
   const first = items[0]
+  const todoCount = items.filter((i) => i.kind === 'todo' && !i.todo.isDone).length
   const upNextWidget = (size: 'small' | 'medium' | 'large') => {
-    const rows = size === 'small' ? 1 : size === 'medium' ? 2 : 6
+    // As many rows as fit the widget's height; the count of to-dos sits next to the title.
+    const rows = size === 'small' ? 1 : size === 'medium' ? 3 : 8
+    const shown = items.slice(0, rows)
     return (
-      <div className={`widget ${size}`} onClick={() => open(first ? linkFor(first) : { tab: 'todos' })}>
-        <div className="wh"><span>Up Next</span></div>
+      <div className={`widget upnext ${size}`} onClick={() => open(first ? linkFor(first) : { tab: 'todos' })}>
+        <div className="wh"><span>Up Next{todoCount > 0 && <span className="count"> {todoCount} to-do{todoCount === 1 ? '' : 's'}</span>}</span></div>
         {items.length === 0 ? <div style={{ marginTop: 10 }}><b>All clear</b><div className="muted" style={{ fontSize: 12 }}>Nothing coming up.</div></div>
-          : items.slice(0, rows).map((i) => <Row key={keyOf(i)} item={i} compact={size === 'small'} />)}
-        <div className="foot"><span>{items.length > rows ? `+${items.length - rows} more` : ''}</span>
-          {size !== 'small' && <button className="ask" aria-label="Open Talk" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>✦</button>}
-        </div>
+          : shown.map((i, n) => <div key={keyOf(i)} style={{ paddingRight: size !== 'small' && n === shown.length - 1 ? 40 : 0 }}><Row item={i} compact={size === 'small'} /></div>)}
+        {size !== 'small' && <button className="ask corner" aria-label="Open Talk" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>✦</button>}
       </div>
     )
   }
@@ -150,7 +152,7 @@ function HomeScreen() {
           {upNextWidget('large')}
         </div>
       </div>
-      <Caption>Next Alarm (small) and Up Next (small, medium, large). Tapping an alarm or timer opens its tab, a to-do opens that to-do, tap a to-do's circle to check it off, ✦ opens Talk. Small widgets have one tap target, so they have no ✦.</Caption>
+      <Caption>Next Alarm (small) and Up Next (small, medium, large), with the number of to-dos next to its title. Tapping an alarm or timer opens its tab, a to-do opens that to-do, tap a to-do's circle to check it off, ✦ opens Talk. Small widgets have one tap target, so they have no ✦.</Caption>
     </>
   )
 }
@@ -367,10 +369,47 @@ function LiveActivity() {
 // MARK: - Control Center
 
 function ControlCenter() {
-  const { open, setTab } = useSystem()
+  const { data } = useSystem()
+  const ask = useAsk()
+  const [popup, setPopup] = useState(false)
+  const [typing, setTyping] = useState(false)
+  const [draft, setDraft] = useState('')
+  const [waiting, setWaiting] = useState(false)
+  const send = async () => {
+    const text = draft.trim()
+    setTyping(false)
+    setDraft('')
+    if (!text) return
+    setWaiting(true)
+    await ask(text)
+    setWaiting(false)
+  }
+  const recent = data.chat.slice(-4)
   return (
     <>
       <div className="cc">
+        {popup && (
+          // iOS shows this at the top of the screen; the app doesn't open.
+          <div className="talk-popup" role="dialog" aria-label="Talk popup">
+            <div className="talk-popup-head"><span>〰︎ Alarmie</span><button aria-label="Close" onClick={() => { setPopup(false); setTyping(false) }}>✕</button></div>
+            {recent.length === 0 && <div className="talk-popup-empty">Ask me anything: “wake me up at 7 on weekdays” or “remind me to call mom at 6”.</div>}
+            {recent.map((m) => m.role === 'event'
+              ? <div key={m.id} className="talk-popup-event">{m.text}</div>
+              : <div key={m.id} className={`talk-popup-bubble ${m.role}`}>{m.text}</div>)}
+            {waiting && <div className="talk-popup-bubble assistant">…</div>}
+            {typing ? (
+              <div className="talk-popup-input">
+                <input autoFocus placeholder="Message Alarmie" value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} />
+                <button onClick={send} aria-label="Send">↑</button>
+              </div>
+            ) : (
+              <div className="talk-popup-actions">
+                <button className="prominent" onClick={() => setTyping(true)}>⌨︎ Type a Message</button>
+                <button aria-label="Live Talk in the app">🎙</button>
+              </div>
+            )}
+          </div>
+        )}
         <div className="cc-grid">
           <div className="cc-tile cc-group">
             <span className="cc-dot on">✈︎</span><span className="cc-dot on blue">⇅</span><span className="cc-dot on blue">◉</span><span className="cc-dot on blue">ᛒ</span>
@@ -382,14 +421,14 @@ function ControlCenter() {
           <div className="cc-slider"><span>🔊</span></div>
           <div className="cc-tile small">🔦</div>
           <div className="cc-tile small">⏱</div>
-          <button className="cc-tile small cc-app" onClick={() => { setTab('talk'); open({ tab: 'talk' }) }} aria-label="Live Talk">〰︎</button>
+          <button className="cc-tile small cc-app" onClick={() => setPopup(true)} aria-label="Live Talk">〰︎</button>
           <div className="cc-tile small">📷</div>
           <div className="cc-tile small">🌙</div>
           <div className="cc-tile small">🧮</div>
         </div>
         <div className="cc-label">Live Talk · Alarmie</div>
       </div>
-      <Caption>Alarmie adds one control: Live Talk (orange, bottom row). Tapping it opens Alarmie and starts listening. The other tiles are stand-ins for system controls.</Caption>
+      <Caption>Alarmie adds one control: Live Talk (orange, bottom row). Tapping it shows your conversation in a popup at the top of the screen, where you can type to the assistant without opening the app (🎙 opens the app for hands-free Live Talk). The other tiles are stand-ins for system controls.</Caption>
     </>
   )
 }

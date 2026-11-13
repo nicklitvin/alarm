@@ -1,9 +1,25 @@
 import SwiftUI
 
+/// Which text field is being typed in. One focus for the whole list, so tapping off or pressing
+/// Return ends editing everywhere.
+enum TodoField: Hashable {
+    case title(UUID), details(UUID)
+    case newTitle, newDetails
+
+    var todoID: UUID? {
+        switch self {
+        case .title(let id), .details(let id): id
+        case .newTitle, .newDetails: nil
+        }
+    }
+}
+
 struct TodoListView: View {
     @Environment(TodoController.self) private var controller
     @State private var editing: TodoItem?
-    @State private var composing = false
+    /// True while a new, not yet saved to-do is being typed at the end of the list.
+    @State private var addingNew = false
+    @FocusState private var focus: TodoField?
 
     var body: some View {
         NavigationStack {
@@ -21,140 +37,143 @@ struct TodoListView: View {
                 }
             }
             .safeAreaInset(edge: .bottom) {
-                if composing {
-                    TodoComposer { composing = false }
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                } else {
-                    BottomActionButton(title: "New To-Do", systemImage: "plus") { composing = true }
+                if focus == nil {
+                    // Like Reminders: adds an empty row at the end of the list, ready to type.
+                    BottomActionButton(title: "New To-Do", systemImage: "plus", action: startNew)
                         .transition(.opacity)
                 }
             }
-            .animation(.snappy, value: composing)
+            .animation(.snappy, value: focus == nil)
             .sheet(item: $editing) { todo in
                 TodoEditorView(todo: todo)
             }
             .task(id: AppNavigation.shared.pendingTodoID) {
-                // Opened from a chat event: show that to-do.
+                // Opened from a widget, notification or chat event: show that to-do.
                 guard let id = AppNavigation.shared.pendingTodoID else { return }
                 AppNavigation.shared.pendingTodoID = nil
+                focus = nil
                 if let todo = controller.todos.first(where: { $0.id == id }) { editing = todo }
             }
         }
         .tint(.orange)
     }
 
+    private func startNew() {
+        addingNew = true
+        focus = .newTitle
+    }
+
     private func list(now: Date) -> some View {
-        List {
-            ForEach(groups(now: now), id: \.title) { group in
-                Section {
-                    ForEach(group.items) { todo in
-                        row(todo, now: now)
+        ScrollViewReader { proxy in
+            List {
+                // Open to-dos: soonest deadline first, then the ones without a deadline. No sections.
+                ForEach(controller.openTodos) { todo in
+                    row(todo, now: now)
+                }
+
+                if addingNew {
+                    NewTodoRow(focus: $focus) { addingNew = false }
+                        .id("new")
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                }
+
+                if !controller.completedTodos.isEmpty {
+                    Section {
+                        ForEach(controller.completedTodos) { todo in
+                            row(todo, now: now, compact: true)
+                        }
+                    } header: {
+                        HStack {
+                            Text("Completed")
+                            Spacer()
+                            Button("Clear") { withAnimation { controller.clearCompleted() } }
+                                .font(.footnote.weight(.semibold))
+                                .textCase(nil)
+                        }
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 12)
                     }
-                } header: {
-                    if !group.title.isEmpty {
-                        Text(group.title)
-                            .foregroundStyle(group.isOverdue ? Color.red : Color.secondary)
+                }
+
+                // Empty space below the rows: tapping it stops editing.
+                Color.clear
+                    .frame(height: 240)
+                    .contentShape(Rectangle())
+                    .onTapGesture { focus = nil }
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .background(Color(.systemGroupedBackground))
+            .environment(\.defaultMinListRowHeight, 0)
+            .scrollDismissesKeyboard(.immediately)
+            .overlay {
+                if controller.todos.isEmpty && !addingNew {
+                    ContentUnavailableView {
+                        Label("Nothing To Do", systemImage: "checklist")
+                    } description: {
+                        Text("Tap New To-Do below, or ask in Talk: “remind me to call mom at 6”.")
                     }
+                    .allowsHitTesting(false)
                 }
             }
-
-            if !controller.completedTodos.isEmpty {
-                Section {
-                    ForEach(controller.completedTodos) { todo in
-                        row(todo, now: now)
-                    }
-                } header: {
-                    HStack {
-                        Text("Completed")
-                        Spacer()
-                        Button("Clear") { withAnimation { controller.clearCompleted() } }
-                            .font(.footnote.weight(.semibold))
-                            .textCase(nil)
-                    }
-                }
+            .animation(.snappy, value: controller.todos)
+            .onChange(of: addingNew) { _, adding in
+                if adding { withAnimation { proxy.scrollTo("new", anchor: .bottom) } }
             }
         }
-        .listStyle(.insetGrouped)
-        .overlay {
-            if controller.todos.isEmpty && !composing {
-                ContentUnavailableView {
-                    Label("Nothing To Do", systemImage: "checklist")
-                } description: {
-                    Text("Tap New To-Do below, or ask in Talk: “remind me to call mom at 6”.")
-                }
-                .allowsHitTesting(false)
-            }
+    }
+
+    private func row(_ todo: TodoItem, now: Date, compact: Bool = false) -> some View {
+        TodoRow(todo: todo, now: now, compact: compact, focus: $focus) {
+            focus = nil
+            editing = todo
         }
-        .animation(.snappy, value: controller.todos)
-    }
-
-    private func row(_ todo: TodoItem, now: Date) -> some View {
-        TodoRow(todo: todo, now: now) { editing = todo }
-            .swipeActions(edge: .trailing) {
-                Button("Delete", systemImage: "trash", role: .destructive) { controller.delete(todo.id) }
-            }
-            .swipeActions(edge: .leading) {
-                Button(todo.isDone ? "Undo" : "Done", systemImage: todo.isDone ? "arrow.uturn.backward" : "checkmark") {
-                    Task { await controller.toggle(todo.id) }
-                }
-                .tint(.orange)
-            }
-    }
-
-    private struct TodoGroup {
-        let title: String
-        let items: [TodoItem]
-        var isOverdue = false
-    }
-
-    private func groups(now: Date) -> [TodoGroup] {
-        let calendar = Calendar.current
-        let open = controller.openTodos
-        let overdue = open.filter { $0.isOverdue(at: now) }
-        let upcoming = open.filter { !$0.isOverdue(at: now) }
-        let today = upcoming.filter { $0.due.map { calendar.isDate($0, inSameDayAs: now) } ?? false }
-        let tomorrow = upcoming.filter { $0.due.map { calendar.isDateInTomorrow($0) } ?? false }
-        let later = upcoming.filter { todo in
-            guard let due = todo.due else { return false }
-            return !calendar.isDate(due, inSameDayAs: now) && !calendar.isDateInTomorrow(due)
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+        .listRowInsets(EdgeInsets(top: compact ? 4 : 7, leading: 20, bottom: compact ? 4 : 7, trailing: 16))
+        .swipeActions(edge: .trailing) {
+            Button("Delete", systemImage: "trash", role: .destructive) { controller.delete(todo.id) }
         }
-        let someday = upcoming.filter { $0.due == nil }
-
-        return [
-            TodoGroup(title: "Overdue", items: overdue, isOverdue: true),
-            TodoGroup(title: "Today", items: today),
-            TodoGroup(title: "Tomorrow", items: tomorrow),
-            TodoGroup(title: "Later", items: later),
-            TodoGroup(title: "", items: someday), // no heading: no deadline needs no label
-        ].filter { !$0.items.isEmpty }
+        .swipeActions(edge: .leading) {
+            Button(todo.isDone ? "Undo" : "Done", systemImage: todo.isDone ? "arrow.uturn.backward" : "checkmark") {
+                Task { await controller.toggle(todo.id) }
+            }
+            .tint(.orange)
+        }
     }
 }
 
 // MARK: - Row
 
-/// A to-do you edit right in the list, like Reminders: tap the title to type, the details line
-/// sits underneath, and while editing a calendar button opens the deadline settings.
+/// A to-do you edit right in the list, like Reminders: a checkbox and its text. Tap the text to
+/// type; Return or tapping elsewhere finishes. While editing, the calendar button opens the
+/// deadline and details.
 private struct TodoRow: View {
     @Environment(TodoController.self) private var controller
     let todo: TodoItem
     let now: Date
+    let compact: Bool
+    var focus: FocusState<TodoField?>.Binding
     let onShowDetails: () -> Void
 
     @State private var title: String
     @State private var details: String
-    @FocusState private var focus: Field?
 
-    private enum Field { case title, details }
-
-    init(todo: TodoItem, now: Date, onShowDetails: @escaping () -> Void) {
+    init(todo: TodoItem, now: Date, compact: Bool, focus: FocusState<TodoField?>.Binding, onShowDetails: @escaping () -> Void) {
         self.todo = todo
         self.now = now
+        self.compact = compact
+        self.focus = focus
         self.onShowDetails = onShowDetails
         _title = State(initialValue: todo.title)
         _details = State(initialValue: todo.details)
     }
 
-    private var isEditing: Bool { focus != nil }
+    private var isEditing: Bool { focus.wrappedValue?.todoID == todo.id }
 
     var body: some View {
         let overdue = todo.isOverdue(at: now)
@@ -163,29 +182,43 @@ private struct TodoRow: View {
                 Task { await controller.toggle(todo.id) }
             } label: {
                 Image(systemName: todo.isDone ? "checkmark.circle.fill" : "circle")
-                    .font(.title2)
+                    .font(compact ? .body : .title2)
                     .foregroundStyle(todo.isDone ? Color.orange : (overdue ? Color.red : Color.secondary))
                     .contentTransition(.symbolEffect(.replace))
             }
             .buttonStyle(.borderless)
-            .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 5 }
+            .alignmentGuide(.firstTextBaseline) { $0[.bottom] - (compact ? 3 : 5) }
             .sensoryFeedback(.success, trigger: todo.isDone) { _, done in done }
             .accessibilityLabel(todo.isDone ? "Mark as not done" : "Mark as done")
 
             VStack(alignment: .leading, spacing: 2) {
                 TextField("To-Do", text: $title, axis: .vertical)
+                    .font(compact ? .subheadline : .body)
                     .strikethrough(todo.isDone)
                     .foregroundStyle(todo.isDone ? .secondary : .primary)
-                    .focused($focus, equals: .title)
+                    .focused(focus, equals: .title(todo.id))
                     .submitLabel(.done)
-                    .onSubmit { focus = nil }
+                    // A multi-line field types a newline on Return: treat it as "done" instead.
+                    .onChange(of: title) { _, text in
+                        if text.contains("\n") {
+                            title = text.replacingOccurrences(of: "\n", with: "")
+                            focus.wrappedValue = nil
+                        }
+                    }
 
                 if isEditing || !todo.trimmedDetails.isEmpty {
                     TextField("Add details", text: $details, axis: .vertical)
-                        .font(.subheadline)
+                        .font(compact ? .caption : .subheadline)
                         .foregroundStyle(.secondary)
                         .lineLimit(1...4)
-                        .focused($focus, equals: .details)
+                        .focused(focus, equals: .details(todo.id))
+                        .submitLabel(.done)
+                        .onChange(of: details) { _, text in
+                            if text.contains("\n") {
+                                details = text.replacingOccurrences(of: "\n", with: "")
+                                focus.wrappedValue = nil
+                            }
+                        }
                 }
 
                 if let due = todo.due, !todo.isDone {
@@ -207,7 +240,6 @@ private struct TodoRow: View {
             if isEditing {
                 Button {
                     commit()
-                    focus = nil
                     onShowDetails()
                 } label: {
                     Image(systemName: "calendar")
@@ -219,10 +251,10 @@ private struct TodoRow: View {
                 .transition(.opacity)
             }
         }
-        .padding(.vertical, 2)
         .animation(.snappy, value: isEditing)
-        .onChange(of: focus) { _, newFocus in
-            if newFocus == nil { commit() }
+        .onChange(of: focus.wrappedValue) { old, new in
+            // Left this row's fields: save.
+            if old?.todoID == todo.id, new?.todoID != todo.id { commit() }
         }
         .onChange(of: todo) { _, updated in
             // Changes from elsewhere (widget, assistant, the details sheet) while not typing here.
@@ -249,157 +281,102 @@ private struct TodoRow: View {
     }
 }
 
-// MARK: - Composer (bottom, within thumb reach)
+// MARK: - New to-do
 
-private struct TodoComposer: View {
+/// The empty row "New To-Do" adds at the end of the list. It's saved once you finish typing
+/// (Return or tapping elsewhere); left empty, it simply goes away.
+private struct NewTodoRow: View {
     @Environment(TodoController.self) private var controller
-    @FocusState private var focus: Field?
+    var focus: FocusState<TodoField?>.Binding
+    let onFinish: () -> Void
+
     @State private var title = ""
     @State private var details = ""
     @State private var due: Date?
-    @State private var showCustom = false
-    let onClose: () -> Void
+    @State private var pickingDeadline = false
 
-    private enum Field { case title, details }
-
-    private var canAdd: Bool { !title.trimmingCharacters(in: .whitespaces).isEmpty }
+    private var isEditing: Bool { focus.wrappedValue == .newTitle || focus.wrappedValue == .newDetails }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SuggestionChips(selection: $due) { showCustom = true }
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Image(systemName: "circle")
+                .font(.title2)
+                .foregroundStyle(.tertiary)
+                .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 5 }
 
-            VStack(alignment: .leading, spacing: 6) {
-                TextField("New To-Do", text: $title)
-                    .font(.body.weight(.medium))
-                    .focused($focus, equals: .title)
+            VStack(alignment: .leading, spacing: 2) {
+                TextField("New To-Do", text: $title, axis: .vertical)
+                    .focused(focus, equals: .newTitle)
                     .submitLabel(.done)
-                    .onSubmit(add)
-                TextField("Details (optional)", text: $details, axis: .vertical)
+                    .onChange(of: title) { _, text in
+                        if text.contains("\n") {
+                            title = text.replacingOccurrences(of: "\n", with: "")
+                            focus.wrappedValue = nil
+                        }
+                    }
+                TextField("Add details", text: $details, axis: .vertical)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1...3)
-                    .focused($focus, equals: .details)
-            }
-            .padding(12)
-            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-
-            HStack(spacing: 10) {
-                Button("Cancel") {
-                    focus = nil
-                    onClose()
+                    .lineLimit(1...4)
+                    .focused(focus, equals: .newDetails)
+                    .onChange(of: details) { _, text in
+                        if text.contains("\n") {
+                            details = text.replacingOccurrences(of: "\n", with: "")
+                            focus.wrappedValue = nil
+                        }
+                    }
+                if let due {
+                    HStack(spacing: 3) {
+                        Image(systemName: "clock")
+                        Text(TimeFormat.dueDescription(due, relativeTo: .now))
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
-                .buttonStyle(.bordered)
-                .buttonBorderShape(.capsule)
-                .tint(Color.secondary)
-
-                Button(action: add) {
-                    Label(due.map { "Add · \(TimeFormat.dueDescription($0, relativeTo: .now))" } ?? "Add", systemImage: "plus")
-                        .font(.headline)
-                        .lineLimit(1)
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .buttonBorderShape(.capsule)
-                .disabled(!canAdd)
             }
-            .controlSize(.large)
+
+            Spacer(minLength: 0)
+
+            Button {
+                pickingDeadline = true
+            } label: {
+                Image(systemName: "calendar")
+                    .font(.title3)
+                    .foregroundStyle(.orange)
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel("Deadline")
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 14)
-        .padding(.bottom, 10)
-        .background(.bar)
-        .onAppear { focus = .title }
-        .sheet(isPresented: $showCustom) {
-            DeadlinePickerSheet(date: due ?? DueSuggestions.make().first?.date ?? Date().roundedToMinutes(5)) { picked in
-                due = picked
-            }
-            .presentationDetents([.medium])
-        }
-    }
-
-    /// Adds the to-do and closes the panel.
-    private func add() {
-        guard canAdd else { return }
-        controller.add(title: title, details: details, due: due)
-        focus = nil
-        onClose()
-    }
-}
-
-// MARK: - Suggested times
-
-/// Suggested deadlines plus "Custom…", laid out in a grid (no sideways scrolling).
-/// Tapping a selected suggestion clears it.
-struct SuggestionChips: View {
-    @Binding var selection: Date?
-    var onCustom: () -> Void
-
-    var body: some View {
-        let now = Date()
-        let suggestions = DueSuggestions.make(now: now)
-        let isCustom = selection.map { picked in !suggestions.contains { $0.date == picked } } ?? false
-
-        // Two columns so titles like "Tomorrow morning" are never cut off.
-        LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
-            ForEach(suggestions) { suggestion in
-                let selected = selection == suggestion.date
-                Button {
-                    selection = selected ? nil : suggestion.date
-                } label: {
-                    chip(title: suggestion.title,
-                         subtitle: Self.subtitle(for: suggestion, now: now),
-                         selected: selected)
-                }
-                .buttonStyle(.plain)
-            }
-            Button(action: onCustom) {
-                chip(title: "Custom",
-                     subtitle: isCustom ? selection.map { TimeFormat.dueDescription($0, relativeTo: now) } ?? "" : "Pick a time",
-                     selected: isCustom,
-                     systemImage: "calendar")
-            }
-            .buttonStyle(.plain)
-        }
-        .sensoryFeedback(.selection, trigger: selection)
-    }
-
-    /// The time under a suggestion, without repeating the day its title already says
-    /// ("Tomorrow morning" → "9:00 AM", "This weekend" → "Sat 10:00 AM").
-    private static func subtitle(for suggestion: DueSuggestions.Suggestion, now: Date) -> String {
-        let impliesDay = ["Tomorrow", "Tonight", "This afternoon", "This evening", "In "].contains { suggestion.title.hasPrefix($0) }
-        return impliesDay ? TimeFormat.string(for: suggestion.date) : TimeFormat.dueDescription(suggestion.date, relativeTo: now)
-    }
-
-    private func chip(title: String, subtitle: String, selected: Bool, systemImage: String? = nil) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            HStack(spacing: 4) {
-                if let systemImage { Image(systemName: systemImage).font(.caption2.weight(.bold)) }
-                Text(title).font(.footnote.weight(.semibold))
-            }
-            Text(subtitle)
-                .font(.caption2)
-                .opacity(0.8)
-        }
-        .lineLimit(1)
-        .minimumScaleFactor(0.85)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 10)
         .padding(.vertical, 7)
-        .foregroundStyle(selected ? Color.white : Color.primary)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(selected ? Color.orange : Color(.tertiarySystemFill))
-        )
+        .padding(.leading, 4)
+        .onChange(of: focus.wrappedValue) { _, new in
+            // Finished typing (and not just picking a deadline): save or discard.
+            if new != .newTitle, new != .newDetails, !pickingDeadline { finish() }
+        }
+        .sheet(isPresented: $pickingDeadline, onDismiss: { focus.wrappedValue = .newTitle }) {
+            DeadlineSheet(date: due ?? QuickTime.nextDefault()) { picked in due = picked }
+                .presentationDetents([.medium, .large])
+        }
+    }
+
+    private func finish() {
+        let text = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !text.isEmpty {
+            controller.add(title: text, details: details, due: due)
+        }
+        onFinish()
     }
 }
 
-/// Time first (in 5-minute steps), date underneath.
-struct DeadlinePickerSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    @State var date: Date
-    let onPick: (Date) -> Void
+// MARK: - Deadline
 
-    init(date: Date, onPick: @escaping (Date) -> Void) {
+/// Deadline for a new to-do: your quick times, a custom time (5-minute steps) and the date.
+struct DeadlineSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var date: Date
+    let onPick: (Date?) -> Void
+
+    init(date: Date, onPick: @escaping (Date?) -> Void) {
         _date = State(initialValue: date.roundedToMinutes(5))
         self.onPick = onPick
     }
@@ -407,14 +384,16 @@ struct DeadlinePickerSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                TimeOfDayChips(date: $date)
-                IntervalDatePicker(selection: $date, mode: .time, style: .wheels, minuteInterval: 5)
-                    .frame(maxWidth: .infinity)
-                HStack {
-                    Text("Date")
-                    Spacer()
-                    IntervalDatePicker(selection: $date, mode: .date, style: .compact,
-                                       minimumDate: Calendar.current.startOfDay(for: .now))
+                Section {
+                    TimeOfDayChips(date: $date)
+                        .padding(.vertical, 4)
+                    DeadlineDateTimeRows(date: $date)
+                }
+                Section {
+                    Button("No Deadline", role: .destructive) {
+                        onPick(nil)
+                        dismiss()
+                    }
                 }
             }
             .navigationTitle("Deadline")
@@ -431,6 +410,25 @@ struct DeadlinePickerSheet: View {
             }
         }
         .tint(.orange)
+    }
+}
+
+/// "Date" and "Time" rows with the system's compact pickers (time in 5-minute steps).
+struct DeadlineDateTimeRows: View {
+    @Binding var date: Date
+
+    var body: some View {
+        HStack {
+            Text("Date")
+            Spacer()
+            IntervalDatePicker(selection: $date, mode: .date, style: .compact,
+                               minimumDate: Calendar.current.startOfDay(for: .now))
+        }
+        HStack {
+            Text("Time")
+            Spacer()
+            IntervalDatePicker(selection: $date, mode: .time, style: .compact, minuteInterval: 5)
+        }
     }
 }
 

@@ -14,13 +14,27 @@ struct ChatMessage: Identifiable, Hashable {
     var link: ChatLink? = nil
 }
 
+extension ChatMessage {
+    var snapshot: TalkSnapshotMessage {
+        switch role {
+        case .user: TalkSnapshotMessage(role: .user, text: text)
+        case .assistant: TalkSnapshotMessage(role: .assistant, text: text)
+        case .event: TalkSnapshotMessage(role: .event, text: text)
+        case .error: TalkSnapshotMessage(role: .error, text: text)
+        }
+    }
+}
+
 /// The Talk tab's conversation with Apple's on-device model, by text or by voice.
 @MainActor
 @Observable
 final class TalkModel {
     static let shared = TalkModel()
 
-    private(set) var messages: [ChatMessage] = []
+    private(set) var messages: [ChatMessage] = [] {
+        // Keeps the Control Center popup's copy of the conversation current.
+        didSet { TalkSnapshot.save(messages.map(\.snapshot)) }
+    }
     private(set) var isResponding = false
     /// Why the on-device model can't be used, if it can't.
     private(set) var unavailableReason: String?

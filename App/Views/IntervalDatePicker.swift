@@ -30,6 +30,14 @@ struct IntervalDatePicker: UIViewRepresentable {
         }
     }
 
+    /// Compact pickers get their natural size; without this SwiftUI can squeeze them to nothing
+    /// (blank and untappable) or cut their text off.
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UIDatePicker, context: Context) -> CGSize? {
+        guard style == .compact else { return nil }
+        let size = uiView.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
+        return CGSize(width: max(size.width, 60), height: max(size.height, 34))
+    }
+
     func makeCoordinator() -> Coordinator { Coordinator(parent: self) }
 
     final class Coordinator: NSObject {

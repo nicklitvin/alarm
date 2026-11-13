@@ -19,18 +19,26 @@ struct NotesListView: View {
             let pinned = visible.filter(\.isPinned)
             let others = visible.filter { !$0.isPinned }
             List {
-                if !pinned.isEmpty {
+                // No empty header views: the list used to reserve header space on the first frame
+                // and then collapse it, so the notes jumped up toward the search field.
+                if pinned.isEmpty {
+                    Section {
+                        ForEach(others) { row($0) }
+                    }
+                } else {
                     Section("Pinned") {
                         ForEach(pinned) { row($0) }
                     }
-                }
-                Section {
-                    ForEach(others) { row($0) }
-                } header: {
-                    if !pinned.isEmpty && !others.isEmpty { Text("Notes") }
+                    if !others.isEmpty {
+                        Section("Notes") {
+                            ForEach(others) { row($0) }
+                        }
+                    }
                 }
             }
             .listStyle(.insetGrouped)
+            .listSectionSpacing(.compact)
+            .contentMargins(.top, 8, for: .scrollContent)
             .overlay {
                 if controller.notes.isEmpty {
                     ContentUnavailableView {

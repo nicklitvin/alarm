@@ -277,77 +277,125 @@ private struct TodoSettingsSection: View {
     }
 }
 
-/// The quick times shown under a deadline (9 AM, 3 PM and 9 PM by default).
+/// The quick times shown under a deadline (9 AM, 3 PM and 9 PM by default): all on one row.
+/// Tap a time to change or remove it, or + to add one.
 private struct QuickTimesSection: View {
     @AppStorage(AppSettings.todoQuickTimesKey, store: AppSettings.store) private var stored = ""
+    @State private var editing: QuickTimeEdit?
 
     private var times: [Int] { AppSettings.parseQuickTimes(stored) }
 
     var body: some View {
         Section {
-            ForEach(times, id: \.self) { minutes in
-                QuickTimeRow(minutes: minutes) { newValue in
-                    save(times.map { $0 == minutes ? newValue : $0 })
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 68), spacing: 8)], spacing: 8) {
+                ForEach(times, id: \.self) { minutes in
+                    Button {
+                        editing = QuickTimeEdit(original: minutes)
+                    } label: {
+                        chip(QuickTime(minutes: minutes).label, filled: true)
+                    }
+                    .buttonStyle(.plain)
+                }
+                if times.count < AppSettings.maxTodoQuickTimes {
+                    Button {
+                        editing = QuickTimeEdit(original: nil)
+                    } label: {
+                        chip(nil, filled: false)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Add Time")
                 }
             }
-            .onDelete { offsets in
-                var list = times
-                list.remove(atOffsets: offsets)
-                save(list)
-            }
-            .deleteDisabled(times.count <= 1)
+            .padding(.vertical, 4)
 
-            if times.count < AppSettings.maxTodoQuickTimes {
-                Button {
-                    save(times + [nextFreeTime()])
-                } label: {
-                    Label("Add Time", systemImage: "plus")
-                }
-            }
             if times != AppSettings.defaultTodoQuickTimes {
                 Button("Reset to 9 AM, 3 PM, 9 PM") { stored = "" }
             }
         } header: {
             Text("Quick Times")
         } footer: {
-            Text("One-tap times under a to-do's deadline. Swipe left to remove one.")
+            Text("One-tap times under a to-do's deadline. Tap one to change or remove it.")
+        }
+        .sheet(item: $editing) { edit in
+            QuickTimeEditor(edit: edit, canRemove: edit.original != nil && times.count > 1) { result in
+                var list = times
+                if let original = edit.original { list.removeAll { $0 == original } }
+                if let result { list.append(result) }
+                stored = AppSettings.formatQuickTimes(AppSettings.parseQuickTimes(AppSettings.formatQuickTimes(list)))
+            }
+            .presentationDetents([.height(340)])
         }
     }
 
-    private func save(_ list: [Int]) {
-        stored = AppSettings.formatQuickTimes(AppSettings.parseQuickTimes(AppSettings.formatQuickTimes(list)))
-    }
-
-    /// An hour after the last time that isn't taken yet.
-    private func nextFreeTime() -> Int {
-        var candidate = ((times.last ?? 540) + 60) % 1440
-        while times.contains(candidate) { candidate = (candidate + 60) % 1440 }
-        return candidate
+    private func chip(_ text: String?, filled: Bool) -> some View {
+        Group {
+            if let text {
+                Text(text)
+            } else {
+                Image(systemName: "plus")
+            }
+        }
+        .font(.subheadline.weight(.semibold))
+        .lineLimit(1)
+        .fixedSize()
+        .frame(maxWidth: .infinity, minHeight: 34)
+        .foregroundStyle(filled ? Color.primary : Color.orange)
+        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color(.tertiarySystemFill)))
     }
 }
 
-private struct QuickTimeRow: View {
-    let minutes: Int
-    let onChange: (Int) -> Void
+private struct QuickTimeEdit: Identifiable {
+    /// The time being changed, or nil when adding one.
+    let original: Int?
+    var id: String { original.map(String.init) ?? "new" }
+}
+
+/// Change, add or remove one quick time.
+private struct QuickTimeEditor: View {
+    @Environment(\.dismiss) private var dismiss
+    let edit: QuickTimeEdit
+    let canRemove: Bool
+    /// The new time in minutes after midnight, or nil to remove it.
+    let onDone: (Int?) -> Void
     @State private var date: Date
 
-    init(minutes: Int, onChange: @escaping (Int) -> Void) {
-        self.minutes = minutes
-        self.onChange = onChange
+    init(edit: QuickTimeEdit, canRemove: Bool, onDone: @escaping (Int?) -> Void) {
+        self.edit = edit
+        self.canRemove = canRemove
+        self.onDone = onDone
+        let minutes = edit.original ?? 12 * 60
         _date = State(initialValue: Calendar.current.date(
             bySettingHour: minutes / 60, minute: minutes % 60, second: 0, of: .now) ?? .now)
     }
 
     var body: some View {
-        HStack {
-            Text("Time")
-            Spacer()
-            IntervalDatePicker(selection: $date, mode: .time, style: .compact, minuteInterval: 5)
+        NavigationStack {
+            VStack(spacing: 12) {
+                IntervalDatePicker(selection: $date, mode: .time, style: .wheels, minuteInterval: 5)
+                    .frame(maxWidth: .infinity)
+                if canRemove {
+                    Button("Remove Time", role: .destructive) {
+                        onDone(nil)
+                        dismiss()
+                    }
+                }
+            }
+            .padding(.horizontal)
+            .navigationTitle(edit.original == nil ? "Add Time" : "Quick Time")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(edit.original == nil ? "Add" : "Save") {
+                        let c = Calendar.current.dateComponents([.hour, .minute], from: date)
+                        onDone((c.hour ?? 0) * 60 + (c.minute ?? 0))
+                        dismiss()
+                    }
+                    .fontWeight(.semibold)
+                }
+            }
         }
-        .onChange(of: date) { _, newDate in
-            let c = Calendar.current.dateComponents([.hour, .minute], from: newDate)
-            onChange((c.hour ?? 0) * 60 + (c.minute ?? 0))
-        }
+        .tint(.orange)
     }
 }
 

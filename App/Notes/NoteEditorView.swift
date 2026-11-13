@@ -27,7 +27,7 @@ struct NoteEditorView: View {
 
             // A real text editor: it fills the rest of the screen (tap anywhere below the text to
             // keep writing), scrolls to follow the cursor, and leaves room at the bottom so the
-            // keyboard's Done bar never covers the last lines.
+            // floating checkmark button never covers the last lines.
             ZStack(alignment: .topLeading) {
                 if text.isEmpty {
                     Text("Start writing…")
@@ -47,6 +47,26 @@ struct NoteEditorView: View {
         }
         .padding(.horizontal, 20)
         .padding(.top, 8)
+        // While typing: a round checkmark button, floating with room to spare above the keyboard.
+        .overlay(alignment: .bottomTrailing) {
+            if focus != nil {
+                Button {
+                    focus = nil
+                } label: {
+                    Image(systemName: "checkmark")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 50, height: 50)
+                        .background(Circle().fill(Color.orange.gradient))
+                        .shadow(color: .black.opacity(0.15), radius: 6, y: 2)
+                }
+                .accessibilityLabel("Done")
+                .padding(.trailing, 20)
+                .padding(.bottom, 20)
+                .transition(.scale.combined(with: .opacity))
+            }
+        }
+        .animation(.snappy, value: focus != nil)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             // Copy All, Clear and Delete as plain icons.
@@ -82,10 +102,6 @@ struct NoteEditorView: View {
                     Image(systemName: "trash")
                 }
                 .accessibilityLabel("Delete Note")
-            }
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") { focus = nil }.fontWeight(.semibold)
             }
         }
         // Alerts (centered, no popover arrow) to confirm Clear and Delete.
