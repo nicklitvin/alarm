@@ -10,6 +10,7 @@ enum BackgroundRefresh {
     static func register() {
         BGTaskScheduler.shared.register(forTaskWithIdentifier: taskID, using: nil) { task in
             let work = Task { @MainActor in
+                await NotificationScheduler.removeDeliveredForRungAlarms()
                 await AlarmController.shared.reconcile()
                 task.setTaskCompleted(success: true)
             }

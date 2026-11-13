@@ -1,6 +1,22 @@
 {
   "releases": [
     {
+      "version": "1.17.0",
+      "build": 24,
+      "date": "2026-11-13",
+      "title": "Bullets, Landscape & Recent Times",
+      "notes": [
+        "Bulleted lists in notes: tap the bullet button, or type - and a space at the start of a line. Bullets are filled dots; checklists keep their boxes.",
+        "Alarmie works sideways. Alarms turns into a grid of cards with big times.",
+        "The heads-up notification goes away once its alarm rings.",
+        "The Live Talk button in Control Center always shows your conversation in a pop-up, without opening the app.",
+        "New Timer shows your last three times as one-tap buttons above the label. The Recents list on the Timers tab is gone.",
+        "Removed the timer warning notification setting.",
+        "To-do quick times are now always three: 8 AM, 2 PM and 9 PM to start. Tap one in To-Do settings to change it.",
+        "No more No Deadline button when picking a new to-do's deadline: Cancel does the same."
+      ]
+    },
+    {
       "version": "1.16.0",
       "build": 23,
       "date": "2026-11-13",

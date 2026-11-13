@@ -23,6 +23,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = self
         NotificationScheduler.registerCategories()
+        Task { await TimerNotifications.removeLegacyWarnings() }
         BackgroundRefresh.register()
         _ = TimerController.shared
         _ = AlarmController.shared

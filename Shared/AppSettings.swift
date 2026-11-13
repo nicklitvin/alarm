@@ -24,13 +24,6 @@ enum AppSettings {
         return alarmHeadsUpChoices.contains(value) ? value : 60
     }
 
-    // MARK: Timers
-
-    static let timerWarningMinutesKey = "settings.timer.warningMinutes"
-    static let timerWarningChoices = [0, 1, 5]
-    /// Notification shortly before a timer ends (0 = off).
-    static var timerWarningMinutes: Int { int(timerWarningMinutesKey, default: 0) }
-
     // MARK: To-dos
 
     static let todoDueAlertEnabledKey = "settings.todo.dueAlertEnabled"
@@ -41,20 +34,25 @@ enum AppSettings {
     /// An extra reminder this long before the deadline (0 = off).
     static var todoEarlyReminderMinutes: Int { int(todoEarlyReminderMinutesKey, default: 0) }
 
-    /// Quick times for deadlines, as minutes after midnight, stored as "540,900,1260".
+    /// Quick times for deadlines, as minutes after midnight, stored as "480,840,1260".
     static let todoQuickTimesKey = "settings.todo.quickTimes"
-    /// 9 AM, 3 PM and 9 PM: morning, afternoon and night.
-    static let defaultTodoQuickTimes = [9 * 60, 15 * 60, 21 * 60]
-    static let maxTodoQuickTimes = 5
+    /// 8 AM, 2 PM and 9 PM: morning, afternoon and night.
+    static let defaultTodoQuickTimes = [8 * 60, 14 * 60, 21 * 60]
+    /// There are always exactly this many quick times; you change them, not add or remove them.
+    static let quickTimeCount = 3
     static var todoQuickTimes: [Int] { parseQuickTimes(store.string(forKey: todoQuickTimesKey)) }
 
-    /// Sorted, without duplicates; the defaults when empty or unreadable.
+    /// Exactly three times, sorted and without duplicates. Missing ones are filled in from the
+    /// defaults; anything unreadable gives the defaults.
     static func parseQuickTimes(_ text: String?) -> [Int] {
         let values = (text ?? "").split(separator: ",")
             .compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
             .filter { (0..<1440).contains($0) }
-        let unique = Array(Set(values)).sorted()
-        return unique.isEmpty ? defaultTodoQuickTimes : Array(unique.prefix(maxTodoQuickTimes))
+        var unique = Array(Array(Set(values)).sorted().prefix(quickTimeCount))
+        for fallback in defaultTodoQuickTimes where unique.count < quickTimeCount && !unique.contains(fallback) {
+            unique.append(fallback)
+        }
+        return unique.sorted()
     }
 
     static func formatQuickTimes(_ minutes: [Int]) -> String {

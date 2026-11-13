@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { SwipeRow } from '../components/SwipeRow'
 import { Alert, BottomAction, Section, TabHeader } from '../components/ui'
-import { checklistProgress, checklistReturn, lineBounds, lineKind, noteCopyText, notePreview, noteTitle, reorderNotes, sortNotes, toggleChecklist, toggleItem, uid, type Note } from '../logic/model'
+import { checklistProgress, checklistReturn, lineBounds, lineKind, noteCopyText, notePreview, noteTitle, reorderNotes, sortNotes, toggleItem, toggleList, autoBullet, uid, type Note } from '../logic/model'
 import { useStore } from '../logic/store'
 
 const progressLabel = (n: Note) => {
@@ -156,18 +156,24 @@ function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
 
   const edit = (changes: Partial<Note>) =>
     update((d) => ({ ...d, notes: d.notes.map((n) => (n.id === note.id ? { ...n, ...changes, updatedAt: Date.now() } : n)) }))
+  // The cursor position to restore once React has put the new text in the textarea.
+  const pendingCaret = useRef<number | null>(null)
+  useLayoutEffect(() => {
+    const t = body.current
+    if (t && pendingCaret.current !== null) { t.focus(); t.setSelectionRange(pendingCaret.current, pendingCaret.current); pendingCaret.current = null }
+  }, [note.body])
   const setBody = (text: string, caret: number) => {
+    pendingCaret.current = caret
     edit({ body: text })
-    requestAnimationFrame(() => { const t = body.current; if (t) { t.focus(); t.setSelectionRange(caret, caret) } })
   }
-  const checklist = () => {
+  const makeList = (style: 'checklist' | 'bullets') => {
     const t = body.current
     if (!t) return
     const focused = document.activeElement === t
     let text = t.value
     let start = t.selectionStart, end = t.selectionEnd
     if (!focused) { if (text && !text.endsWith('\n')) text += '\n'; start = end = text.length }
-    const r = toggleChecklist(text, start, end)
+    const r = toggleList(style, text, start, end)
     setBody(r.text, r.caret)
   }
   return (
@@ -194,15 +200,15 @@ function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
           <div className="note-backdrop" aria-hidden>
             {note.body.split('\n').map((line, i) => {
               const kind = lineKind(line)
-              return <div key={i}>{kind === 'plain' ? (line || '\u200b')
+              return <div key={i}>{kind === 'plain' || kind === 'bullet' ? (line || '\u200b')
                 : <><span className="box">{line[0]}</span> <span className={kind === 'checked' ? 'done' : ''}>{line.slice(2) || '\u200b'}</span></>}</div>
             })}
           </div>
           <textarea ref={body} placeholder="Start writing…" value={note.body} onChange={(e) => edit({ body: e.target.value })}
             onKeyDown={(e) => {
               const t = e.currentTarget
-              if (e.key !== 'Enter' || t.selectionStart !== t.selectionEnd) return
-              const r = checklistReturn(t.value, t.selectionStart)
+              if (t.selectionStart !== t.selectionEnd) return
+              const r = e.key === 'Enter' ? checklistReturn(t.value, t.selectionStart) : e.key === ' ' ? autoBullet(t.value, t.selectionStart) : null
               if (!r) return
               e.preventDefault()
               setBody(r.text, r.caret)
@@ -220,7 +226,8 @@ function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
       </div>
       {/* Floating above the keyboard: the checklist button, and while typing a checkmark that finishes. */}
       <div className="float-check-wrap">
-        <button className="float-list" aria-label="Checklist" onMouseDown={(e) => e.preventDefault()} onClick={checklist}>☑︎</button>
+        <button className="float-list" aria-label="Bulleted List" onMouseDown={(e) => e.preventDefault()} onClick={() => makeList('bullets')}>•≡</button>
+        <button className="float-list" aria-label="Checklist" onMouseDown={(e) => e.preventDefault()} onClick={() => makeList('checklist')}>☑︎</button>
         {typing && <button className="float-check" aria-label="Done" onMouseDown={(e) => e.preventDefault()}
           onClick={() => (document.activeElement as HTMLElement | null)?.blur()}>✓</button>}
       </div>

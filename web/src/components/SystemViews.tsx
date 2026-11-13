@@ -10,15 +10,14 @@ import { useAsk } from '../tabs/TalkTab'
 // Live Activities, Control Center and the ringing alarm. They use the preview's real data and
 // their buttons work, but nothing here is a real iOS surface.
 
-type View = 'home' | 'lock' | 'notifications' | 'live' | 'control' | 'ringing'
-
-const VIEWS: { id: View; label: string }[] = [
-  { id: 'home', label: 'Home Screen' },
-  { id: 'lock', label: 'Lock Screen' },
-  { id: 'notifications', label: 'Notifications' },
-  { id: 'live', label: 'Live Activity' },
-  { id: 'control', label: 'Control Center' },
-  { id: 'ringing', label: 'Alarm Ringing' },
+const SECTIONS: { id: string; label: string; view: () => ReactNode }[] = [
+  { id: 'home', label: 'Home Screen', view: () => <HomeScreen /> },
+  { id: 'variations', label: 'Up Next Variations', view: () => <UpNextVariations /> },
+  { id: 'lock', label: 'Lock Screen', view: () => <LockScreen /> },
+  { id: 'notifications', label: 'Notifications', view: () => <Notifications /> },
+  { id: 'live', label: 'Live Activity', view: () => <LiveActivity /> },
+  { id: 'control', label: 'Control Center', view: () => <ControlCenter /> },
+  { id: 'ringing', label: 'Alarm Ringing', view: () => <Ringing /> },
 ]
 
 const linkFor = (item: UpNextItem): Link => {
@@ -46,21 +45,16 @@ function useSystem() {
   return { ...store, next, within24h, items, dismiss, complete, snooze, setTimer }
 }
 
+/** Every system view, one after another in a long list. */
 export function SystemViews() {
-  const [view, setView] = useState<View>('home')
   return (
-    <div>
-      <div className="seg" role="tablist">
-        {VIEWS.map((v) => (
-          <button key={v.id} role="tab" aria-selected={view === v.id} className={view === v.id ? 'active' : ''} onClick={() => setView(v.id)}>{v.label}</button>
-        ))}
-      </div>
-      {view === 'home' && <HomeScreen />}
-      {view === 'lock' && <LockScreen />}
-      {view === 'notifications' && <Notifications />}
-      {view === 'live' && <LiveActivity />}
-      {view === 'control' && <ControlCenter />}
-      {view === 'ringing' && <Ringing />}
+    <div className="system-list">
+      {SECTIONS.map((section) => (
+        <section key={section.id} id={section.id} className="system-section">
+          <h2>{section.label}</h2>
+          {section.view()}
+        </section>
+      ))}
     </div>
   )
 }
@@ -157,6 +151,117 @@ function HomeScreen() {
   )
 }
 
+// MARK: - Up Next variations
+
+/** Alternative Up Next layouts to compare, all live: same data, same taps. */
+function UpNextVariations() {
+  const { now, next, items, open, dismiss } = useSystem()
+  const todos = items.filter((i) => i.kind === 'todo')
+  const others = items.filter((i) => i.kind !== 'todo' && i.kind !== 'nextAlarm' && i.kind !== 'alarmSoon')
+  const todoCount = todos.filter((i) => i.kind === 'todo' && !i.todo.isDone).length
+  const ask = (cls = 'ask') => <button className={cls} aria-label="Open Talk" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>✦</button>
+  const count = todoCount > 0 && <span className="count"> {todoCount} to-do{todoCount === 1 ? '' : 's'}</span>
+  const soonDate = next && next.date - now <= 3600_000 ? next.date : undefined
+  const alarmBlock = (big: boolean) => next ? (
+    <div className={`v-alarm ${big ? 'big' : ''}`} onClick={(e) => { e.stopPropagation(); open({ tab: 'alarms' }) }}>
+      <div className="v-alarm-time">{bigTime(next.date).time}<small> {bigTime(next.date).period}</small></div>
+      <div className="v-alarm-sub ellipsis">⏰ {alarmTitle(next.alarm)} · {dayDescription(next.date, now)}, in {countdown(now, next.date)}</div>
+      {soonDate && <button className="mini" onClick={(e) => { e.stopPropagation(); dismiss(next.alarm.id, soonDate) }}>Dismiss</button>}
+    </div>
+  ) : <div className="v-alarm"><div className="v-alarm-sub">zzz · No alarms</div></div>
+
+  const variants: { name: string; note: string; render: (size: 'medium' | 'large') => ReactNode }[] = [
+    {
+      name: 'A · List (current)',
+      note: 'Everything in one list in order of urgency; ✦ in the corner.',
+      render: (size) => (
+        <>
+          <div className="wh"><span>Up Next{count}</span></div>
+          {items.slice(0, size === 'medium' ? 3 : 8).map((i, n, a) => <div key={keyOf(i)} style={{ paddingRight: n === a.length - 1 ? 40 : 0 }}><Row item={i} /></div>)}
+          {ask('ask corner')}
+        </>
+      ),
+    },
+    {
+      name: 'B · Alarm on top',
+      note: 'The next alarm as a big time across the top with ✦ beside it, then just to-dos and timers.',
+      render: (size) => (
+        <>
+          <div className="v-top">{alarmBlock(false)}{ask()}</div>
+          <div className="v-divider" />
+          <div className="wh small"><span>To-Do{count}</span></div>
+          {[...others, ...todos].slice(0, size === 'medium' ? 1 : 7).map((i) => <Row key={keyOf(i)} item={i} />)}
+        </>
+      ),
+    },
+    {
+      name: 'C · Side by side',
+      note: 'Alarm and ✦ in a column on the left, to-dos on the right.',
+      render: (size) => (
+        <div className="v-split">
+          <div className="v-left">
+            {alarmBlock(true)}
+            <div style={{ flex: 1 }} />
+            <button className="ask-pill" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>✦ Ask</button>
+          </div>
+          <div className="v-right">
+            <div className="wh small"><span>Up Next{count}</span></div>
+            {[...others, ...todos].slice(0, size === 'medium' ? 3 : 8).map((i) => <Row key={keyOf(i)} item={i} compact />)}
+          </div>
+        </div>
+      ),
+    },
+    {
+      name: 'D · Agenda',
+      note: 'Times in a column on the left, like a calendar; ✦ next to the title.',
+      render: (size) => (
+        <>
+          <div className="wh"><span>Up Next{count}</span>{ask('ask small')}</div>
+          {items.slice(0, size === 'medium' ? 3 : 8).map((i) => {
+            const when = i.kind === 'todo' ? (i.todo.due ? timeOf(i.todo.due) : '—') : 'date' in i ? timeOf(i.date) : 'Now'
+            return (
+              <div key={keyOf(i)} className="v-agenda-row">
+                <span className={`v-when ${i.kind === 'todo' && isOverdue(i.todo, now) ? 'red' : ''}`}>{when.replace(' ', '\u00a0')}</span>
+                <div style={{ flex: 1, minWidth: 0 }}><Row item={i} /></div>
+              </div>
+            )
+          })}
+        </>
+      ),
+    },
+    {
+      name: 'E · Ask bar',
+      note: 'The list on top and a full-width "Ask Alarmie" bar along the bottom instead of a round button.',
+      render: (size) => (
+        <>
+          <div className="wh"><span>Up Next{count}</span></div>
+          {items.slice(0, size === 'medium' ? 2 : 7).map((i) => <Row key={keyOf(i)} item={i} />)}
+          <div style={{ flex: 1 }} />
+          <button className="ask-bar" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>✦ Ask Alarmie…</button>
+        </>
+      ),
+    },
+  ]
+  return (
+    <>
+      <div className="variations">
+        {variants.map((v) => (
+          <div key={v.name} className="variation">
+            <div className="variation-head"><b>{v.name}</b><span>{v.note}</span></div>
+            <div className="home variation-stage">
+              <div className="widgets">
+                <div className="widget upnext medium" onClick={() => open(items[0] ? linkFor(items[0]) : { tab: 'todos' })}>{v.render('medium')}</div>
+                <div className="widget upnext large" onClick={() => open(items[0] ? linkFor(items[0]) : { tab: 'todos' })}>{v.render('large')}</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <Caption>Five ways to lay out Up Next with the alarm and the ✦ Talk button, in medium and large sizes. They're live: tap rows, check off to-dos or tap ✦. Tell me which one to build into the app.</Caption>
+    </>
+  )
+}
+
 const keyOf = (i: UpNextItem) => i.kind + ('alarm' in i ? i.alarm.id : i.kind === 'timer' ? i.timer.id : i.todo.id)
 
 // MARK: - Lock Screen
@@ -219,7 +324,6 @@ function Notifications() {
   const alarm = alarmWithRing?.a
   const ring = alarmWithRing?.t ?? now + 3600_000
   const todo: Todo | undefined = data.todos.find((t) => !t.isDone && t.due !== undefined)
-  const timer = data.timers.find((t) => t.state === 'running')
 
   const tapAlarm = () => {
     if (s.alarmTapToDismiss && alarm) dismiss(alarm.id, ring)
@@ -285,25 +389,12 @@ function Notifications() {
             </button>
           </div>
         )}
-
-        {/* Timer warning */}
-        {timer && s.timerWarningMinutes > 0 && (
-          <div className="notif">
-            <button className="notif-body" onClick={() => open({ tab: 'timers' })}>
-              <img src="/icon.png" alt="" />
-              <div className="notif-text">
-                <div className="notif-top"><b>{timer.label || durationName(timer.duration)}</b><span>now</span></div>
-                <div>{leadTimeName(s.timerWarningMinutes)} left</div>
-              </div>
-            </button>
-          </div>
-        )}
       </div>
       <Caption>
         Tap a notification to open it{s.alarmTapToDismiss ? ' (the alarm one also dismisses that ring, because Tap Notification to Dismiss is on)' : ''}.
         Right-click, or tap "Touch and hold…", to see the actions you'd get by pressing and holding on iPhone.
-        Which notifications appear follows each tab's settings{[!s.timerWarningMinutes && 'timer warnings', !s.todoEarlyReminderMinutes && 'to-do early reminders'].filter(Boolean).length
-          ? ` (${[!s.timerWarningMinutes && 'timer warnings', !s.todoEarlyReminderMinutes && 'to-do early reminders'].filter(Boolean).join(' and ')} are off)` : ''}.
+        Which notifications appear follows each tab's settings{!s.todoEarlyReminderMinutes ? ' (to-do early reminders are off)' : ''}.
+        The alarm heads-up clears itself once that alarm rings.
         {!alarm && ' No alarms are set, so the alarm one is an example.'}
       </Caption>
     </>

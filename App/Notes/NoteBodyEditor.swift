@@ -7,11 +7,14 @@ final class NoteEditorCommands {
     fileprivate weak var coordinator: NoteBodyEditor.Coordinator?
 
     /// Turns the current line(s) into checklist items, or back into text.
-    func toggleChecklist() { coordinator?.toggleChecklist() }
+    func toggleChecklist() { coordinator?.toggleList(.checklist) }
+
+    /// Turns the current line(s) into bullets (•), or back into text.
+    func toggleBullets() { coordinator?.toggleList(.bullets) }
 }
 
 /// The note's body: a text view that draws checklist items (☐ / ☑ lines) as tappable boxes,
-/// strikes through done items, and continues the checklist when you press Return.
+/// strikes through done items, and continues checklists and bulleted lists (•) on Return.
 struct NoteBodyEditor: UIViewRepresentable {
     @Binding var text: String
     @Binding var isEditing: Bool
@@ -83,13 +86,19 @@ struct NoteBodyEditor: UIViewRepresentable {
         }
 
         func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText replacement: String) -> Bool {
-            guard replacement == "\n", range.length == 0,
-                  let result = NoteChecklist.handleReturn(in: textView.text, at: range.location) else { return true }
-            replace(with: result.text, caret: result.caret)
-            return false
+            guard range.length == 0 else { return true }
+            if replacement == "\n", let result = NoteChecklist.handleReturn(in: textView.text, at: range.location) {
+                replace(with: result.text, caret: result.caret)
+                return false
+            }
+            if let result = NoteChecklist.autoBullet(in: textView.text, at: range.location, typing: replacement) {
+                replace(with: result.text, caret: result.caret)
+                return false
+            }
+            return true
         }
 
-        func toggleChecklist() {
+        func toggleList(_ style: NoteChecklist.ListStyle) {
             guard let textView else { return }
             var selection = textView.selectedRange
             var base = textView.text ?? ""
@@ -99,7 +108,7 @@ struct NoteBodyEditor: UIViewRepresentable {
                 if !base.isEmpty, !base.hasSuffix("\n") { base += "\n" }
                 selection = NSRange(location: max(length, (base as NSString).length), length: 0)
             }
-            let result = NoteChecklist.toggleChecklist(in: base, selection: selection)
+            let result = NoteChecklist.toggleList(style, in: base, selection: selection)
             replace(with: result.text, caret: result.selection.location)
             if !textView.isFirstResponder { textView.becomeFirstResponder() }
         }
@@ -141,7 +150,8 @@ struct NoteBodyEditor: UIViewRepresentable {
             let index = textView.offset(from: textView.beginningOfDocument, to: position)
             let text = textView.text ?? ""
             let line = NoteChecklist.lineRange(in: text, at: index)
-            guard NoteChecklist.kind(of: (text as NSString).substring(with: line)) != .plain,
+            let kind = NoteChecklist.kind(of: (text as NSString).substring(with: line))
+            guard kind == .unchecked || kind == .checked,
                   let afterBox = textView.position(from: textView.beginningOfDocument, offset: line.location + NoteChecklist.prefixLength)
             else { return nil }
             let lineRect = textView.caretRect(for: afterBox)
@@ -162,7 +172,7 @@ struct NoteBodyEditor: UIViewRepresentable {
             let boxFont = UIFont.systemFont(ofSize: font.pointSize * 1.15, weight: .regular)
             storage.beginEditing()
             storage.setAttributes([.font: font, .foregroundColor: UIColor.label], range: NSRange(location: 0, length: storage.length))
-            for line in NoteChecklist.lines(in: text) where line.kind != .plain {
+            for line in NoteChecklist.lines(in: text) where line.kind == .unchecked || line.kind == .checked {
                 storage.addAttributes([.foregroundColor: UIColor.systemOrange, .font: boxFont],
                                       range: NSRange(location: line.range.location, length: 1))
                 if line.kind == .checked, line.range.length > NoteChecklist.prefixLength {

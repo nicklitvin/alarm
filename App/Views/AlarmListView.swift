@@ -16,6 +16,7 @@ enum EditorTarget: Identifiable {
 struct AlarmListView: View {
     @Environment(AlarmController.self) private var controller
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @State private var editorTarget: EditorTarget?
 
     var body: some View {
@@ -59,6 +60,8 @@ struct AlarmListView: View {
             } description: {
                 Text("Tap New Alarm below to set your first one.")
             }
+        } else if verticalSizeClass == .compact {
+            landscape(now: now)
         } else {
             List {
                 if !controller.isAuthorized {
@@ -97,6 +100,87 @@ struct AlarmListView: View {
             .listStyle(.insetGrouped)
             .animation(.default, value: controller.alarms)
         }
+    }
+}
+
+// MARK: - Landscape
+
+extension AlarmListView {
+    /// Sideways, a long list wastes the width and shows two alarms at a time. Instead: a grid of
+    /// cards with big times, the dismiss card(s) across the top.
+    fileprivate func landscape(now: Date) -> some View {
+        ScrollView {
+            VStack(spacing: 12) {
+                if !controller.isAuthorized {
+                    PermissionBanner()
+                        .padding(14)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                }
+                ForEach(controller.soonAlarms(now: now)) { item in
+                    SoonAlarmCard(item: item, now: now)
+                        .padding(.horizontal, 14)
+                        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                }
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 210), spacing: 12)], spacing: 12) {
+                    ForEach(controller.sortedAlarms) { alarm in
+                        AlarmCard(alarm: alarm, now: now)
+                            .onTapGesture { editorTarget = .edit(alarm) }
+                            .contextMenu {
+                                Button("Delete", systemImage: "trash", role: .destructive) { controller.delete(alarm.id) }
+                            }
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 8)
+        }
+        .background(Color(.systemGroupedBackground))
+        .animation(.default, value: controller.alarms)
+    }
+}
+
+/// One alarm as a card (landscape): time, label and days, with its switch in the corner.
+private struct AlarmCard: View {
+    @Environment(AlarmController.self) private var controller
+    let alarm: AlarmItem
+    let now: Date
+
+    var body: some View {
+        let parts = TimeFormat.parts(hour: alarm.hour, minute: alarm.minute)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .top) {
+                Text(alarm.title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(alarm.isEnabled ? Color.orange : Color.secondary)
+                    .lineLimit(1)
+                Spacer(minLength: 8)
+                Toggle("Enabled", isOn: Binding(
+                    get: { alarm.isEnabled },
+                    set: { controller.setEnabled($0, for: alarm.id) }
+                ))
+                .labelsHidden()
+                .tint(.green)
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(parts.time)
+                    .font(.system(size: 48, weight: .light))
+                    .monospacedDigit()
+                if let period = parts.period {
+                    Text(period).font(.title3)
+                }
+            }
+            .foregroundStyle(alarm.isEnabled ? .primary : .secondary)
+            Text(alarm.isRepeating ? alarm.repeatSummary
+                 : (alarm.isEnabled ? alarm.oneTimeDate.map { TimeFormat.dayDescription(for: $0, relativeTo: now) } ?? "Once" : "Once"))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }
 

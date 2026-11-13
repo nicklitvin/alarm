@@ -114,7 +114,7 @@ private struct DeleteAllSection: View {
     private var question: String {
         switch tab {
         case .alarms: "Delete all \(count) alarm\(count == 1 ? "" : "s")?"
-        case .timers: "Cancel running timers and clear Recents?"
+        case .timers: "Cancel running timers and clear recent times?"
         case .todos: "Delete all \(count) to-do\(count == 1 ? "" : "s"), including completed ones?"
         case .notes: "Delete all \(count) note\(count == 1 ? "" : "s")?"
         case .talk: ""
@@ -123,7 +123,7 @@ private struct DeleteAllSection: View {
 
     private var footer: String {
         switch tab {
-        case .timers: "Cancels any running timers and clears the Recents list."
+        case .timers: "Cancels any running timers and clears your recent times."
         default: "Removes everything on this tab."
         }
     }
@@ -217,23 +217,12 @@ private struct WidgetToggleRow: View {
 // MARK: - Timers
 
 private struct TimerSettingsSection: View {
-    @AppStorage(AppSettings.timerWarningMinutesKey, store: AppSettings.store) private var warningMinutes = 0
-
     var body: some View {
         Section {
-            Picker("Before a Timer Ends", selection: $warningMinutes) {
-                ForEach(AppSettings.timerWarningChoices, id: \.self) { minutes in
-                    Text(minutes == 0 ? "Off" : "\(AppSettings.leadTimeName(minutes)) before").tag(minutes)
-                }
-            }
-        } header: {
-            Text("Notifications")
-        } footer: {
-            Text(warningMinutes == 0
-                 ? "Timers ring when they finish, even in Silent mode."
-                 : "You'll get a notification \(AppSettings.leadTimeName(warningMinutes)) before a timer finishes. It still rings when it's done.")
+            Label("Timers ring when they finish, even in Silent mode.", systemImage: "bell.badge")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
         }
-        .onChange(of: warningMinutes) { TimerController.shared.refreshNotifications() }
     }
 }
 
@@ -277,8 +266,8 @@ private struct TodoSettingsSection: View {
     }
 }
 
-/// The quick times shown under a deadline (9 AM, 3 PM and 9 PM by default): all on one row.
-/// Tap a time to change or remove it, or + to add one.
+/// The three quick times shown under a deadline (8 AM, 2 PM and 9 PM by default), on one row.
+/// Tap one to change it.
 private struct QuickTimesSection: View {
     @AppStorage(AppSettings.todoQuickTimesKey, store: AppSettings.store) private var stored = ""
     @State private var editing: QuickTimeEdit?
@@ -287,83 +276,60 @@ private struct QuickTimesSection: View {
 
     var body: some View {
         Section {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 68), spacing: 8)], spacing: 8) {
+            HStack(spacing: 8) {
                 ForEach(times, id: \.self) { minutes in
                     Button {
                         editing = QuickTimeEdit(original: minutes)
                     } label: {
-                        chip(QuickTime(minutes: minutes).label, filled: true)
+                        Text(QuickTime(minutes: minutes).label)
+                            .font(.subheadline.weight(.semibold))
+                            .lineLimit(1)
+                            .fixedSize()
+                            .frame(maxWidth: .infinity, minHeight: 34)
+                            .foregroundStyle(Color.primary)
+                            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color(.tertiarySystemFill)))
                     }
                     .buttonStyle(.plain)
-                }
-                if times.count < AppSettings.maxTodoQuickTimes {
-                    Button {
-                        editing = QuickTimeEdit(original: nil)
-                    } label: {
-                        chip(nil, filled: false)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Add Time")
                 }
             }
             .padding(.vertical, 4)
 
             if times != AppSettings.defaultTodoQuickTimes {
-                Button("Reset to 9 AM, 3 PM, 9 PM") { stored = "" }
+                Button("Reset to 8 AM, 2 PM, 9 PM") { stored = "" }
             }
         } header: {
             Text("Quick Times")
         } footer: {
-            Text("One-tap times under a to-do's deadline. Tap one to change or remove it.")
+            Text("One-tap times under a to-do's deadline. Tap one to change it.")
         }
         .sheet(item: $editing) { edit in
-            QuickTimeEditor(edit: edit, canRemove: edit.original != nil && times.count > 1) { result in
-                var list = times
-                if let original = edit.original { list.removeAll { $0 == original } }
-                if let result { list.append(result) }
+            QuickTimeEditor(edit: edit) { result in
+                let list = times.map { $0 == edit.original ? result : $0 }
                 stored = AppSettings.formatQuickTimes(AppSettings.parseQuickTimes(AppSettings.formatQuickTimes(list)))
             }
-            .presentationDetents([.height(340)])
+            .presentationDetents([.height(320)])
         }
-    }
-
-    private func chip(_ text: String?, filled: Bool) -> some View {
-        Group {
-            if let text {
-                Text(text)
-            } else {
-                Image(systemName: "plus")
-            }
-        }
-        .font(.subheadline.weight(.semibold))
-        .lineLimit(1)
-        .fixedSize()
-        .frame(maxWidth: .infinity, minHeight: 34)
-        .foregroundStyle(filled ? Color.primary : Color.orange)
-        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color(.tertiarySystemFill)))
     }
 }
 
 private struct QuickTimeEdit: Identifiable {
-    /// The time being changed, or nil when adding one.
-    let original: Int?
-    var id: String { original.map(String.init) ?? "new" }
+    /// The time being changed.
+    let original: Int
+    var id: Int { original }
 }
 
-/// Change, add or remove one quick time.
+/// Change one quick time.
 private struct QuickTimeEditor: View {
     @Environment(\.dismiss) private var dismiss
     let edit: QuickTimeEdit
-    let canRemove: Bool
-    /// The new time in minutes after midnight, or nil to remove it.
-    let onDone: (Int?) -> Void
+    /// The new time in minutes after midnight.
+    let onDone: (Int) -> Void
     @State private var date: Date
 
-    init(edit: QuickTimeEdit, canRemove: Bool, onDone: @escaping (Int?) -> Void) {
+    init(edit: QuickTimeEdit, onDone: @escaping (Int) -> Void) {
         self.edit = edit
-        self.canRemove = canRemove
         self.onDone = onDone
-        let minutes = edit.original ?? 12 * 60
+        let minutes = edit.original
         _date = State(initialValue: Calendar.current.date(
             bySettingHour: minutes / 60, minute: minutes % 60, second: 0, of: .now) ?? .now)
     }
@@ -373,20 +339,14 @@ private struct QuickTimeEditor: View {
             VStack(spacing: 12) {
                 IntervalDatePicker(selection: $date, mode: .time, style: .wheels, minuteInterval: 5)
                     .frame(maxWidth: .infinity)
-                if canRemove {
-                    Button("Remove Time", role: .destructive) {
-                        onDone(nil)
-                        dismiss()
-                    }
-                }
             }
             .padding(.horizontal)
-            .navigationTitle(edit.original == nil ? "Add Time" : "Quick Time")
+            .navigationTitle("Quick Time")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(edit.original == nil ? "Add" : "Save") {
+                    Button("Save") {
                         let c = Calendar.current.dateComponents([.hour, .minute], from: date)
                         onDone((c.hour ?? 0) * 60 + (c.minute ?? 0))
                         dismiss()

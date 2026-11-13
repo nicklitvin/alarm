@@ -437,7 +437,7 @@ struct WriteNoteTool: Tool {
         var action: Action
         @Guide(description: "For create: the new title. Otherwise: which note, by title or words from it.")
         var note: String
-        @Guide(description: "The text to write (create, append, replace) or the new title (rename). For a checklist or to-do list in a note, start each item's line with ☐ (or ☑ when done).")
+        @Guide(description: "The text to write (create, append, replace) or the new title (rename). For a checklist or to-do list in a note, start each item's line with ☐ (or ☑ when done); for a bulleted list, start each line with •.")
         var text: String
     }
 

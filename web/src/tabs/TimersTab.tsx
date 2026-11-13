@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import { SwipeRow } from '../components/SwipeRow'
 import { BottomAction, Section, Sheet, TabHeader, Wheel } from '../components/ui'
-import { addRecent, clock, compactDuration, durationName, recentID, uid, type RecentTimer, type TimerItem } from '../logic/model'
+import { addRecent, clock, compactDuration, durationName, latestTimes, uid, type RecentTimer, type TimerItem } from '../logic/model'
 import { useStore } from '../logic/store'
 
-const PRESETS = [60, 180, 300, 600, 900, 1800]
 const range = (n: number) => Array.from({ length: n }, (_, i) => i)
 
-/** Running timers and Recents. New timers are set up in a sheet, like adding an alarm. */
+/** Running timers. New timers are set up in a sheet with your last three times one tap away. */
 export function TimersTab() {
   const { data, update, now } = useStore()
   const [creating, setCreating] = useState(false)
@@ -23,7 +22,6 @@ export function TimersTab() {
   }
   const set = (id: string, change: (t: TimerItem) => TimerItem | null) =>
     update((d) => ({ ...d, timers: d.timers.flatMap((t) => (t.id === id ? (change(t) ?? []) : [t])) }))
-  const removeRecent = (r: RecentTimer) => update((d) => ({ ...d, recents: d.recents.filter((x) => recentID(x) !== recentID(r)) }))
 
   return (
     <>
@@ -55,31 +53,17 @@ export function TimersTab() {
         </Section>
       )}
 
-      {data.recents.length > 0 && (
-        <Section>
-          {data.recents.map((r) => (
-            <SwipeRow key={recentID(r)} trailing={{ label: 'Remove', color: 'var(--red)', onAction: () => removeRecent(r) }}>
-              <div className="grow">
-                <div className="timer-time">{clock(r.duration)}</div>
-                <div className="sub ellipsis">{r.label || durationName(r.duration)}</div>
-              </div>
-              <button className="circle-btn" aria-label={`Start ${r.label || durationName(r.duration)}`} onClick={() => start(r.duration, r.label)}>▶</button>
-            </SwipeRow>
-          ))}
-        </Section>
-      )}
-
-      {timers.length === 0 && data.recents.length === 0 && (
-        <div className="talk-empty"><div className="big">⏱</div><h3>No Timers</h3>Tap New Timer below. Timers you use show up here so you can start them again.</div>
+      {timers.length === 0 && (
+        <div className="talk-empty"><div className="big">⏱</div><h3>No Timers</h3>Tap New Timer below. Your last three times are one tap away there.</div>
       )}
 
       <BottomAction label="New Timer" onClick={() => setCreating(true)} />
-      {creating && <NewTimerSheet onClose={() => setCreating(false)} onStart={start} />}
+      {creating && <NewTimerSheet recent={latestTimes(data.recents)} onClose={() => setCreating(false)} onStart={start} />}
     </>
   )
 }
 
-function NewTimerSheet({ onClose, onStart }: { onClose: () => void; onStart: (seconds: number, label: string) => void }) {
+function NewTimerSheet({ recent, onClose, onStart }: { recent: RecentTimer[]; onClose: () => void; onStart: (seconds: number, label: string) => void }) {
   const [h, setH] = useState(0)
   const [m, setM] = useState(5)
   const [s, setS] = useState(0)
@@ -102,9 +86,15 @@ function NewTimerSheet({ onClose, onStart }: { onClose: () => void; onStart: (se
         ))}
       </div>
       <div style={{ height: 16 }} />
-      <Section footer="Tap a preset to start it right away.">
-        <div className="preset-grid">
-          {PRESETS.map((p) => <button key={p} className="preset" onClick={() => start(p)}>{compactDuration(p)}</button>)}
+      <Section header="Recent">
+        {/* The last three times, same chips as the to-do quick times: tap one to set the wheels. */}
+        <div className="row quick-times">
+          {recent.map((r) => (
+            <button key={r.duration} className={`qt-chip ${total === r.duration ? 'selected' : ''}`} title={r.label || durationName(r.duration)}
+              onClick={() => { setH(Math.floor(r.duration / 3600)); setM(Math.floor((r.duration % 3600) / 60)); setS(r.duration % 60); if (r.label) setLabel(r.label) }}>
+              {compactDuration(r.duration)}
+            </button>
+          ))}
         </div>
         <div className="row"><span>Label</span><input className="input right" placeholder="Timer" value={label} onChange={(e) => setLabel(e.target.value)} /></div>
       </Section>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import changelog from '../../../CHANGELOG.json'
 import {
-  applyQuickTime, cleanQuickTimes, DEFAULT_QUICK_TIMES, dueDescription, dueSuggestions, leadTimeName, MAX_QUICK_TIMES, quickTimeLabel, timeOf, type NotesSort, type Settings,
+  applyQuickTime, cleanQuickTimes, DEFAULT_QUICK_TIMES, dueDescription, dueSuggestions, leadTimeName, quickTimeLabel, timeOf, type NotesSort, type Settings,
 } from '../logic/model'
 import { useStore, type Tab } from '../logic/store'
 
@@ -185,34 +185,24 @@ export function Alert({ title, message, action, onConfirm, onCancel }: {
 }
 
 
-/** To-Do settings → Quick Times: all on one row. Tap one to change or remove it, + to add. */
+/** To-Do settings → Quick Times: always three, on one row. Tap one to change it. */
 function QuickTimesSection() {
   const { data, update } = useStore()
   const times = cleanQuickTimes(data.settings.todoQuickTimes)
-  const [editing, setEditing] = useState<{ original?: number; value: number } | null>(null)
+  const [editing, setEditing] = useState<{ original: number; value: number } | null>(null)
   const save = (list: number[]) => update((d) => ({ ...d, settings: { ...d.settings, todoQuickTimes: cleanQuickTimes(list) } }))
   const isDefault = times.join() === DEFAULT_QUICK_TIMES.join()
-  const done = (value: number | null) => {
-    if (!editing) return
-    const rest = times.filter((x) => x !== editing.original)
-    save(value === null ? rest : [...rest, value])
-    setEditing(null)
-  }
   return (
-    <Section header="Quick Times" footer="One-tap times under a to-do's deadline. Tap one to change or remove it.">
+    <Section header="Quick Times" footer="One-tap times under a to-do's deadline. Tap one to change it.">
       <div className="row quick-times">
         {times.map((m) => <button key={m} className="qt-chip" onClick={() => setEditing({ original: m, value: m })}>{quickTimeLabel(m)}</button>)}
-        {times.length < MAX_QUICK_TIMES && <button className="qt-chip add" aria-label="Add Time" onClick={() => setEditing({ value: 12 * 60 })}>＋</button>}
       </div>
-      {!isDefault && <button className="row tappable orange" style={{ width: '100%' }} onClick={() => save(DEFAULT_QUICK_TIMES)}>Reset to 9 AM, 3 PM, 9 PM</button>}
+      {!isDefault && <button className="row tappable orange" style={{ width: '100%' }} onClick={() => save(DEFAULT_QUICK_TIMES)}>Reset to 8 AM, 2 PM, 9 PM</button>}
       {editing && (
-        <Sheet title={editing.original === undefined ? 'Add Time' : 'Quick Time'} medium onClose={() => setEditing(null)}
+        <Sheet title="Quick Time" medium onClose={() => setEditing(null)}
           left={<button onClick={() => setEditing(null)}>Cancel</button>}
-          right={<button onClick={() => done(editing.value)}>{editing.original === undefined ? 'Add' : 'Save'}</button>}>
+          right={<button onClick={() => { save(times.map((x) => (x === editing.original ? editing.value : x))); setEditing(null) }}>Save</button>}>
           <TimeWheel hour={Math.floor(editing.value / 60)} minute={editing.value % 60} onChange={(h, mm) => setEditing({ ...editing, value: h * 60 + mm })} />
-          {editing.original !== undefined && times.length > 1 && (
-            <Section><button className="row tappable red" style={{ width: '100%', justifyContent: 'center' }} onClick={() => done(null)}>Remove Time</button></Section>
-          )}
         </Sheet>
       )}
     </Section>
@@ -302,8 +292,8 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
         </Section>
       )}
       {tab === 'timers' && (
-        <Section header="Notifications" footer={s.timerWarningMinutes === 0 ? 'Timers ring when they finish, even in Silent mode.' : `You'll get a notification ${leadTimeName(s.timerWarningMinutes)} before a timer finishes.`}>
-          <div className="row"><span className="grow">Before a Timer Ends</span>{choice(s.timerWarningMinutes, [0, 1, 5], (v) => set('timerWarningMinutes', v))}</div>
+        <Section>
+          <div className="row muted" style={{ fontSize: 15 }}>🔔 Timers ring when they finish, even in Silent mode.</div>
         </Section>
       )}
       {tab === 'todos' && (
@@ -352,14 +342,14 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
       {tab !== 'talk' && (() => {
         const info = {
           alarms: { label: 'Delete All Alarms', count: data.alarms.length, ask: `Delete all ${data.alarms.length} alarms?` },
-          timers: { label: 'Delete All Timers', count: data.timers.length + data.recents.length, ask: 'Cancel running timers and clear Recents?' },
+          timers: { label: 'Delete All Timers', count: data.timers.length + data.recents.length, ask: 'Cancel running timers and clear recent times?' },
           todos: { label: 'Delete All To-Dos', count: data.todos.length, ask: `Delete all ${data.todos.length} to-dos, including completed ones?` },
           notes: { label: 'Delete All Notes', count: data.notes.length, ask: `Delete all ${data.notes.length} notes?` },
         }[tab]
         const clear = () => update((d) => tab === 'alarms' ? { ...d, alarms: [] } : tab === 'timers' ? { ...d, timers: [], recents: [] }
           : tab === 'todos' ? { ...d, todos: [] } : { ...d, notes: [] })
         return (
-          <Section footer={tab === 'timers' ? 'Cancels any running timers and clears the Recents list.' : 'Removes everything on this tab.'}>
+          <Section footer={tab === 'timers' ? 'Cancels any running timers and clears your recent times.' : 'Removes everything on this tab.'}>
             <button className="row tappable red" style={{ width: '100%' }}
               onClick={() => { if (info.count) setConfirmDeleteAll(true) }}>🗑︎ {info.label}</button>
             {confirmDeleteAll && <Alert title={info.ask} message="This can't be undone." action="Delete All"

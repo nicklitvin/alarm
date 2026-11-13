@@ -5,6 +5,7 @@ import {
   ALARM_SOUNDS, alarmTitle, countdown, dayDescription, nextAlarm, nextFire, repeatSummary, roundTo5, soundName, timeOf, timeParts, uid,
   weekdayInitial, type Alarm, type Weekday,
 } from '../logic/model'
+import { useLandscape } from '../logic/orientation'
 import { useStore } from '../logic/store'
 
 const ORDER: Weekday[] = [1, 2, 3, 4, 5, 6, 7]
@@ -12,6 +13,7 @@ const ORDER: Weekday[] = [1, 2, 3, 4, 5, 6, 7]
 export function AlarmsTab() {
   const { data, update, now, pending, clearPending } = useStore()
   const [editing, setEditing] = useState<Alarm | 'new' | null>(null)
+  const landscape = useLandscape()
   const headsUp = data.settings.alarmHeadsUpMinutes * 60_000
   const next = nextAlarm(data.alarms, now)
   const sorted = [...data.alarms].sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute))
@@ -54,6 +56,27 @@ export function AlarmsTab() {
               ))}
             </Section>
           )}
+          {landscape ? (
+            // Sideways: a grid of cards with big times instead of a long list (AlarmCard in the app).
+            <div className="alarm-grid">
+              {sorted.map((alarm) => {
+                const p = timeParts(alarm.hour, alarm.minute)
+                const fire = nextFire(alarm, now)
+                return (
+                  <div key={alarm.id} className={`alarm-card ${alarm.isEnabled ? '' : 'off'}`} onClick={() => setEditing(alarm)}>
+                    <div className="alarm-card-top">
+                      <span className="ellipsis">{alarmTitle(alarm)}</span>
+                      <span onClick={(e) => e.stopPropagation()}>
+                        <Switch label="Enabled" on={alarm.isEnabled} onChange={(v) => setAlarm(alarm.id, (a) => ({ ...a, isEnabled: v, skippedOccurrence: undefined }))} />
+                      </span>
+                    </div>
+                    <div className="alarm-time">{p.time}<small>{p.period}</small></div>
+                    <div className="sub ellipsis">{alarm.weekdays.length ? repeatSummary(alarm) : alarm.isEnabled && fire ? dayDescription(fire, now) : 'Once'}</div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
           <Section>
             {sorted.map((alarm) => {
               const p = timeParts(alarm.hour, alarm.minute)
@@ -74,6 +97,7 @@ export function AlarmsTab() {
               )
             })}
           </Section>
+          )}
         </>
       )}
       <BottomAction label="New Alarm" onClick={() => setEditing('new')} />

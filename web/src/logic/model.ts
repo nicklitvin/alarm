@@ -39,6 +39,14 @@ export interface RecentTimer {
 
 export const recentID = (r: RecentTimer) => `${r.duration}|${r.label}`
 
+/** The latest three different durations, filled with 5, 10 and 15 min (RecentTimer.latestTimes). */
+export function latestTimes(recents: RecentTimer[], count = 3): RecentTimer[] {
+  const out: RecentTimer[] = []
+  for (const r of recents) { if (!out.some((x) => x.duration === r.duration)) out.push(r); if (out.length === count) return out }
+  for (const m of [5, 10, 15]) if (out.length < count && !out.some((x) => x.duration === m * 60)) out.push({ duration: m * 60, label: '' })
+  return out
+}
+
 /** Newest first, no duplicates, at most 12. */
 export function addRecent(recents: RecentTimer[], timer: RecentTimer) {
   return [timer, ...recents.filter((r) => recentID(r) !== recentID(timer))].slice(0, 12)
@@ -70,7 +78,6 @@ export interface Settings {
   alarmHeadsUpEnabled: boolean
   alarmHeadsUpMinutes: number
   alarmTapToDismiss: boolean
-  timerWarningMinutes: number
   todoDueAlertEnabled: boolean
   todoEarlyReminderMinutes: number
   notesSort: NotesSort
@@ -88,7 +95,6 @@ export const defaultSettings: Settings = {
   alarmHeadsUpEnabled: true,
   alarmHeadsUpMinutes: 60,
   alarmTapToDismiss: false,
-  timerWarningMinutes: 0,
   todoDueAlertEnabled: true,
   todoEarlyReminderMinutes: 0,
   notesSort: 'edited',
@@ -96,7 +102,7 @@ export const defaultSettings: Settings = {
   wakeWord: 'Hey Alarm',
   speakReplies: true,
   customInstructions: '',
-  todoQuickTimes: [9 * 60, 15 * 60, 21 * 60],
+  todoQuickTimes: [8 * 60, 14 * 60, 21 * 60],
   widgetShowsAlarms: true,
   widgetShowsTimedTodos: true,
   widgetShowsUntimedTodos: true,
@@ -300,13 +306,14 @@ export function dueSuggestions(now: number): Suggestion[] {
   return result
 }
 
-export const DEFAULT_QUICK_TIMES = [9 * 60, 15 * 60, 21 * 60]
-export const MAX_QUICK_TIMES = 5
+export const DEFAULT_QUICK_TIMES = [8 * 60, 14 * 60, 21 * 60]
+export const QUICK_TIME_COUNT = 3
 
-/** Sorted, unique, valid; the defaults when empty (AppSettings.parseQuickTimes). */
+/** Exactly three, sorted and unique; missing ones filled from the defaults (AppSettings.parseQuickTimes). */
 export function cleanQuickTimes(list: number[] | undefined) {
-  const unique = [...new Set((list ?? []).filter((m) => Number.isInteger(m) && m >= 0 && m < 1440))].sort((a, b) => a - b)
-  return unique.length ? unique.slice(0, MAX_QUICK_TIMES) : DEFAULT_QUICK_TIMES
+  const unique = [...new Set((list ?? []).filter((m) => Number.isInteger(m) && m >= 0 && m < 1440))].sort((a, b) => a - b).slice(0, QUICK_TIME_COUNT)
+  for (const d of DEFAULT_QUICK_TIMES) if (unique.length < QUICK_TIME_COUNT && !unique.includes(d)) unique.push(d)
+  return unique.sort((a, b) => a - b)
 }
 
 /** "9 AM", "9:30 AM" (QuickTime.label). */
@@ -341,8 +348,11 @@ export function notePreview(n: Note) {
 // Checklists in notes (NoteChecklist in App/Notes/Note.swift): "☐ " to do, "☑ " done.
 export const UNCHECKED = '☐ '
 export const CHECKED = '☑ '
-export type LineKind = 'plain' | 'unchecked' | 'checked'
-export const lineKind = (line: string): LineKind => line.startsWith(UNCHECKED) ? 'unchecked' : line.startsWith(CHECKED) ? 'checked' : 'plain'
+export const BULLET = '• '
+export type LineKind = 'plain' | 'unchecked' | 'checked' | 'bullet'
+export const lineKind = (line: string): LineKind =>
+  line.startsWith(UNCHECKED) ? 'unchecked' : line.startsWith(CHECKED) ? 'checked' : line.startsWith(BULLET) ? 'bullet' : 'plain'
+const isItem = (k: LineKind) => k === 'unchecked' || k === 'checked'
 
 /** [start, end) of the line containing `at`, without its line break. */
 export function lineBounds(text: string, at: number): [number, number] {
@@ -354,21 +364,25 @@ export function lineBounds(text: string, at: number): [number, number] {
 export function toggleItem(text: string, at: number): string | null {
   const [s, e] = lineBounds(text, at)
   const kind = lineKind(text.slice(s, e))
-  if (kind === 'plain') return null
+  if (!isItem(kind)) return null
   return text.slice(0, s) + (kind === 'unchecked' ? CHECKED : UNCHECKED) + text.slice(s + 2)
 }
 
-export function toggleChecklist(text: string, selStart: number, selEnd: number): { text: string; caret: number } {
+/** The checklist / bullet buttons: make the selected lines that kind of list, or back into text. */
+export function toggleList(style: 'checklist' | 'bullets', text: string, selStart: number, selEnd: number): { text: string; caret: number } {
   const [s] = lineBounds(text, selStart)
   const [, e] = lineBounds(text, selEnd)
   const lines = text.slice(s, e).split('\n')
-  const allItems = lines.every((l) => lineKind(l) !== 'plain')
+  const matches = (k: LineKind) => (style === 'checklist' ? isItem(k) : k === 'bullet')
+  const prefix = style === 'checklist' ? UNCHECKED : BULLET
+  const all = lines.every((l) => matches(lineKind(l)))
   let delta = 0
   const changed = lines.map((l) => {
-    if (allItems) { delta -= 2; return l.slice(2) }
-    if (lineKind(l) !== 'plain') return l
+    if (all) { delta -= 2; return l.slice(2) }
+    if (matches(lineKind(l))) return l
+    if (lineKind(l) !== 'plain') return prefix + l.slice(2)
     delta += 2
-    return UNCHECKED + l
+    return prefix + l
   })
   const out = text.slice(0, s) + changed.join('\n') + text.slice(e)
   return { text: out, caret: Math.min(out.length, Math.max(s, selEnd + delta)) }
@@ -378,13 +392,22 @@ export function toggleChecklist(text: string, selStart: number, selEnd: number):
 export function checklistReturn(text: string, at: number): { text: string; caret: number } | null {
   const [s, e] = lineBounds(text, at)
   const line = text.slice(s, e)
-  if (lineKind(line) === 'plain' || at < s + 2) return null
+  const kind = lineKind(line)
+  if (kind === 'plain' || at < s + 2) return null
   if (!line.slice(2).trim()) return { text: text.slice(0, s) + text.slice(e), caret: s }
-  return { text: text.slice(0, at) + '\n' + UNCHECKED + text.slice(at), caret: at + 3 }
+  return { text: text.slice(0, at) + '\n' + (kind === 'bullet' ? BULLET : UNCHECKED) + text.slice(at), caret: at + 3 }
+}
+
+/** Typing "- " or "* " at the start of a line makes a bullet. */
+export function autoBullet(text: string, at: number): { text: string; caret: number } | null {
+  const [s] = lineBounds(text, at)
+  const before = text.slice(s, at)
+  if (before !== '-' && before !== '*') return null
+  return { text: text.slice(0, s) + BULLET + text.slice(at), caret: s + 2 }
 }
 
 export function checklistProgress(body: string) {
-  const kinds = body.split('\n').map(lineKind).filter((k) => k !== 'plain')
+  const kinds = body.split('\n').map(lineKind).filter(isItem)
   return kinds.length ? { done: kinds.filter((k) => k === 'checked').length, total: kinds.length } : null
 }
 

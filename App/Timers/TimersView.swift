@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Running timers and Recents. New timers are set up in a sheet (like adding an alarm).
+/// Running timers. New timers are set up in a sheet (like adding an alarm), with your last three
+/// times one tap away.
 struct TimersView: View {
     @Environment(TimerController.self) private var controller
     @State private var showNew = false
@@ -20,27 +21,17 @@ struct TimersView: View {
                     }
                 }
 
-                if !controller.recents.isEmpty {
-                    Section {
-                        ForEach(controller.recents) { recent in
-                            RecentRow(recent: recent) { start(recent.duration, label: recent.label) }
-                                .swipeActions {
-                                    Button("Remove", systemImage: "trash", role: .destructive) { controller.removeRecent(recent) }
-                                }
-                        }
-                    }
-                }
             }
             .listStyle(.insetGrouped)
             // Always the same light gray as the other tabs (an empty list would otherwise be white).
             .scrollContentBackground(.hidden)
             .background(Color(.systemGroupedBackground))
             .overlay {
-                if controller.timers.isEmpty && controller.recents.isEmpty {
+                if controller.timers.isEmpty {
                     ContentUnavailableView {
                         Label("No Timers", systemImage: "timer")
                     } description: {
-                        Text("Tap New Timer below. Timers you use show up here so you can start them again.")
+                        Text("Tap New Timer below. Your last three times are one tap away there.")
                     }
                 }
             }
@@ -62,9 +53,8 @@ struct TimersView: View {
                 BottomActionButton(title: "New Timer", systemImage: "plus") { showNew = true }
             }
             .animation(.default, value: controller.timers)
-            .animation(.default, value: controller.recents)
             .sheet(isPresented: $showNew) {
-                NewTimerSheet { duration, label in start(duration, label: label) }
+                NewTimerSheet(recentTimes: controller.recentTimes) { duration, label in start(duration, label: label) }
             }
             .alert("Couldn't Start Timer", isPresented: Binding(
                 get: { errorMessage != nil },
@@ -97,9 +87,9 @@ private struct NewTimerSheet: View {
     @State private var minutes = 5
     @State private var seconds = 0
     @State private var label = ""
+    /// The last three times used (filled in with 5, 10 and 15 minutes at first).
+    let recentTimes: [RecentTimer]
     let onStart: (TimeInterval, String) -> Void
-
-    private static let presets: [TimeInterval] = [60, 3 * 60, 5 * 60, 10 * 60, 15 * 60, 30 * 60]
 
     private var pickedDuration: TimeInterval {
         TimeInterval(hours * 3600 + minutes * 60 + seconds)
@@ -114,22 +104,29 @@ private struct NewTimerSheet: View {
                 .listRowBackground(Color.clear)
 
                 Section {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
-                        ForEach(Self.presets, id: \.self) { preset in
+                    // Recent times, the same chips as the to-do quick times: tap one to set the wheels.
+                    HStack(spacing: 8) {
+                        ForEach(recentTimes) { recent in
+                            let selected = TimeInterval(hours * 3600 + minutes * 60 + seconds) == recent.duration
                             Button {
-                                start(preset)
+                                set(recent)
                             } label: {
-                                Text(TimeFormat.compactDuration(preset))
+                                Text(TimeFormat.compactDuration(recent.duration))
                                     .font(.subheadline.weight(.semibold))
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 10)
-                                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.orange.opacity(0.14)))
-                                    .foregroundStyle(.orange)
+                                    .lineLimit(1)
+                                    .fixedSize()
+                                    .frame(maxWidth: .infinity, minHeight: 34)
+                                    .foregroundStyle(selected ? Color.white : Color.primary)
+                                    .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .fill(selected ? Color.orange : Color(.tertiarySystemFill)))
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel(recent.title)
                         }
                     }
                     .padding(.vertical, 4)
+                    .sensoryFeedback(.selection, trigger: hours * 3600 + minutes * 60 + seconds)
+
                     HStack {
                         Text("Label")
                         TextField("Timer", text: $label)
@@ -137,8 +134,8 @@ private struct NewTimerSheet: View {
                             .foregroundStyle(.secondary)
                             .submitLabel(.done)
                     }
-                } footer: {
-                    Text("Tap a preset to start it right away.")
+                } header: {
+                    Text("Recent")
                 }
             }
             .navigationTitle("New Timer")
@@ -173,36 +170,18 @@ private struct NewTimerSheet: View {
         .tint(.orange)
     }
 
+    private func set(_ recent: RecentTimer) {
+        let total = Int(recent.duration)
+        hours = total / 3600
+        minutes = total % 3600 / 60
+        seconds = total % 60
+        if label.isEmpty || recentTimes.contains(where: { $0.label == label }) { label = recent.label }
+    }
+
     private func start(_ duration: TimeInterval) {
         guard duration > 0 else { return }
         onStart(duration, label.trimmingCharacters(in: .whitespacesAndNewlines))
         dismiss()
-    }
-}
-
-// MARK: - Recent timer row
-
-/// A timer used before: tap play to start it again.
-private struct RecentRow: View {
-    let recent: RecentTimer
-    let onStart: () -> Void
-
-    var body: some View {
-        HStack(spacing: 14) {
-            VStack(alignment: .leading, spacing: 0) {
-                Text(TimeFormat.clock(recent.duration))
-                    .font(.system(size: 34, weight: .light))
-                    .monospacedDigit()
-                Text(recent.title)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-            Spacer(minLength: 0)
-            CircleButton(systemImage: "play.fill", action: onStart)
-                .accessibilityLabel("Start \(recent.title)")
-        }
-        .padding(.vertical, 4)
     }
 }
 

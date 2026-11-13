@@ -16,8 +16,8 @@ settings:
     SWIFT_VERSION: "5.0"
     # Version: bump both for every release and add a matching entry to CHANGELOG.json
     # (Tests/run.sh fails if they don't match).
-    MARKETING_VERSION: "1.16.0"
-    CURRENT_PROJECT_VERSION: "23"
+    MARKETING_VERSION: "1.17.0"
+    CURRENT_PROJECT_VERSION: "24"
     TARGETED_DEVICE_FAMILY: "1"
     GENERATE_INFOPLIST_FILE: YES
 
@@ -42,7 +42,7 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: Alarmie
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
-        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
 
   AlarmWidget:
     type: app-extension

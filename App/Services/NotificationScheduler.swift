@@ -81,6 +81,7 @@ enum NotificationScheduler {
             guard !alreadyShown else { continue }
 
             let content = makeContent(for: alarm)
+            content.userInfo[ringDateKey] = ring.timeIntervalSince1970
             let minutes = max(1, Int((lead / 60).rounded(.up)))
             content.title = "Alarm in \(minutes) min"
             let request = UNNotificationRequest(
@@ -109,6 +110,24 @@ enum NotificationScheduler {
             .filter { ($0.request.content.userInfo[alarmIDKey] as? String) == alarmID.uuidString }
             .map(\.request.identifier)
         center.removeDeliveredNotifications(withIdentifiers: ids)
+    }
+
+    private static let ringDateKey = "ringDate"
+
+    /// Clears heads-ups whose alarm is ringing or has rung: once it rings, "Alarm in 1 hour" is
+    /// out of date. Called when an alarm starts ringing (if the app is running), when its Stop
+    /// button is tapped, and whenever the app comes to the foreground.
+    static func removeDeliveredForRungAlarms(now: Date = .now) async {
+        let center = UNUserNotificationCenter.current()
+        let ids = await center.deliveredNotifications()
+            .filter { $0.request.content.categoryIdentifier == categoryID }
+            .filter { notification in
+                let ring = (notification.request.content.userInfo[ringDateKey] as? Double).map(Date.init(timeIntervalSince1970:))
+                    ?? notification.date.addingTimeInterval(AlarmItem.headsUpInterval)
+                return ring <= now.addingTimeInterval(60)
+            }
+            .map(\.request.identifier)
+        if !ids.isEmpty { center.removeDeliveredNotifications(withIdentifiers: ids) }
     }
 
     // MARK: - Private

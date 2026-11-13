@@ -46,6 +46,10 @@ final class TimerController {
         observation = Task { [weak self] in
             for await alarms in AlarmManager.shared.alarmUpdates {
                 self?.reconcile(with: alarms)
+                // An alarm started ringing: its "Alarm in 1 hour" heads-up is out of date.
+                if alarms.contains(where: { $0.state == .alerting }) {
+                    await NotificationScheduler.removeDeliveredForRungAlarms()
+                }
             }
         }
     }
@@ -111,6 +115,10 @@ final class TimerController {
         save()
     }
 
+    /// The last three different times used, for the New Timer sheet. Filled in with
+    /// 5, 10 and 15 minutes until you've used three.
+    var recentTimes: [RecentTimer] { RecentTimer.latestTimes(from: recents) }
+
     func removeRecent(_ recent: RecentTimer) {
         recents.removeAll { $0.id == recent.id }
         RecentTimerStorage.save(recents)
@@ -165,14 +173,6 @@ final class TimerController {
     private func save() {
         TimerStorage.save(timers)
         WidgetCenter.shared.reloadAllTimelines()
-        let snapshot = timers
-        Task { await TimerNotifications.sync(snapshot) }
-    }
-
-    /// Re-applies Timers notification settings.
-    func refreshNotifications() {
-        let snapshot = timers
-        Task { await TimerNotifications.sync(snapshot) }
     }
 
     private static func configuration(for item: TimerItem) -> AlarmManager.AlarmConfiguration<AlarmPayload> {

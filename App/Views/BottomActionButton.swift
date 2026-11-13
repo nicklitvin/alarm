@@ -12,6 +12,7 @@ struct BottomActionButton: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 8)
+                .frame(maxWidth: 400) // not stretched across the screen sideways
         }
         .buttonStyle(.borderedProminent)
         .buttonBorderShape(.capsule)

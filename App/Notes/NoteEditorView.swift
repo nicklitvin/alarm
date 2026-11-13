@@ -47,10 +47,23 @@ struct NoteEditorView: View {
         }
         .padding(.horizontal, 20)
         .padding(.top, 8)
-        // Floating above the keyboard: the checklist button, and while typing a round checkmark
-        // that finishes.
+        // Floating above the keyboard: bulleted list and checklist buttons, and while typing a
+        // round checkmark that finishes.
         .overlay(alignment: .bottomTrailing) {
             HStack(spacing: 12) {
+                Button {
+                    focus = nil
+                    commands.toggleBullets()
+                } label: {
+                    Image(systemName: "list.bullet")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.orange)
+                        .frame(width: 50, height: 50)
+                        .background(Circle().fill(.regularMaterial))
+                        .shadow(color: .black.opacity(0.12), radius: 6, y: 2)
+                }
+                .accessibilityLabel("Bulleted List")
+
                 Button {
                     focus = nil
                     commands.toggleChecklist()

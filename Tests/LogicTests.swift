@@ -321,8 +321,9 @@ check(QuickTime(hour: 9).apply(to: tuesdayNoonish, now: tuesdayNoonish) == d(202
 check(QuickTime(hour: 21, minute: 30).apply(to: tuesdayNoonish, now: tuesdayNoonish) == d(2026, 11, 17, 21, 30), "quick times keep their minutes")
 let quick = [QuickTime(hour: 9), QuickTime(hour: 21)]
 check(QuickTime.matching(d(2026, 11, 17, 21, 0), in: quick) == QuickTime(hour: 21) && QuickTime.matching(d(2026, 11, 17, 21, 5), in: quick) == nil, "matching highlights exact times only")
-check(AppSettings.parseQuickTimes(nil) == [540, 900, 1260], "default quick times are 9 AM, 3 PM, 9 PM")
-check(AppSettings.parseQuickTimes("1260, 540,540,abc,9999") == [540, 1260], "quick times are sorted, unique and valid")
+check(AppSettings.parseQuickTimes(nil) == [480, 840, 1260], "default quick times are 8 AM, 2 PM, 9 PM")
+check(AppSettings.parseQuickTimes("1260, 540,540,abc,9999") == [480, 540, 1260], "always three quick times, sorted, unique and valid")
+check(AppSettings.parseQuickTimes("60,120,180,240") == [60, 120, 180], "never more than three quick times")
 check(QuickTime(hour: 21).label == "9 PM" && QuickTime(hour: 9, minute: 30).label == "9:30 AM", "quick time labels are just the time")
 check(AlarmSound(name: "chime") == .chime && AlarmSound(name: "Default") == .default && AlarmSound(name: "kazoo") == nil, "alarm sounds by name")
 check(AlarmSound.chime.fileName == "alarmie-chime.wav" && AlarmSound.default.fileName == nil, "bundled alarm sound files")
@@ -424,6 +425,23 @@ check(NoteChecklist.appending("- bread", to: "☐ milk") == "☐ milk\n☐ bread
 check(NoteChecklist.appending("bread", to: "Shopping") == "Shopping\nbread", "adding to plain text stays plain")
 check(NoteChecklist.progress(of: list).map { "\($0.done)/\($0.total)" } == "1/2", "checklist progress")
 check(NoteChecklist.lines(in: list).map(\.kind) == [.plain, .unchecked, .checked], "line kinds for styling")
+
+// Recent times in the New Timer sheet.
+let usedTimers = [RecentTimer(duration: 540, label: "Pasta"), RecentTimer(duration: 300, label: "Tea"), RecentTimer(duration: 540, label: "Eggs"), RecentTimer(duration: 1800, label: "")]
+check(RecentTimer.latestTimes(from: usedTimers).map(\.duration) == [540, 300, 1800], "latest three different times")
+check(RecentTimer.latestTimes(from: usedTimers).first?.label == "Pasta", "with the label used last")
+check(RecentTimer.latestTimes(from: [RecentTimer(duration: 600, label: "")]).map(\.duration) == [600, 300, 900], "filled in with defaults")
+
+// Bulleted lists in notes.
+check(NoteChecklist.toggleBullets(in: "a\nb", selection: NSRange(location: 0, length: 3)).text == "• a\n• b", "bullet button makes filled bullets")
+check(NoteChecklist.toggleBullets(in: "• a", selection: NSRange(location: 0, length: 0)).text == "a", "and back")
+check(NoteChecklist.toggleChecklist(in: "• a", selection: NSRange(location: 0, length: 0)).text == "☐ a", "a bullet becomes a checklist item")
+check(NoteChecklist.handleReturn(in: "• a", at: 3)?.text == "• a\n• ", "Return continues bullets")
+check(NoteChecklist.toggleItem(in: "• a", at: 0) == nil, "bullets aren't checkboxes")
+check(NoteChecklist.autoBullet(in: "x\n-", at: 3, typing: " ")?.text == "x\n• ", "typing - and space makes a bullet")
+check(NoteChecklist.autoBullet(in: "a-", at: 2, typing: " ") == nil, "only at the start of a line")
+check(NoteChecklist.appending("bread", to: "• milk") == "• milk\n• bread", "adding to a bulleted note adds a bullet")
+check(NoteChecklist.progress(of: "• a\n• b") == nil, "bullets don't count as checklist progress")
 
 print(failures == 0 ? "\nALL PASSED" : "\n\(failures) FAILED")
 exit(failures == 0 ? 0 : 1)

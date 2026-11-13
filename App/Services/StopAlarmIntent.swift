@@ -22,6 +22,7 @@ struct StopAlarmIntent: LiveActivityIntent {
         if let id = UUID(uuidString: alarmID) {
             try? AlarmManager.shared.stop(id: id)
         }
+        await NotificationScheduler.removeDeliveredForRungAlarms()
         await AlarmController.shared.reconcile()
         return .result()
     }

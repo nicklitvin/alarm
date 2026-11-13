@@ -88,6 +88,7 @@ struct RootView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 TodoController.shared.reload()
+                Task { await NotificationScheduler.removeDeliveredForRungAlarms() }
                 updates.checkIfNeeded()
             }
         }

@@ -389,12 +389,6 @@ struct DeadlineSheet: View {
                         .padding(.vertical, 4)
                     DeadlineDateTimeRows(date: $date)
                 }
-                Section {
-                    Button("No Deadline", role: .destructive) {
-                        onPick(nil)
-                        dismiss()
-                    }
-                }
             }
             .navigationTitle("Deadline")
             .navigationBarTitleDisplayMode(.inline)
@@ -432,7 +426,7 @@ struct DeadlineDateTimeRows: View {
     }
 }
 
-/// The quick times from To-Do settings (9 AM · 3 PM · 9 PM by default): one tap sets the deadline's time.
+/// The quick times from To-Do settings (8 AM · 2 PM · 9 PM by default): one tap sets the deadline's time.
 struct TimeOfDayChips: View {
     @Binding var date: Date
     @AppStorage(AppSettings.todoQuickTimesKey, store: AppSettings.store) private var stored = ""

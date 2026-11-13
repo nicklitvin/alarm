@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { LandscapeGallery } from './components/Landscape'
 import { SystemViews } from './components/SystemViews'
 import { appVersion } from './components/ui'
 import { timeParts } from './logic/model'
@@ -31,6 +32,7 @@ export default function App() {
 
   const d = new Date(now)
   return (
+    <>
     <div className="stage">
       <div className="phone">
         <div className="screen">
@@ -73,5 +75,7 @@ export default function App() {
         <SystemViews />
       </aside>
     </div>
+    <LandscapeGallery />
+    </>
   )
 }

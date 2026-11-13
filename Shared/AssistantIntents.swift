@@ -67,6 +67,8 @@ struct StartLiveTalkIntent: AppIntent {
 /// `LiveActivityIntent` runs it inside the app in the background, like Ask Assistant.
 struct TalkPopupIntent: AppIntent, LiveActivityIntent {
     static let title: LocalizedStringResource = "Talk to Alarmie"
+    /// Never opens the app: the conversation shows in the popup at the top of the screen.
+    static var openAppWhenRun: Bool { false }
     static let description = IntentDescription("Shows your conversation with the assistant and lets you type to it, without opening the app.")
 
     init() {}
@@ -92,6 +94,7 @@ struct TalkSnippetIntent: SnippetIntent {
 /// shows the reply.
 struct MessageTalkIntent: AppIntent, LiveActivityIntent {
     static let title: LocalizedStringResource = "Message Alarmie"
+    static var openAppWhenRun: Bool { false }
     static let isDiscoverable = false
 
     @Parameter(title: "Message", requestValueDialog: "Message Alarmie")

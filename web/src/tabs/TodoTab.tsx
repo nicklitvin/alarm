@@ -85,7 +85,6 @@ function CustomDeadline({ value, onPick, onClose }: { value: number; onPick: (v:
     <Sheet title="Deadline" medium onClose={onClose} left={<button onClick={onClose}>Cancel</button>}
       right={<button onClick={() => { onPick(date); onClose() }}>Set</button>}>
       <Section><div style={{ padding: 12 }}><TimeOfDayChips value={date} onChange={setDate} /></div><DeadlineInputs value={date} onChange={setDate} /></Section>
-      <Section><button className="row tappable red" style={{ width: '100%', justifyContent: 'center' }} onClick={() => { onPick(undefined); onClose() }}>No Deadline</button></Section>
     </Sheet>
   )
 }

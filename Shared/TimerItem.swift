@@ -61,6 +61,23 @@ struct RecentTimer: Codable, Hashable, Identifiable, Sendable {
     static func adding(_ timer: RecentTimer, to recents: [RecentTimer], limit: Int = 12) -> [RecentTimer] {
         Array(([timer] + recents.filter { $0.id != timer.id }).prefix(limit))
     }
+
+    /// The latest `count` different durations (with the label last used for each), filled in
+    /// with 5, 10 and 15 minutes when fewer have been used.
+    static func latestTimes(from recents: [RecentTimer], count: Int = 3) -> [RecentTimer] {
+        var result: [RecentTimer] = []
+        for recent in recents where !result.contains(where: { $0.duration == recent.duration }) {
+            result.append(recent)
+            if result.count == count { return result }
+        }
+        for minutes in [5, 10, 15] where result.count < count {
+            let duration = TimeInterval(minutes * 60)
+            if !result.contains(where: { $0.duration == duration }) {
+                result.append(RecentTimer(duration: duration, label: ""))
+            }
+        }
+        return result
+    }
 }
 
 enum RecentTimerStorage {
