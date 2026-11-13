@@ -14,6 +14,11 @@ enum AppSettings {
     /// Notification before each alarm, with a Dismiss button.
     static var alarmHeadsUpEnabled: Bool { bool(alarmHeadsUpEnabledKey, default: true) }
     /// How long before an alarm the heads-up arrives and the Dismiss button appears.
+    static let alarmTapToDismissKey = "settings.alarm.tapToDismiss"
+    /// Tapping the heads-up notification dismisses that ring (off by default). Swiping the
+    /// notification away never does.
+    static var alarmTapToDismiss: Bool { bool(alarmTapToDismissKey, default: false) }
+
     static var alarmHeadsUpMinutes: Int {
         let value = int(alarmHeadsUpMinutesKey, default: 60)
         return alarmHeadsUpChoices.contains(value) ? value : 60

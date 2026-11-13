@@ -15,6 +15,8 @@ enum NotificationScheduler {
             options: [.destructive],
             icon: UNNotificationActionIcon(systemImageName: "alarm")
         )
+        // No `.customDismissAction`: swiping the heads-up away is never reported, so it can't
+        // dismiss the alarm. Only the Dismiss Alarm button (or a tap, if that setting is on) does.
         let category = UNNotificationCategory(
             identifier: categoryID,
             actions: [dismiss],
@@ -152,7 +154,9 @@ enum NotificationScheduler {
         if !alarm.label.trimmingCharacters(in: .whitespaces).isEmpty {
             content.subtitle = alarm.title
         }
-        content.body = "Rings at \(alarm.timeString). Touch and hold to dismiss it."
+        content.body = AppSettings.alarmTapToDismiss
+            ? "Rings at \(alarm.timeString). Tap to dismiss it."
+            : "Rings at \(alarm.timeString). Touch and hold to dismiss it."
         content.sound = .default
         content.categoryIdentifier = categoryID
         content.threadIdentifier = "alarm-heads-up"

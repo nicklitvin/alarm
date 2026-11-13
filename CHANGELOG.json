@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.13.0",
+      "build": 20,
+      "date": "2026-11-13",
+      "title": "Tap to Dismiss",
+      "notes": [
+        "New setting, Tap Notification to Dismiss (Alarm settings, off by default): tap the heads-up notification to cancel that ring. Swiping the notification away never dismisses the alarm."
+      ]
+    },
+    {
       "version": "1.12.0",
       "build": 19,
       "date": "2026-11-12",

@@ -235,6 +235,14 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
         </Section>
       )}
       {tab === 'alarms' && (
+        <Section footer={s.alarmTapToDismiss
+          ? "Tapping the heads-up notification cancels that ring. Swiping the notification away doesn't."
+          : 'Touch and hold the heads-up notification, then tap Dismiss Alarm, to cancel that ring.'}>
+          <div className="row"><span className="grow">Tap Notification to Dismiss</span>
+            <Switch label="Tap notification to dismiss" on={s.alarmTapToDismiss} onChange={(v) => set('alarmTapToDismiss', v)} /></div>
+        </Section>
+      )}
+      {tab === 'alarms' && (
         <Section header="Up Next Widget" footer="Whether alarms appear in the Up Next widget. The Next Alarm widget always shows them.">
           <div className="row"><span className="grow">Show Alarms</span><Switch label="Show alarms in widget" on={s.widgetShowsAlarms} onChange={(v) => set('widgetShowsAlarms', v)} /></div>
         </Section>

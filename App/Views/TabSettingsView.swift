@@ -143,6 +143,7 @@ private struct DeleteAllSection: View {
 private struct AlarmSettingsSection: View {
     @AppStorage(AppSettings.alarmHeadsUpEnabledKey, store: AppSettings.store) private var headsUpEnabled = true
     @AppStorage(AppSettings.alarmHeadsUpMinutesKey, store: AppSettings.store) private var headsUpMinutes = 60
+    @AppStorage(AppSettings.alarmTapToDismissKey, store: AppSettings.store) private var tapToDismiss = false
 
     var body: some View {
         Section {
@@ -162,6 +163,16 @@ private struct AlarmSettingsSection: View {
         }
         .onChange(of: headsUpEnabled) { AlarmController.shared.refresh() }
         .onChange(of: headsUpMinutes) { AlarmController.shared.refresh() }
+
+        Section {
+            Toggle("Tap Notification to Dismiss", isOn: $tapToDismiss)
+                .disabled(!headsUpEnabled)
+        } footer: {
+            Text(tapToDismiss
+                 ? "Tapping the heads-up notification cancels that ring. Swiping the notification away doesn't."
+                 : "Touch and hold the heads-up notification, then tap Dismiss Alarm, to cancel that ring.")
+        }
+        .onChange(of: tapToDismiss) { AlarmController.shared.refresh() } // updates the notification's wording
 
         WidgetToggles(rows: [
             ("Show Alarms", AppSettings.widgetShowsAlarmsKey),
