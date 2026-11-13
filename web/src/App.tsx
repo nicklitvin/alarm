@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Widgets } from './components/Widgets'
+import { SystemViews } from './components/SystemViews'
 import { appVersion } from './components/ui'
 import { timeParts } from './logic/model'
 import { useStore, type Tab } from './logic/store'
@@ -70,7 +70,7 @@ export default function App() {
             <button className="pill" onClick={() => { if (confirm('Reset all preview data to the demo set?')) reset() }}>Reset demo data</button>
           </div>
         </div>
-        <Widgets />
+        <SystemViews />
       </aside>
     </div>
   )
