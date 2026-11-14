@@ -1,6 +1,17 @@
 {
   "releases": [
     {
+      "version": "1.18.1",
+      "build": 26,
+      "date": "2026-11-14",
+      "title": "Tidier Settings",
+      "notes": [
+        "Timer settings no longer show a note about Silent mode.",
+        "Removed the Reset button under Quick Times in To-Do settings.",
+        "The recent times in New Timer stretch across the full width."
+      ]
+    },
+    {
       "version": "1.18.0",
       "build": 25,
       "date": "2026-11-14",

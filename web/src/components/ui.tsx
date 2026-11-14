@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import changelog from '../../../CHANGELOG.json'
 import {
-  applyQuickTime, cleanQuickTimes, DEFAULT_QUICK_TIMES, dueDescription, dueSuggestions, leadTimeName, quickTimeLabel, timeOf, type NotesSort, type Settings,
+  applyQuickTime, cleanQuickTimes, dueDescription, dueSuggestions, leadTimeName, quickTimeLabel, timeOf, type NotesSort, type Settings,
 } from '../logic/model'
 import { useStore, type Tab } from '../logic/store'
 
@@ -191,13 +191,11 @@ function QuickTimesSection() {
   const times = cleanQuickTimes(data.settings.todoQuickTimes)
   const [editing, setEditing] = useState<{ original: number; value: number } | null>(null)
   const save = (list: number[]) => update((d) => ({ ...d, settings: { ...d.settings, todoQuickTimes: cleanQuickTimes(list) } }))
-  const isDefault = times.join() === DEFAULT_QUICK_TIMES.join()
   return (
     <Section header="Quick Times" footer="One-tap times under a to-do's deadline. Tap one to change it.">
       <div className="row quick-times">
         {times.map((m) => <button key={m} className="qt-chip" onClick={() => setEditing({ original: m, value: m })}>{quickTimeLabel(m)}</button>)}
       </div>
-      {!isDefault && <button className="row tappable orange" style={{ width: '100%' }} onClick={() => save(DEFAULT_QUICK_TIMES)}>Reset to 8 AM, 2 PM, 9 PM</button>}
       {editing && (
         <Sheet title="Quick Time" medium onClose={() => setEditing(null)}
           left={<button onClick={() => setEditing(null)}>Cancel</button>}
@@ -289,11 +287,6 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
       {tab === 'alarms' && (
         <Section header="Up Next Widget" footer="Whether alarms appear in the Up Next widget. The Next Alarm widget always shows them.">
           <div className="row"><span className="grow">Show Alarms</span><Switch label="Show alarms in widget" on={s.widgetShowsAlarms} onChange={(v) => set('widgetShowsAlarms', v)} /></div>
-        </Section>
-      )}
-      {tab === 'timers' && (
-        <Section>
-          <div className="row muted" style={{ fontSize: 15 }}>🔔 Timers ring when they finish, even in Silent mode.</div>
         </Section>
       )}
       {tab === 'todos' && (

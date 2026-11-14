@@ -216,14 +216,9 @@ private struct WidgetToggleRow: View {
 
 // MARK: - Timers
 
+/// Timers have no settings of their own (just Delete All and About below).
 private struct TimerSettingsSection: View {
-    var body: some View {
-        Section {
-            Label("Timers ring when they finish, even in Silent mode.", systemImage: "bell.badge")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
-    }
+    var body: some View { EmptyView() }
 }
 
 // MARK: - To-dos
@@ -293,10 +288,6 @@ private struct QuickTimesSection: View {
                 }
             }
             .padding(.vertical, 4)
-
-            if times != AppSettings.defaultTodoQuickTimes {
-                Button("Reset to 8 AM, 2 PM, 9 PM") { stored = "" }
-            }
         } header: {
             Text("Quick Times")
         } footer: {
