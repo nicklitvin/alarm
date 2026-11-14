@@ -140,31 +140,10 @@ private struct NewTimerSheet: View {
             }
             .navigationTitle("New Timer")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Start") { start(pickedDuration) }
-                        .fontWeight(.semibold)
-                        .disabled(pickedDuration == 0)
-                }
-            }
+            // The same big bottom button as the tabs; swipe the sheet down to cancel.
             .safeAreaInset(edge: .bottom) {
-                Button {
-                    start(pickedDuration)
-                } label: {
-                    Text("Start")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
-                }
-                .buttonStyle(.borderedProminent)
-                .buttonBorderShape(.capsule)
-                .controlSize(.large)
-                .disabled(pickedDuration == 0)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 8)
+                BottomActionButton(title: "Start", systemImage: "play.fill") { start(pickedDuration) }
+                    .disabled(pickedDuration == 0)
             }
         }
         .tint(.orange)

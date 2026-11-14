@@ -457,3 +457,6 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .v-top { align-items: center; }
 .v-top.stacked { flex-direction: column; align-items: flex-start; gap: 8px; }
 .mini.dismiss { flex: none; font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 999px; background: var(--orange); color: #fff; }
+.sheet-bottom { padding: 10px 20px 28px; background: var(--bg-grouped); }
+.sheet-bottom .btn { width: 100%; padding: 15px; font-size: 17px; box-shadow: 0 6px 18px rgba(255, 149, 0, 0.35); }
+.sheet-bottom .btn:disabled { opacity: 0.4; box-shadow: none; }

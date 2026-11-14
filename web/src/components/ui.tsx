@@ -21,8 +21,11 @@ export function Section({ header, footer, children, headerClass }: { header?: Re
   )
 }
 
-export function Sheet({ title, onClose, left, right, medium, children }: {
-  title: string; onClose: () => void; left?: ReactNode; right?: ReactNode; medium?: boolean; children: ReactNode
+export function Sheet({ title, onClose, left, right, medium, bottom, children }: {
+  title: string; onClose: () => void; left?: ReactNode; right?: ReactNode; medium?: boolean
+  /** A big button pinned to the bottom of the sheet, like the tabs' New … buttons. */
+  bottom?: { label: string; onClick: () => void; disabled?: boolean }
+  children: ReactNode
 }) {
   return (
     <div className="sheet-backdrop" onClick={onClose}>
@@ -34,6 +37,11 @@ export function Sheet({ title, onClose, left, right, medium, children }: {
           <div className="right">{right ?? <span />}</div>
         </div>
         <div className="sheet-body">{children}</div>
+        {bottom && (
+          <div className="sheet-bottom">
+            <button className="btn prominent" disabled={bottom.disabled} onClick={bottom.onClick}>{bottom.label}</button>
+          </div>
+        )}
       </div>
     </div>
   )

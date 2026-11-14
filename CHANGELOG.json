@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.18.2",
+      "build": 27,
+      "date": "2026-11-14",
+      "title": "Buttons at the Bottom",
+      "notes": [
+        "Add Alarm, Save and Start are now big buttons at the bottom of the alarm and timer pop-ups, like New Alarm on the tab. Swipe the pop-up down to cancel."
+      ]
+    },
+    {
       "version": "1.18.1",
       "build": 26,
       "date": "2026-11-14",

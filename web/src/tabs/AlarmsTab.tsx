@@ -128,7 +128,7 @@ function AlarmEditor({ alarm, onClose }: { alarm?: Alarm; onClose: () => void })
 
   return (
     <Sheet title={alarm ? 'Edit Alarm' : 'Add Alarm'} onClose={onClose}
-      left={<button onClick={onClose}>Cancel</button>} right={<button onClick={save}>Save</button>}>
+      bottom={{ label: alarm ? '✓ Save' : '＋ Add Alarm', onClick: save }}>
       <TimeWheel hour={draft.hour} minute={draft.minute} onChange={(hour, minute) => setDraft((d) => ({ ...d, hour, minute }))} />
       <div style={{ height: 20 }} />
       <Section header="Repeat" footer={footer}>

@@ -70,14 +70,10 @@ struct AlarmEditorView: View {
             }
             .navigationTitle(isNew ? "Add Alarm" : "Edit Alarm")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", action: save)
-                        .fontWeight(.semibold)
-                }
+            // The same big bottom button as the tabs; swipe the sheet down to cancel.
+            .safeAreaInset(edge: .bottom) {
+                BottomActionButton(title: isNew ? "Add Alarm" : "Save",
+                                   systemImage: isNew ? "plus" : "checkmark", action: save)
             }
         }
         .tint(.orange)

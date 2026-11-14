@@ -75,8 +75,7 @@ function NewTimerSheet({ recent, onClose, onStart }: { recent: RecentTimer[]; on
     onClose()
   }
   return (
-    <Sheet title="New Timer" onClose={onClose} left={<button onClick={onClose}>Cancel</button>}
-      right={<button disabled={total === 0} onClick={() => start(total)}>Start</button>}>
+    <Sheet title="New Timer" onClose={onClose} bottom={{ label: '▶ Start', onClick: () => start(total), disabled: total === 0 }}>
       <div className="wheels">
         {([['hours', 24, h, setH], ['min', 60, m, setM], ['sec', 60, s, setS]] as const).map(([unit, n, value, setter]) => (
           <div className="wheel-unit" key={unit}>
@@ -98,9 +97,6 @@ function NewTimerSheet({ recent, onClose, onStart }: { recent: RecentTimer[]; on
         </div>
         <div className="row"><span>Label</span><input className="input right" placeholder="Timer" value={label} onChange={(e) => setLabel(e.target.value)} /></div>
       </Section>
-      <div style={{ padding: '0 16px' }}>
-        <button className="btn prominent" style={{ width: '100%', padding: 14, fontSize: 17 }} disabled={total === 0} onClick={() => start(total)}>Start</button>
-      </div>
     </Sheet>
   )
 }
