@@ -2,8 +2,8 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
-// The "Up Next" widget: whatever is relevant right now. An alarm within the hour (with Dismiss),
-// running timers, overdue and soon-due to-dos, the next alarm, then the rest of the to-do list.
+// The "Up Next" widget: the next alarm on top when it rings within 24 hours (with Dismiss), then
+// running timers, overdue and soon-due to-dos and the rest of the to-do list. Taps open the tab.
 // It keeps the To-Do widget's kind, so widgets already on the home screen upgrade in place.
 
 // MARK: - Timeline
@@ -70,9 +70,11 @@ struct UpNextWidgetView: View {
             default: list
             }
         }
-        // Tapping anywhere else opens the top item (small and lock screen widgets only support this).
-        .widgetURL((entry.items.first?.deepLink ?? .todos).url)
+        // Tapping anywhere else opens the tab of what's on top.
+        .widgetURL((layout.alarm != nil ? DeepLink.alarms : entry.items.first?.deepLink ?? .todos).url)
     }
+
+    private var layout: UpNext.Layout { UpNext.layout(entry.items, now: entry.date) }
 
     /// Open to-dos in the widget, shown next to the title.
     private var todoCount: Int {
@@ -82,25 +84,40 @@ struct UpNextWidgetView: View {
         }.count
     }
 
-    /// Rows that fit in `height` (title included), so the list uses the widget's full height.
+    /// Rows that fit in `height`, so the list uses the widget's full height.
     private func rowCapacity(height: CGFloat) -> Int {
-        max(1, Int((height - Self.headerHeight) / Self.rowHeight))
+        max(1, Int(height / Self.rowHeight))
     }
     private static let headerHeight: CGFloat = 22
+    private static let alarmHeight: CGFloat = 56
     private static let rowHeight: CGFloat = 34
 
-    // Medium / large: as many rows as fit, with the ✦ (open Talk) button in the bottom-right corner.
+    // Medium / large: the next alarm on top (when within 24 hours) with Dismiss on its line,
+    // then as many rows as fit, and the ✦ (open Talk) button in the bottom-right corner.
     private var list: some View {
         GeometryReader { geometry in
-            let shown = Array(entry.items.prefix(rowCapacity(height: geometry.size.height)))
+            let layout = self.layout
+            let top = layout.alarm != nil ? Self.alarmHeight + 6 + Self.headerHeight : Self.headerHeight
+            let shown = Array(layout.rows.prefix(rowCapacity(height: geometry.size.height - top)))
             VStack(alignment: .leading, spacing: 2) {
-                header
+                if let alarm = layout.alarm {
+                    AlarmHeader(upcoming: alarm, now: entry.date)
+                        .frame(height: Self.alarmHeight)
+                    Divider().padding(.vertical, 2)
+                }
+                header(title: layout.alarm != nil ? "To-Do" : "Up Next")
                 if shown.isEmpty {
-                    Spacer(minLength: 0)
-                    allClear
+                    if layout.alarm == nil {
+                        Spacer(minLength: 0)
+                        allClear
+                    } else {
+                        Text("Nothing to do.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                     Spacer(minLength: 0)
                 } else {
-                    // No gaps between rows: every point of a row opens that row's item.
+                    // No gaps between rows: every point of a row opens its tab.
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(shown) { item in
                             UpNextRow(item: item, now: entry.date, tapPadding: 1)
@@ -119,24 +136,29 @@ struct UpNextWidgetView: View {
         }
     }
 
-    // Small: the single most relevant thing. (No ✦: iOS gives a small widget one tap target.)
+    // Small: the next alarm (within 24 hours) with Dismiss, otherwise the most relevant thing.
+    // (No ✦: there's no room for it.)
     private var small: some View {
         VStack(alignment: .leading, spacing: 6) {
-            header
-            if let first = entry.items.first {
-                UpNextRow(item: first, now: entry.date, prominent: true)
+            if let alarm = layout.alarm {
+                AlarmHeader(upcoming: alarm, now: entry.date, stacked: true)
             } else {
-                allClear
+                header(title: "Up Next")
+                if let first = entry.items.first {
+                    UpNextRow(item: first, now: entry.date, prominent: true)
+                } else {
+                    allClear
+                }
             }
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    /// "Up Next" and how many to-dos there are.
-    private var header: some View {
+    /// "Up Next" (or "To-Do" under the alarm) and how many to-dos there are.
+    private func header(title: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text("Up Next")
+            Text(title)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.orange)
             if todoCount > 0 {
@@ -192,6 +214,57 @@ struct UpNextWidgetView: View {
             }
         } else {
             Label("All clear", systemImage: "checkmark.circle")
+        }
+    }
+}
+
+/// The next alarm across the top: big time, label and when, with Dismiss on the right.
+/// Dismiss always works for the next ring, however far away it is.
+private struct AlarmHeader: View {
+    let upcoming: UpcomingAlarm
+    let now: Date
+    /// Small widget: Dismiss under the time instead of beside it.
+    var stacked = false
+
+    var body: some View {
+        let parts = TimeFormat.parts(for: upcoming.date)
+        let layout = stacked ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6)) : AnyLayout(HStackLayout(alignment: .center, spacing: 8))
+        layout {
+            Link(destination: DeepLink.alarms.url) {
+                VStack(alignment: .leading, spacing: 1) {
+                    HStack(alignment: .firstTextBaseline, spacing: 3) {
+                        Text(parts.time)
+                            .font(.system(size: stacked ? 34 : 30, weight: .semibold, design: .rounded))
+                            .monospacedDigit()
+                        if let period = parts.period {
+                            Text(period).font(.subheadline.weight(.semibold))
+                        }
+                    }
+                    .minimumScaleFactor(0.7)
+                    .lineLimit(1)
+                    HStack(spacing: 3) {
+                        Image(systemName: "alarm.fill").foregroundStyle(.orange)
+                        Text("\(upcoming.alarm.title) · \(TimeFormat.dayDescription(for: upcoming.date, relativeTo: now)), in \(upcoming.date, style: .relative)")
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .foregroundStyle(.primary)
+
+            Button(intent: DismissNextAlarmIntent(alarmID: upcoming.alarm.id)) {
+                Text("Dismiss")
+                    .font(.caption.weight(.semibold))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Capsule().fill(Color.orange))
+                    .foregroundStyle(.white)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Dismiss the \(TimeFormat.string(for: upcoming.date)) alarm")
         }
     }
 }
@@ -348,7 +421,7 @@ struct UpNextWidget: Widget {
                 .widgetBackground()
         }
         .configurationDisplayName("Up Next")
-        .description("What matters now: an alarm you can dismiss, timers, to-dos that are due. Tap ✦ to open Talk.")
+        .description("Your next alarm with a Dismiss button, then timers and to-dos. Tap ✦ to open Talk.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .accessoryRectangular, .accessoryInline])
     }
 }

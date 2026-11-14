@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import {
   alarmTitle, clock, countdown, dayDescription, dueDescription, durationName, isOverdue, leadTimeName, nextAlarm, nextFire,
-  timeOf, timeParts, upNext, type Alarm, type TimerItem, type Todo, type UpNextItem,
+  timeOf, timeParts, upNext, upNextLayout, type Alarm, type TimerItem, type Todo, type UpNextItem,
 } from '../logic/model'
 import { useStore, type Link } from '../logic/store'
 import { useAsk } from '../tabs/TalkTab'
@@ -12,7 +12,6 @@ import { useAsk } from '../tabs/TalkTab'
 
 const SECTIONS: { id: string; label: string; view: () => ReactNode }[] = [
   { id: 'home', label: 'Home Screen', view: () => <HomeScreen /> },
-  { id: 'variations', label: 'Up Next Variations', view: () => <UpNextVariations /> },
   { id: 'lock', label: 'Lock Screen', view: () => <LockScreen /> },
   { id: 'notifications', label: 'Notifications', view: () => <Notifications /> },
   { id: 'live', label: 'Live Activity', view: () => <LiveActivity /> },
@@ -24,7 +23,7 @@ const linkFor = (item: UpNextItem): Link => {
   switch (item.kind) {
     case 'alarmSoon': case 'nextAlarm': return { tab: 'alarms' }
     case 'timer': return { tab: 'timers' }
-    case 'todo': return { tab: 'todos', id: item.todo.id }
+    case 'todo': return { tab: 'todos' }
   }
 }
 
@@ -111,19 +110,44 @@ function bigTime(date: number) {
 // MARK: - Home Screen
 
 function HomeScreen() {
-  const { now, next, items, open } = useSystem()
+  const { now, next, items, open, dismiss } = useSystem()
   const first = items[0]
   const todoCount = items.filter((i) => i.kind === 'todo' && !i.todo.isDone).length
+  const layout = upNextLayout(items, now)
+  const featured = layout.alarm
+  // Variant B: the next alarm on top (within 24 hours) with Dismiss on its line, then the rest;
+  // ✦ in the bottom-right corner. Every tap opens the tab.
+  const alarmHeader = (stacked: boolean) => featured && (
+    <div className={`v-top ${stacked ? 'stacked' : ''}`}>
+      <div className="v-alarm" onClick={(e) => { e.stopPropagation(); open({ tab: 'alarms' }) }}>
+        <div className="v-alarm-time">{bigTime(featured.date).time}<small> {bigTime(featured.date).period}</small></div>
+        <div className="v-alarm-sub ellipsis">⏰ {alarmTitle(featured.alarm)} · {dayDescription(featured.date, now)}, in {countdown(now, featured.date)}</div>
+      </div>
+      <button className="mini dismiss" onClick={(e) => { e.stopPropagation(); dismiss(featured.alarm.id, featured.date) }}>Dismiss</button>
+    </div>
+  )
   const upNextWidget = (size: 'small' | 'medium' | 'large') => {
-    // As many rows as fit the widget's height; the count of to-dos sits next to the title.
-    const rows = size === 'small' ? 1 : size === 'medium' ? 3 : 8
-    const shown = items.slice(0, rows)
+    const rows = featured ? (size === 'medium' ? 1 : 7) : (size === 'medium' ? 3 : 8)
+    const shown = layout.rows.slice(0, rows)
+    if (size === 'small') {
+      return (
+        <div className="widget upnext small" onClick={() => open(featured ? { tab: 'alarms' } : first ? linkFor(first) : { tab: 'todos' })}>
+          {featured ? alarmHeader(true) : (
+            <>
+              <div className="wh"><span>Up Next{todoCount > 0 && <span className="count"> {todoCount} to-do{todoCount === 1 ? '' : 's'}</span>}</span></div>
+              {first ? <Row item={first} compact /> : <div style={{ marginTop: 10 }}><b>All clear</b></div>}
+            </>
+          )}
+        </div>
+      )
+    }
     return (
-      <div className={`widget upnext ${size}`} onClick={() => open(first ? linkFor(first) : { tab: 'todos' })}>
-        <div className="wh"><span>Up Next{todoCount > 0 && <span className="count"> {todoCount} to-do{todoCount === 1 ? '' : 's'}</span>}</span></div>
-        {items.length === 0 ? <div style={{ marginTop: 10 }}><b>All clear</b><div className="muted" style={{ fontSize: 12 }}>Nothing coming up.</div></div>
-          : shown.map((i, n) => <div key={keyOf(i)} style={{ paddingRight: size !== 'small' && n === shown.length - 1 ? 40 : 0 }}><Row item={i} compact={size === 'small'} /></div>)}
-        {size !== 'small' && <button className="ask corner" aria-label="Open Talk" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>✦</button>}
+      <div className={`widget upnext ${size}`} onClick={() => open(featured ? { tab: 'alarms' } : first ? linkFor(first) : { tab: 'todos' })}>
+        {featured && <>{alarmHeader(false)}<div className="v-divider" /></>}
+        <div className={`wh ${featured ? 'small' : ''}`}><span>{featured ? 'To-Do' : 'Up Next'}{todoCount > 0 && <span className="count"> {todoCount} to-do{todoCount === 1 ? '' : 's'}</span>}</span></div>
+        {shown.length === 0 ? <div style={{ marginTop: 6 }}>{featured ? <span className="muted" style={{ fontSize: 12 }}>Nothing to do.</span> : <><b>All clear</b><div className="muted" style={{ fontSize: 12 }}>Nothing coming up.</div></>}</div>
+          : shown.map((i, n) => <div key={keyOf(i)} style={{ paddingRight: n === shown.length - 1 ? 40 : 0 }}><Row item={i} /></div>)}
+        <button className="ask corner" aria-label="Open Talk" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>✦</button>
       </div>
     )
   }
@@ -146,118 +170,7 @@ function HomeScreen() {
           {upNextWidget('large')}
         </div>
       </div>
-      <Caption>Next Alarm (small) and Up Next (small, medium, large), with the number of to-dos next to its title. Tapping an alarm or timer opens its tab, a to-do opens that to-do, tap a to-do's circle to check it off, ✦ opens Talk. Small widgets have one tap target, so they have no ✦.</Caption>
-    </>
-  )
-}
-
-// MARK: - Up Next variations
-
-/** Alternative Up Next layouts to compare, all live: same data, same taps. */
-function UpNextVariations() {
-  const { now, next, items, open, dismiss } = useSystem()
-  const todos = items.filter((i) => i.kind === 'todo')
-  const others = items.filter((i) => i.kind !== 'todo' && i.kind !== 'nextAlarm' && i.kind !== 'alarmSoon')
-  const todoCount = todos.filter((i) => i.kind === 'todo' && !i.todo.isDone).length
-  const ask = (cls = 'ask') => <button className={cls} aria-label="Open Talk" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>✦</button>
-  const count = todoCount > 0 && <span className="count"> {todoCount} to-do{todoCount === 1 ? '' : 's'}</span>
-  const soonDate = next && next.date - now <= 3600_000 ? next.date : undefined
-  const alarmBlock = (big: boolean) => next ? (
-    <div className={`v-alarm ${big ? 'big' : ''}`} onClick={(e) => { e.stopPropagation(); open({ tab: 'alarms' }) }}>
-      <div className="v-alarm-time">{bigTime(next.date).time}<small> {bigTime(next.date).period}</small></div>
-      <div className="v-alarm-sub ellipsis">⏰ {alarmTitle(next.alarm)} · {dayDescription(next.date, now)}, in {countdown(now, next.date)}</div>
-      {soonDate && <button className="mini" onClick={(e) => { e.stopPropagation(); dismiss(next.alarm.id, soonDate) }}>Dismiss</button>}
-    </div>
-  ) : <div className="v-alarm"><div className="v-alarm-sub">zzz · No alarms</div></div>
-
-  const variants: { name: string; note: string; render: (size: 'medium' | 'large') => ReactNode }[] = [
-    {
-      name: 'A · List (current)',
-      note: 'Everything in one list in order of urgency; ✦ in the corner.',
-      render: (size) => (
-        <>
-          <div className="wh"><span>Up Next{count}</span></div>
-          {items.slice(0, size === 'medium' ? 3 : 8).map((i, n, a) => <div key={keyOf(i)} style={{ paddingRight: n === a.length - 1 ? 40 : 0 }}><Row item={i} /></div>)}
-          {ask('ask corner')}
-        </>
-      ),
-    },
-    {
-      name: 'B · Alarm on top',
-      note: 'The next alarm as a big time across the top with ✦ beside it, then just to-dos and timers.',
-      render: (size) => (
-        <>
-          <div className="v-top">{alarmBlock(false)}{ask()}</div>
-          <div className="v-divider" />
-          <div className="wh small"><span>To-Do{count}</span></div>
-          {[...others, ...todos].slice(0, size === 'medium' ? 1 : 7).map((i) => <Row key={keyOf(i)} item={i} />)}
-        </>
-      ),
-    },
-    {
-      name: 'C · Side by side',
-      note: 'Alarm and ✦ in a column on the left, to-dos on the right.',
-      render: (size) => (
-        <div className="v-split">
-          <div className="v-left">
-            {alarmBlock(true)}
-            <div style={{ flex: 1 }} />
-            <button className="ask-pill" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>✦ Ask</button>
-          </div>
-          <div className="v-right">
-            <div className="wh small"><span>Up Next{count}</span></div>
-            {[...others, ...todos].slice(0, size === 'medium' ? 3 : 8).map((i) => <Row key={keyOf(i)} item={i} compact />)}
-          </div>
-        </div>
-      ),
-    },
-    {
-      name: 'D · Agenda',
-      note: 'Times in a column on the left, like a calendar; ✦ next to the title.',
-      render: (size) => (
-        <>
-          <div className="wh"><span>Up Next{count}</span>{ask('ask small')}</div>
-          {items.slice(0, size === 'medium' ? 3 : 8).map((i) => {
-            const when = i.kind === 'todo' ? (i.todo.due ? timeOf(i.todo.due) : '—') : 'date' in i ? timeOf(i.date) : 'Now'
-            return (
-              <div key={keyOf(i)} className="v-agenda-row">
-                <span className={`v-when ${i.kind === 'todo' && isOverdue(i.todo, now) ? 'red' : ''}`}>{when.replace(' ', '\u00a0')}</span>
-                <div style={{ flex: 1, minWidth: 0 }}><Row item={i} /></div>
-              </div>
-            )
-          })}
-        </>
-      ),
-    },
-    {
-      name: 'E · Ask bar',
-      note: 'The list on top and a full-width "Ask Alarmie" bar along the bottom instead of a round button.',
-      render: (size) => (
-        <>
-          <div className="wh"><span>Up Next{count}</span></div>
-          {items.slice(0, size === 'medium' ? 2 : 7).map((i) => <Row key={keyOf(i)} item={i} />)}
-          <div style={{ flex: 1 }} />
-          <button className="ask-bar" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>✦ Ask Alarmie…</button>
-        </>
-      ),
-    },
-  ]
-  return (
-    <>
-      <div className="variations">
-        {variants.map((v) => (
-          <div key={v.name} className="variation">
-            <div className="variation-head"><b>{v.name}</b><span>{v.note}</span></div>
-            <div className="home variation-stage">
-              <div className="widgets">
-                <div className="widget upnext medium" onClick={() => open(items[0] ? linkFor(items[0]) : { tab: 'todos' })}>{v.render('medium')}</div>
-                <div className="widget upnext large" onClick={() => open(items[0] ? linkFor(items[0]) : { tab: 'todos' })}>{v.render('large')}</div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <Caption>Five ways to lay out Up Next with the alarm and the ✦ Talk button, in medium and large sizes. They're live: tap rows, check off to-dos or tap ✦. Tell me which one to build into the app.</Caption>
+      <Caption>Next Alarm (small) and Up Next (small, medium, large). When an alarm rings within 24 hours it sits on top with a Dismiss button, which works for the next ring however far away it is; to-dos and timers follow. Tapping anything opens its tab, a to-do's circle checks it off, and ✦ opens Talk.</Caption>
     </>
   )
 }

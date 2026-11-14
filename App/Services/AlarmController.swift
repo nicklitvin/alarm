@@ -92,14 +92,16 @@ final class AlarmController {
     ///
     /// - Parameter referenceDate: when the request was made. For the notification action this is
     ///   the time the heads-up was delivered, so a late tap never skips the *following* ring.
-    func dismissNextRing(of id: UUID, referenceDate: Date = .now) async {
+    /// `anyTime`: the widget's Dismiss works for the next ring however far away it is; the
+    /// notification's only for the ring it announced.
+    func dismissNextRing(of id: UUID, referenceDate: Date = .now, anyTime: Bool = false) async {
         let now = Date()
         guard let index = alarms.firstIndex(where: { $0.id == id }) else { return }
         let alarm = alarms[index]
         guard alarm.isEnabled,
               let ring = alarm.nextFireDate(after: min(referenceDate, now)),
               ring > now,
-              ring.timeIntervalSince(referenceDate) <= AlarmItem.headsUpInterval + 60
+              anyTime || ring.timeIntervalSince(referenceDate) <= AlarmItem.headsUpInterval + 60
         else { return }
 
         if alarm.isRepeating {

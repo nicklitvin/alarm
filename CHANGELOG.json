@@ -1,6 +1,20 @@
 {
   "releases": [
     {
+      "version": "1.18.0",
+      "build": 25,
+      "date": "2026-11-14",
+      "title": "Alarm on Top",
+      "notes": [
+        "The Up Next widget shows your next alarm at the top when it rings within 24 hours, with a Dismiss button on the same line. Your to-dos follow below.",
+        "Dismiss in the widget always works for your next alarm, however far away it is.",
+        "The ✦ Talk button sits in the bottom-right corner of the widget.",
+        "Tapping the widget opens the tab (Alarms, Timers or To-Do) instead of the item you tapped.",
+        "Checklist boxes in notes are easier to tap on and off.",
+        "Sideways, each alarm shows its time on the left with its switch right next to it."
+      ]
+    },
+    {
       "version": "1.17.0",
       "build": 24,
       "date": "2026-11-13",

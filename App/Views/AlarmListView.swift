@@ -148,39 +148,45 @@ private struct AlarmCard: View {
 
     var body: some View {
         let parts = TimeFormat.parts(hour: alarm.hour, minute: alarm.minute)
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .top) {
-                Text(alarm.title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(alarm.isEnabled ? Color.orange : Color.secondary)
-                    .lineLimit(1)
-                Spacer(minLength: 8)
+        VStack(alignment: .leading, spacing: 2) {
+            // The time on the left with its switch right beside it.
+            HStack(alignment: .center, spacing: 12) {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(parts.time)
+                        .font(.system(size: 48, weight: .light))
+                        .monospacedDigit()
+                    if let period = parts.period {
+                        Text(period).font(.title3)
+                    }
+                }
+                .foregroundStyle(alarm.isEnabled ? .primary : .secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
                 Toggle("Enabled", isOn: Binding(
                     get: { alarm.isEnabled },
                     set: { controller.setEnabled($0, for: alarm.id) }
                 ))
                 .labelsHidden()
                 .tint(.green)
+                Spacer(minLength: 0)
             }
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(parts.time)
-                    .font(.system(size: 48, weight: .light))
-                    .monospacedDigit()
-                if let period = parts.period {
-                    Text(period).font(.title3)
-                }
-            }
-            .foregroundStyle(alarm.isEnabled ? .primary : .secondary)
-            Text(alarm.isRepeating ? alarm.repeatSummary
-                 : (alarm.isEnabled ? alarm.oneTimeDate.map { TimeFormat.dayDescription(for: $0, relativeTo: now) } ?? "Once" : "Once"))
+            Text(subtitle)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(alarm.isEnabled ? Color.secondary : Color.secondary.opacity(0.7))
                 .lineLimit(1)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+
+    /// "Wake up · Weekdays".
+    private var subtitle: String {
+        let days = alarm.isRepeating ? alarm.repeatSummary
+            : (alarm.isEnabled ? alarm.oneTimeDate.map { TimeFormat.dayDescription(for: $0, relativeTo: now) } ?? "Once" : "Once")
+        let label = alarm.label.trimmingCharacters(in: .whitespaces)
+        return label.isEmpty ? days : "\(alarm.title) · \(days)"
     }
 }
 

@@ -33,7 +33,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         AssistantBridge.ask = { request in
             await TalkModel.shared.respond(to: request) ?? "Sorry, I couldn't do that."
         }
-        AlarmIntentBridge.dismiss = { id in await AlarmController.shared.dismissNextRing(of: id) }
+        AlarmIntentBridge.dismiss = { id in await AlarmController.shared.dismissNextRing(of: id, anyTime: true) }
         AssistantBridge.openLiveTalk = {
             AppNavigation.shared.tab = .talk
             TalkModel.shared.startLive()

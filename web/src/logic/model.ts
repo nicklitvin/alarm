@@ -447,6 +447,14 @@ export type UpNextItem =
   | { kind: 'todo'; todo: Todo }
   | { kind: 'nextAlarm'; alarm: Alarm; date: number }
 
+/** The widget layout (UpNext.layout): the next alarm on top when it rings within 24 hours, the rest below. */
+export function upNextLayout(items: UpNextItem[], now: number): { alarm?: { alarm: Alarm; date: number }; rows: UpNextItem[] } {
+  const index = items.findIndex((i) => (i.kind === 'alarmSoon' || i.kind === 'nextAlarm') && i.date - now <= 24 * 3600_000)
+  if (index === -1) return { rows: items }
+  const featured = items[index] as { alarm: Alarm; date: number }
+  return { alarm: { alarm: featured.alarm, date: featured.date }, rows: items.filter((_, n) => n !== index) }
+}
+
 /** A to-do checked off this recently stays (shown checked) before leaving the widget. */
 export const COMPLETED_LINGER = 2000
 

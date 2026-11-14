@@ -334,7 +334,7 @@ for link in [DeepLink.alarms, .alarm(someID), .timers, .todos, .todo(someID), .n
     check(DeepLink(url: link.url) == link, "deep link round trip \(link.url.absoluteString)")
 }
 check(DeepLink(url: URL(string: "https://example.com/alarm")!) == nil && DeepLink(url: URL(string: "alarmapp://bogus")!) == nil, "foreign/unknown links ignored")
-check(UpNextItem(kind: .todo(TodoItem(id: someID, title: "x"))).deepLink == .todo(someID), "widget to-do row opens that to-do")
+check(UpNextItem(kind: .todo(TodoItem(id: someID, title: "x"))).deepLink == .todos, "widget to-do row opens the To-Do tab")
 check(UpNextItem(kind: .nextAlarm(AlarmItem(id: someID, hour: 7, minute: 0), Date())).deepLink == .alarms, "widget alarm row opens the Alarms tab")
 
 // Editing an alarm after it rang/was dismissed makes it a new system alarm.
@@ -442,6 +442,15 @@ check(NoteChecklist.autoBullet(in: "x\n-", at: 3, typing: " ")?.text == "x\n• 
 check(NoteChecklist.autoBullet(in: "a-", at: 2, typing: " ") == nil, "only at the start of a line")
 check(NoteChecklist.appending("bread", to: "• milk") == "• milk\n• bread", "adding to a bulleted note adds a bullet")
 check(NoteChecklist.progress(of: "• a\n• b") == nil, "bullets don't count as checklist progress")
+
+// Up Next widget layout: the next alarm on top when it rings within 24 hours.
+let layoutNow = d(2026, 11, 17, 20, 0)
+let morning = AlarmItem(hour: 7, minute: 0, weekdays: Set(Weekday.allCases))
+let layoutTodo = TodoItem(title: "Pay rent")
+let withAlarm = UpNext.layout([UpNextItem(kind: .todo(layoutTodo)), UpNextItem(kind: .nextAlarm(morning, d(2026, 11, 18, 7, 0)))], now: layoutNow)
+check(withAlarm.alarm?.alarm.id == morning.id && withAlarm.rows.count == 1, "alarm within 24 h goes on top, the rest below")
+let farAlarm = UpNext.layout([UpNextItem(kind: .nextAlarm(morning, d(2026, 11, 19, 7, 0)))], now: layoutNow)
+check(farAlarm.alarm == nil && farAlarm.rows.count == 1, "no alarm on top when it's more than 24 h away")
 
 print(failures == 0 ? "\nALL PASSED" : "\n\(failures) FAILED")
 exit(failures == 0 ? 0 : 1)

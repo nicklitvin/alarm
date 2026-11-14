@@ -103,6 +103,28 @@ enum UpNext {
         return result
     }
 
+    /// The widget's layout: the next alarm on top when one rings within 24 hours, and
+    /// everything else (to-dos, timers, any other alarm) as rows underneath.
+    struct Layout: Sendable {
+        var alarm: UpcomingAlarm?
+        var rows: [UpNextItem]
+    }
+
+    static func layout(_ items: [UpNextItem], now: Date) -> Layout {
+        for (index, item) in items.enumerated() {
+            switch item.kind {
+            case .alarmSoon(let alarm, let date), .nextAlarm(let alarm, let date):
+                guard date.timeIntervalSince(now) <= nextAlarmWindow else { continue }
+                var rows = items
+                rows.remove(at: index)
+                return Layout(alarm: UpcomingAlarm(alarm: alarm, date: date), rows: rows)
+            default:
+                continue
+            }
+        }
+        return Layout(alarm: nil, rows: items)
+    }
+
     /// Moments when the list above changes, so the widget can refresh exactly then.
     static func changeDates(alarms: [AlarmItem], todos: [TodoItem], timers: [TimerItem], now: Date, limit: Int = 20) -> [Date] {
         var dates: [Date] = []

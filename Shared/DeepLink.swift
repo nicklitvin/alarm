@@ -51,13 +51,12 @@ enum DeepLink: Hashable, Sendable {
 }
 
 extension UpNextItem {
-    /// Where tapping this item in the widget goes: alarms and timers open their tab,
-    /// a to-do opens that to-do.
+    /// Where tapping this item in the widget goes: its tab (Alarms, Timers or To-Do).
     var deepLink: DeepLink {
         switch kind {
         case .alarmSoon, .nextAlarm: .alarms
         case .timer: .timers
-        case .todo(let todo): .todo(todo.id)
+        case .todo: .todos
         }
     }
 }

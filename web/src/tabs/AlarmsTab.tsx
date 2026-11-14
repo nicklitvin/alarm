@@ -64,14 +64,14 @@ export function AlarmsTab() {
                 const fire = nextFire(alarm, now)
                 return (
                   <div key={alarm.id} className={`alarm-card ${alarm.isEnabled ? '' : 'off'}`} onClick={() => setEditing(alarm)}>
+                    {/* The time on the left with its switch right beside it. */}
                     <div className="alarm-card-top">
-                      <span className="ellipsis">{alarmTitle(alarm)}</span>
+                      <div className="alarm-time">{p.time}<small>{p.period}</small></div>
                       <span onClick={(e) => e.stopPropagation()}>
                         <Switch label="Enabled" on={alarm.isEnabled} onChange={(v) => setAlarm(alarm.id, (a) => ({ ...a, isEnabled: v, skippedOccurrence: undefined }))} />
                       </span>
                     </div>
-                    <div className="alarm-time">{p.time}<small>{p.period}</small></div>
-                    <div className="sub ellipsis">{alarm.weekdays.length ? repeatSummary(alarm) : alarm.isEnabled && fire ? dayDescription(fire, now) : 'Once'}</div>
+                    <div className="sub ellipsis">{[alarm.label.trim() || null, alarm.weekdays.length ? repeatSummary(alarm) : alarm.isEnabled && fire ? dayDescription(fire, now) : 'Once'].filter(Boolean).join(' · ')}</div>
                   </div>
                 )
               })}

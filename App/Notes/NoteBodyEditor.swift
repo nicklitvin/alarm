@@ -34,6 +34,7 @@ struct NoteBodyEditor: UIViewRepresentable {
 
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.tapped(_:)))
         tap.delegate = context.coordinator
+        tap.cancelsTouchesInView = true
         view.addGestureRecognizer(tap)
 
         context.coordinator.textView = view
@@ -133,6 +134,13 @@ struct NoteBodyEditor: UIViewRepresentable {
         func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
                                shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { false }
 
+        /// A tap on a box must reach us before the text view's own taps (which would just move the
+        /// cursor or start editing). Elsewhere we decline the touch, so they work as usual.
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                               shouldBeRequiredToFailBy other: UIGestureRecognizer) -> Bool {
+            other.view === textView
+        }
+
         @objc func tapped(_ recognizer: UITapGestureRecognizer) {
             guard let textView, let lineStart = boxLine(at: recognizer.location(in: textView), in: textView),
                   let newText = NoteChecklist.toggleItem(in: textView.text, at: lineStart) else { return }
@@ -155,8 +163,8 @@ struct NoteBodyEditor: UIViewRepresentable {
                   let afterBox = textView.position(from: textView.beginningOfDocument, offset: line.location + NoteChecklist.prefixLength)
             else { return nil }
             let lineRect = textView.caretRect(for: afterBox)
-            // The box itself: left of the item's text, on that line.
-            guard point.x <= lineRect.minX + 4, point.y >= lineRect.minY - 6, point.y <= lineRect.maxY + 6 else { return nil }
+            // The box itself (with some room around it): left of the item's text, on that line.
+            guard point.x <= lineRect.minX + 10, point.y >= lineRect.minY - 8, point.y <= lineRect.maxY + 8 else { return nil }
             return line.location
         }
 
