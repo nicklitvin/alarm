@@ -14,7 +14,7 @@ struct TabSettingsView: View {
                 case .timers: TimerSettingsSection()
                 case .todos: TodoSettingsSection()
                 case .notes: NotesSettingsSection()
-                case .talk: TalkSettingsSection { dismiss() }
+                case .talk: TalkSettingsSection()
                 }
 
                 if tab != .talk {
@@ -381,7 +381,6 @@ private struct TalkSettingsSection: View {
     @AppStorage(TalkSettings.wakeWordKey) private var wakeWord = TalkSettings.defaultWakeWord
     @AppStorage(TalkSettings.speakRepliesKey) private var speakReplies = true
     @AppStorage(TalkSettings.customInstructionsKey) private var customInstructions = ""
-    let onCleared: () -> Void
 
     var body: some View {
         Section {
@@ -416,19 +415,7 @@ private struct TalkSettingsSection: View {
         } header: {
             Text("Custom Instructions")
         } footer: {
-            Text("Applied to every conversation and reply.")
-        }
-
-        Section {
-            Button(role: .destructive) {
-                TalkModel.shared.clear()
-                onCleared()
-            } label: {
-                Label("Clear Conversation", systemImage: "trash")
-            }
-            .foregroundStyle(.red)
-        } footer: {
-            Text("Everything runs on your iPhone with Apple's on-device model. Nothing you say is sent anywhere.")
+            Text("Applied to every conversation and reply. Everything runs on your iPhone with Apple's on-device model; nothing you say is sent anywhere.")
         }
     }
 }

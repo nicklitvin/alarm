@@ -460,3 +460,5 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .sheet-bottom { padding: 10px 20px 28px; background: var(--bg-grouped); }
 .sheet-bottom .btn { width: 100%; padding: 15px; font-size: 17px; box-shadow: 0 6px 18px rgba(255, 149, 0, 0.35); }
 .sheet-bottom .btn:disabled { opacity: 0.4; box-shadow: none; }
+.gear:disabled { color: var(--secondary); opacity: 0.6; }
+.header .gear + .gear { margin-left: -2px; }

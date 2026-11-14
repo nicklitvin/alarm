@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { TabHeader } from '../components/ui'
+import { Alert, TabHeader } from '../components/ui'
 import { respond } from '../logic/assistant'
 import { uid } from '../logic/model'
 import { useStore, type ChatMessage } from '../logic/store'
@@ -21,8 +21,9 @@ export function useAsk() {
 }
 
 export function TalkTab() {
-  const { data, open } = useStore()
+  const { data, open, update } = useStore()
   const ask = useAsk()
+  const [confirmClear, setConfirmClear] = useState(false)
   const [draft, setDraft] = useState('')
   const [live, setLive] = useState(false)
   const [thinking, setThinking] = useState(false)
@@ -46,7 +47,13 @@ export function TalkTab() {
   const wake = data.settings.wakeWordEnabled ? data.settings.wakeWord : null
   return (
     <>
-      <TabHeader tab="talk" />
+      {/* Clear Conversation sits right next to the settings button. */}
+      <TabHeader tab="talk" accessory={
+        <button className="gear" aria-label="Clear Conversation" title="Clear Conversation" disabled={data.chat.length === 0}
+          onClick={() => setConfirmClear(true)}>🗑︎</button>
+      } />
+      {confirmClear && <Alert title="Clear this conversation?" message="All messages are removed and the assistant starts fresh." action="Clear"
+        onCancel={() => setConfirmClear(false)} onConfirm={() => { update((d) => ({ ...d, chat: [] })); setConfirmClear(false) }} />}
       <div className="chat">
         {data.chat.length === 0 && !live && (
           <div className="talk-empty" style={{ paddingTop: 90 }}>

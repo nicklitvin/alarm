@@ -329,14 +329,11 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
           <Section footer="Reads replies aloud during Live Talk.">
             <div className="row"><span className="grow">Speak Replies</span><Switch label="Speak replies" on={s.speakReplies} onChange={(v) => set('speakReplies', v)} /></div>
           </Section>
-          <Section header="Custom Instructions" footer="Applied to every conversation and reply.">
+          <Section header="Custom Instructions" footer="Applied to every conversation and reply. In the app everything runs on your iPhone with Apple's on-device model; this preview uses simple canned replies.">
             <div className="row">
               <textarea className="instructions" rows={3} placeholder="e.g. Call me Sam. Keep answers very short." value={s.customInstructions}
                 onChange={(e) => set('customInstructions', e.target.value)} />
             </div>
-          </Section>
-          <Section footer="In the app everything runs on your iPhone with Apple's on-device model. This preview uses simple canned replies.">
-            <button className="row tappable red" style={{ width: '100%' }} onClick={() => { update((d) => ({ ...d, chat: [] })); onClose() }}>🗑︎ Clear Conversation</button>
           </Section>
         </>
       )}

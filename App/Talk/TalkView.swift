@@ -4,6 +4,7 @@ struct TalkView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var model = TalkModel.shared
     @FocusState private var inputFocused: Bool
+    @State private var confirmClear = false
 
     var body: some View {
         NavigationStack {
@@ -28,7 +29,21 @@ struct TalkView: View {
             .toolbar(.hidden, for: .navigationBar)
             // No title on Talk: just the settings button, in the same spot as the other tabs.
             .safeAreaInset(edge: .top, spacing: 0) {
-                TabHeader(title: nil, tab: .talk)
+                TabHeader(title: nil, tab: .talk) {
+                    // Clear Conversation sits right next to the settings button.
+                    Button {
+                        confirmClear = true
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(model.messages.isEmpty ? Color.secondary : Color.orange)
+                            .frame(width: 36, height: 36)
+                            .background(Circle().fill(Color(.tertiarySystemFill)))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(model.messages.isEmpty)
+                    .accessibilityLabel("Clear Conversation")
+                }
             }
             // The message field sits on the outermost content view, which SwiftUI moves above the
             // keyboard reliably (nested insets inside the scroll view sometimes stayed behind it).
@@ -37,6 +52,12 @@ struct TalkView: View {
             }
         }
         .tint(.orange)
+        .alert("Clear this conversation?", isPresented: $confirmClear) {
+            Button("Clear", role: .destructive) { model.clear() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("All messages are removed and the assistant starts fresh.")
+        }
         .task { model.prepare() }
         .onChange(of: scenePhase) { _, phase in
             if phase == .background, model.isLive { model.toggleLive() }

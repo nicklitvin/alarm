@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.18.3",
+      "build": 28,
+      "date": "2026-11-14",
+      "title": "Clear Chat Button",
+      "notes": [
+        "Clear Conversation is now a trash button next to the settings button on the Talk tab, and asks before clearing. It's no longer in Talk settings."
+      ]
+    },
+    {
       "version": "1.18.2",
       "build": 27,
       "date": "2026-11-14",
