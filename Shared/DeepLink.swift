@@ -14,6 +14,10 @@ enum DeepLink: Hashable, Sendable {
     /// `NSWorkspace.shared.open(URL(string: "alarmapp://livetalk")!)`.
     case liveTalk
     case note(UUID)
+    /// A new, empty note, ready to type (the Up Next widget's note button).
+    case newNote
+    /// The Timers tab with New Timer open (the Up Next widget's timer button).
+    case newTimer
 
     static let scheme = "alarmapp"
 
@@ -30,6 +34,8 @@ enum DeepLink: Hashable, Sendable {
         case .talk: components.host = "talk"
         case .liveTalk: components.host = "livetalk"
         case .note(let id): components.host = "note"; components.path = "/" + id.uuidString
+        case .newNote: components.host = "new-note"
+        case .newTimer: components.host = "new-timer"
         }
         return components.url!
     }
@@ -50,6 +56,8 @@ enum DeepLink: Hashable, Sendable {
         case ("livetalk", _), ("live-talk", _), ("live", _): self = .liveTalk
         case ("note", let id?): self = .note(id)
         case ("note", nil): self = .notes
+        case ("new-note", _): self = .newNote
+        case ("new-timer", _): self = .newTimer
         default: return nil
         }
     }

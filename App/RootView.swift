@@ -19,6 +19,9 @@ final class AppNavigation {
     var pendingAlarmID: UUID?
     var pendingTodoID: UUID?
     var pendingNoteID: UUID?
+    /// Set to start a new note (Notes) or open New Timer (Timers); the tab clears it.
+    var pendingNewNote = false
+    var pendingNewTimer = false
     /// Goes up every time a link is opened (a widget tap, a notification, a chat event). Open
     /// sheets (settings, editors) watch it and close, so the tab underneath shows.
     private(set) var linkOpenCount = 0
@@ -48,6 +51,12 @@ final class AppNavigation {
         case .note(let id):
             tab = .notes
             pendingNoteID = id
+        case .newNote:
+            tab = .notes
+            pendingNewNote = true
+        case .newTimer:
+            tab = .timers
+            pendingNewTimer = true
         }
     }
 }

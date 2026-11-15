@@ -93,8 +93,6 @@ enum AppSettings {
     static var widgetShowsTimedTodos: Bool { bool(widgetShowsTimedTodosKey, default: true) }
     static var widgetShowsUntimedTodos: Bool { bool(widgetShowsUntimedTodosKey, default: true) }
     /// The Live Talk button in the corner of the medium and large Up Next widget (Talk settings).
-    static let widgetShowsTalkButtonKey = "settings.widget.talkButton"
-    static var widgetShowsTalkButton: Bool { bool(widgetShowsTalkButtonKey, default: true) }
 
     // MARK: Notes
 

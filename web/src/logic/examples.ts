@@ -19,7 +19,7 @@ const todos = (now: number): Todo[] => [
 ]
 const base = (now: number): AppData => ({ ...seedData(now), timers: [], stopwatch: emptyStopwatch, chat: [] })
 
-/** An alarm within 12 hours (Dismiss shows), more to-dos than fit, Live Talk button on. */
+/** An alarm within 12 hours (Dismiss shows), more to-dos than fit. */
 export function alarmSoon(now: number): AppData {
   const alarms: Alarm[] = [
     { id: uid(), ...at(now, 40), label: 'Gym', weekdays: [1, 2, 3, 4, 5, 6, 7], isEnabled: true },
@@ -28,13 +28,13 @@ export function alarmSoon(now: number): AppData {
   return { ...base(now), alarms, todos: todos(now) }
 }
 
-/** The next alarm is days away (no Dismiss yet, lock screen shows zzz), Live Talk button off. */
+/** The next alarm is days away (no Dismiss yet, lock screen shows zzz). */
 export function alarmFar(now: number): AppData {
   const d = new Date(now + 3 * 24 * hour)
   const weekday = (d.getDay() + 1) as Alarm['weekdays'][number]
   const alarms: Alarm[] = [{ id: uid(), hour: 9, minute: 0, label: '', weekdays: [weekday], isEnabled: true }]
   const s = base(now)
-  return { ...s, alarms, todos: todos(now).slice(0, 3), settings: { ...s.settings, widgetShowsTalkButton: false } }
+  return { ...s, alarms, todos: todos(now).slice(0, 3) }
 }
 
 /** No alarms set; just to-dos. */

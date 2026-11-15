@@ -104,9 +104,10 @@ struct UpNextWidgetView: View {
                 }
             }
             let shown = Array(others.prefix(lines - (layout.alarm != nil ? 1 : 0)))
-            HStack(alignment: .top, spacing: 14) {
+            HStack(alignment: .top, spacing: 10) {
+                // Just wide enough for the two buttons, so the to-dos get the rest.
                 summary
-                    .frame(width: geometry.size.width * 0.34, alignment: .leading)
+                    .frame(width: 78, alignment: .leading)
                     .frame(maxHeight: .infinity, alignment: .leading)
                 VStack(alignment: .leading, spacing: 0) {
                     if let alarm = layout.alarm {
@@ -136,20 +137,19 @@ struct UpNextWidgetView: View {
     /// How far the right column's rows reach into the top and bottom margins.
     private static let rowBleed: CGFloat = 11
 
-    /// The left column: the Live Talk button (or a to-do icon when it's off in Talk settings) and
-    /// the number of open to-dos, which also tells you how many didn't fit on the right.
+    /// The left column: New Note and New Timer buttons, and the number of open to-dos, which also
+    /// tells you how many didn't fit on the right.
     private var summary: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if AppSettings.widgetShowsTalkButton {
-                Link(destination: DeepLink.talk.url) {
-                    SummaryIcon(systemImage: "waveform") // the Live Talk icon, as on the Talk tab
+            HStack(spacing: 8) {
+                Link(destination: DeepLink.newNote.url) {
+                    SummaryIcon(systemImage: "square.and.pencil")
                 }
-                .accessibilityLabel("Open Talk")
-            } else {
-                Link(destination: DeepLink.todos.url) {
-                    SummaryIcon(systemImage: "checklist")
+                .accessibilityLabel("New Note")
+                Link(destination: DeepLink.newTimer.url) {
+                    SummaryIcon(systemImage: "timer")
                 }
-                .accessibilityLabel("Open To-Do")
+                .accessibilityLabel("New Timer")
             }
             Spacer(minLength: 0)
             Link(destination: DeepLink.todos.url) {
@@ -300,15 +300,15 @@ struct SmallAlarm: View {
 }
 
 
-/// The round orange icon top left (like the Reminders widget's list icon).
+/// A round orange button top left (New Note, New Timer), like the Reminders widget's list icon.
 private struct SummaryIcon: View {
     let systemImage: String
 
     var body: some View {
         Image(systemName: systemImage)
-            .font(.system(size: 18, weight: .semibold))
+            .font(.system(size: 15, weight: .semibold))
             .foregroundStyle(.white)
-            .frame(width: 40, height: 40)
+            .frame(width: 34, height: 34)
             .background(Circle().fill(Color.orange.gradient))
     }
 }

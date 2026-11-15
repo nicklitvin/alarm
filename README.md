@@ -20,9 +20,7 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
   - The app checks the App Store for a newer version and offers to open it there. A copy installed from Xcode isn't on the App Store, so it just says so.
   - Open any tab's settings → **About & Updates** to see your version and the patch notes for every release.
   - A "What's New" screen appears the first time you open a new version.
-- **Control Center button.**
-  - **Ask Alarmie:** like the Reminders quick add, a text box drops in from the top of the screen. Type or dictate a request and the reply shows right there, without opening the app.
-  - You can also ask the assistant through Siri ("Ask Alarmie"), Spotlight, Shortcuts and the Action button.
+- **Siri and Shortcuts.** Ask the assistant through Siri ("Ask Alarmie"), Spotlight, Shortcuts and the Action button.
 - **Talk tab.** A private assistant that runs entirely on your iPhone using Apple's on-device model:
   - Tap the waveform for hands-free **Live Talk**: it listens, replies out loud and listens again. You can still type at any time.
   - It can manage almost everything in the app:
@@ -58,7 +56,6 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 5. To add widgets:
    - **Home screen:** long-press an empty spot → **Edit** → **Add Widget** → **Alarm**.
    - **Lock screen:** long-press the lock screen → **Customize** → **Lock Screen** → tap the widget area → **Alarm**.
-   - **Control Center:** swipe down from the top-right corner → tap **+** (top left) → **Add a Control** → search "Alarm" → pick **Ask Alarmie**.
 
 ## How it works
 
@@ -83,7 +80,7 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 | Up Next widget (what's relevant now) | `Shared/UpNext.swift`, `Widget/UpNextWidget.swift` |
 | Notes tab | `App/Notes/` |
 | Version check, What's New, patch notes | `App/About/`, `CHANGELOG.json` |
-| Control Center button, Siri and Shortcuts | `Shared/AssistantIntents.swift`, `Widget/AssistantControls.swift`, `App/Talk/AssistantShortcuts.swift` |
+| Siri and Shortcuts | `Shared/AssistantIntents.swift`, `App/Talk/AssistantShortcuts.swift` |
 | Lock screen widget | `Widget/NextAlarmWidget.swift` |
 | Alarm sounds (made by `Tools/make_sounds.py`) | `Shared/AlarmSound.swift`, `App/Sounds/` |
 

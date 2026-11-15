@@ -52,6 +52,7 @@ struct NoteEditorView: View {
                     }
                 }
                 .onSubmit { goToFirstLine() }
+                .padding(.horizontal, 20)
 
             // The body fills the rest of the screen (tap anywhere below the text to keep writing),
             // scrolls to follow the cursor, and draws checklist items as tappable boxes.
@@ -60,13 +61,15 @@ struct NoteEditorView: View {
                     Text("Start writing…")
                         .foregroundStyle(.tertiary)
                         .padding(.top, 8)
+                        .padding(.leading, 20)
                         .allowsHitTesting(false)
                 }
                 NoteBodyEditor(text: $text, isEditing: $bodyEditing, commands: commands)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .padding(.horizontal, 20)
+        // No side padding here: the body runs edge to edge so its scroll bar sits at the screen's
+        // right edge; the text keeps its 20 pt margins inside it (textContainerInset).
         .padding(.top, 8)
         // Floating above the keyboard: one list button (numbered, bulleted or checklist), and
         // while typing a round checkmark that finishes.

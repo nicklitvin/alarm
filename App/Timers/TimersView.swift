@@ -66,7 +66,15 @@ struct TimersView: View {
                 .animation(.snappy, value: stopwatch.stopwatch.isReset)
             }
             .animation(.default, value: controller.timers)
-            .onChange(of: AppNavigation.shared.linkOpenCount) { showNew = false }
+            .onChange(of: AppNavigation.shared.linkOpenCount) {
+                if !AppNavigation.shared.pendingNewTimer { showNew = false }
+            }
+            .task(id: AppNavigation.shared.pendingNewTimer) {
+                // The widget's timer button: New Timer, ready to pick a time.
+                guard AppNavigation.shared.pendingNewTimer else { return }
+                AppNavigation.shared.pendingNewTimer = false
+                showNew = true
+            }
             .sheet(isPresented: $showNew) {
                 NewTimerSheet(recentTimes: controller.newTimerChoices, title: AppSettings.timerUsesRecentTimes ? "Recent" : "Quick Times") { duration, label in start(duration, label: label) }
             }

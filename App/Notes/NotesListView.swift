@@ -116,6 +116,12 @@ struct NotesListView: View {
             AppNavigation.shared.pendingNoteID = nil
             if controller.note(id) != nil { open(id) }
         }
+        .task(id: AppNavigation.shared.pendingNewNote) {
+            // The widget's note button: a new note, ready to type.
+            guard AppNavigation.shared.pendingNewNote else { return }
+            AppNavigation.shared.pendingNewNote = false
+            open(controller.add().id)
+        }
     }
 
     private func row(_ note: Note) -> some View {

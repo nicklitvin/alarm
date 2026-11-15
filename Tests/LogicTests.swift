@@ -331,7 +331,7 @@ check(AlarmSound.chime.fileName == "alarmie-chime.wav" && AlarmSound.default.fil
 
 // Deep links (widget taps).
 let someID = UUID()
-for link in [DeepLink.alarms, .alarm(someID), .timers, .todos, .todo(someID), .notes, .note(someID), .talk, .liveTalk] {
+for link in [DeepLink.alarms, .alarm(someID), .timers, .todos, .todo(someID), .notes, .note(someID), .talk, .liveTalk, .newNote, .newTimer] {
     check(DeepLink(url: link.url) == link, "deep link round trip \(link.url.absoluteString)")
 }
 check(DeepLink(url: URL(string: "alarmapp://livetalk")!) == .liveTalk && DeepLink(url: URL(string: "alarmapp://live-talk")!) == .liveTalk, "alarmapp://livetalk starts Live Talk")

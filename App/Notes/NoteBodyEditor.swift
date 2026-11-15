@@ -86,7 +86,8 @@ struct NoteBodyEditor: UIViewRepresentable {
         view.adjustsFontForContentSizeCategory = true
         view.textContainer.lineFragmentPadding = 0
         // Room at the bottom so the floating buttons never cover the last lines.
-        view.textContainerInset = UIEdgeInsets(top: 8, left: 0, bottom: 140, right: 0)
+        // 20 pt side margins inside the text view (not around it), so the scroll bar is at the edge.
+        view.textContainerInset = UIEdgeInsets(top: 8, left: 20, bottom: 140, right: 20)
         view.keyboardDismissMode = .interactive
         view.alwaysBounceVertical = true
         view.delegate = context.coordinator

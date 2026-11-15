@@ -200,7 +200,6 @@ struct AlarmWidgetBundle: WidgetBundle {
         #if !targetEnvironment(macCatalyst)
         TimerLiveActivity() // AlarmKit timers' Live Activity: not on the Mac
         #endif
-        LiveTalkControl()
     }
 }
 

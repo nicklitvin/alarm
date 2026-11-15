@@ -1,6 +1,17 @@
 {
   "releases": [
     {
+      "version": "1.36.0",
+      "build": 86,
+      "date": "2026-11-15",
+      "title": "Note and Timer Buttons",
+      "notes": [
+        "The Up Next widget has New Note and New Timer buttons instead of the Talk button, and more room for your to-dos.",
+        "The note scroll bar now sits at the right edge of the screen.",
+        "The Ask Alarmie control is gone from Control Center. You can still ask Alarmie through Siri and Shortcuts."
+      ]
+    },
+    {
       "version": "1.35.2",
       "build": 85,
       "date": "2026-11-15",

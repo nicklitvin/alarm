@@ -5,7 +5,6 @@ import {
 } from '../logic/model'
 import * as ex from '../logic/examples'
 import { ExampleStore, useStore, type AppData, type Link } from '../logic/store'
-import { useAsk } from '../tabs/TalkTab'
 
 // Examples of everything the app shows outside itself: widgets, lock screen, notifications,
 // Live Activities, Control Center and the ringing alarm. Each example has its own fixed data
@@ -17,7 +16,7 @@ type Example = [label: string, make: (now: number) => AppData]
 const SECTIONS: { id: string; label: string; examples: Example[]; view: () => ReactNode }[] = [
   { id: 'home', label: 'Home Screen', view: () => <HomeScreen />, examples: [
     ['Alarm within 12 hours (the widget window): it shows, with Dismiss; more to-dos than fit', ex.alarmSoon],
-    ['Next alarm days away: not in the widgets yet (zzz); Live Talk button off', ex.alarmFar],
+    ['Next alarm days away: not in the widgets yet (zzz)', ex.alarmFar],
     ['No alarms: Next Alarm shows zzz', ex.noAlarms],
     ['Nothing at all', ex.empty],
   ] },
@@ -30,7 +29,6 @@ const SECTIONS: { id: string; label: string; examples: Example[]; view: () => Re
     ['Running', ex.timerRunning],
     ['Paused', ex.timerPaused],
   ] },
-  { id: 'control', label: 'Control Center', view: () => <ControlCenter />, examples: [['', ex.alarmSoon]] },
   { id: 'ringing', label: 'Alarm Ringing', view: () => <Ringing />, examples: [['', ex.alarmSoon]] },
 ]
 
@@ -190,7 +188,7 @@ function HomeScreen() {
           {upNextWidget('large')}
         </div>
       </div>
-      <Caption>Next Alarm (small, with Dismiss) and Up Next (medium, large). Your next alarm shows (with Dismiss) from 12 hours before it rings, or whatever Alarm settings → Show Alarm says; to-dos and timers follow. Up Next is laid out like the Reminders widget: the waveform button (opens Talk) and the number of open to-dos on the left, the alarm with Dismiss and then to-dos on the right. Tapping anything opens its tab and a to-do's circle checks it off.</Caption>
+      <Caption>Next Alarm (small, with Dismiss) and Up Next (medium, large). Your next alarm shows (with Dismiss) from 12 hours before it rings, or whatever Alarm settings → Show Alarm says; to-dos and timers follow. Up Next is laid out like the Reminders widget: New Note and New Timer buttons and the number of open to-dos on the left, the alarm with Dismiss and then to-dos on the right. Tapping anything opens its tab and a to-do's circle checks it off.</Caption>
     </>
   )
 }
@@ -243,9 +241,11 @@ function UpNextSplit({ size }: { size: 'medium' | 'large' }) {
   return (
     <div className={`widget upnext ${size} split`} onClick={() => open({ tab: 'todos' })}>
       <div className="split-left">
-        {data.settings.widgetShowsTalkButton
-          ? <button className="split-icon" aria-label="Open Talk" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>〰︎</button>
-          : <button className="split-icon" aria-label="Open To-Do" onClick={(e) => { e.stopPropagation(); open({ tab: 'todos' }) }}>☰</button>}
+        {/* New Note and New Timer. */}
+        <div className="split-buttons">
+          <button className="split-icon" aria-label="New Note" onClick={(e) => { e.stopPropagation(); open({ tab: 'notes', id: 'new' }) }}>✎</button>
+          <button className="split-icon" aria-label="New Timer" onClick={(e) => { e.stopPropagation(); open({ tab: 'timers', id: 'new' }) }}>⏱</button>
+        </div>
         <div className="split-count" onClick={(e) => { e.stopPropagation(); open({ tab: 'todos' }) }}>
           <b>{openTodos}</b>
           <span>{openTodos === 1 ? 'To-Do' : 'To-Dos'}</span>
@@ -433,78 +433,6 @@ function LiveActivity() {
         <TimerLockActivity timer={timer} />
       </div>
       <Caption>A timer in the Dynamic Island (compact, minimal, expanded) and on the lock screen, with Pause/Resume and Cancel.</Caption>
-    </>
-  )
-}
-
-// MARK: - Control Center
-
-function ControlCenter() {
-  const ask = useAsk()
-  // Like the Reminders quick add: a text box drops in from the top; after sending, the reply
-  // shows in the same place. The app never opens.
-  const [stage, setStage] = useState<'closed' | 'typing' | 'thinking' | 'reply'>('closed')
-  const [draft, setDraft] = useState('')
-  const [asked, setAsked] = useState('')
-  const [reply, setReply] = useState('')
-  const send = async () => {
-    const text = draft.trim()
-    if (!text) return
-    setAsked(text)
-    setDraft('')
-    setStage('thinking')
-    setReply(await ask(text))
-    setStage('reply')
-  }
-  const close = () => { setStage('closed'); setDraft('') }
-  return (
-    <>
-      <div className="cc">
-        {stage !== 'closed' && (
-          <div className="quick-prompt" role="dialog" aria-label="Ask Alarmie">
-            <div className="qp-head"><img src="/icon.png" alt="" /><b>Alarmie</b></div>
-            {stage === 'typing' ? (
-              <>
-                <div className="qp-question">What can I do for you?</div>
-                <input autoFocus className="qp-input" placeholder="Request" value={draft} onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') send(); if (e.key === 'Escape') close() }} />
-                <div className="qp-buttons">
-                  <button onClick={close}>Cancel</button>
-                  <button className="primary" disabled={!draft.trim()} onClick={send}>Done</button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="qp-asked">“{asked}”</div>
-                <div className="qp-reply">{stage === 'thinking' ? <span className="qp-dots">•••</span> : reply}</div>
-                {stage === 'reply' && (
-                  <div className="qp-buttons single">
-                    <button className="primary" onClick={close}>Done</button>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        )}
-        <div className="cc-grid">
-          <div className="cc-tile cc-group">
-            <span className="cc-dot on">✈︎</span><span className="cc-dot on blue">⇅</span><span className="cc-dot on blue">◉</span><span className="cc-dot on blue">ᛒ</span>
-          </div>
-          <div className="cc-tile cc-media"><div style={{ fontSize: 12, opacity: 0.6 }}>Not Playing</div><div style={{ fontSize: 22 }}>⏮ ▶ ⏭</div></div>
-          <div className="cc-tile small">🔒</div>
-          <div className="cc-tile small">⧉</div>
-          <div className="cc-slider"><span>☀︎</span></div>
-          <div className="cc-slider"><span>🔊</span></div>
-          <div className="cc-tile small">🔦</div>
-          <div className="cc-tile small">⏱</div>
-          <button className="cc-tile small cc-app" onClick={() => setStage('typing')} aria-label="Ask Alarmie">〰︎</button>
-          <div className="cc-tile small">📷</div>
-          <div className="cc-tile small">🌙</div>
-          <div className="cc-tile small">🧮</div>
-        </div>
-        <div className="cc-label">Ask Alarmie</div>
-      </div>
-      <Caption>Alarmie adds one control, Ask Alarmie (orange, bottom row). Like the Reminders quick add, tapping it drops a text box in from the top of the screen: type a request, tap Done, and the assistant's reply appears in the same box. The app doesn't open. The other tiles are stand-ins for system controls.</Caption>
     </>
   )
 }
