@@ -1,3 +1,4 @@
+#if !targetEnvironment(macCatalyst)
 import ActivityKit
 import AlarmKit
 import Foundation
@@ -90,3 +91,63 @@ final class AlarmKitScheduler {
         )
     }
 }
+#else
+import Foundation
+import UserNotifications
+
+/// The Mac (Catalyst) build has no AlarmKit, so alarms ring as time-sensitive notifications with
+/// the alarm's sound, scheduled from the same plan (including a dismissed ring). They show while
+/// the Mac is awake; a sleeping Mac won't wake up for them, so the iPhone stays the alarm clock.
+@MainActor
+final class AlarmKitScheduler {
+    private static let prefix = "alarmie.ring."
+
+    func requestAuthorization() async -> Bool {
+        await Self.ensureAuthorized()
+    }
+
+    /// Asks for notification permission if needed. Shared by alarms and timers.
+    static func ensureAuthorized() async -> Bool {
+        let center = UNUserNotificationCenter.current()
+        switch await center.notificationSettings().authorizationStatus {
+        case .authorized, .provisional, .ephemeral:
+            return true
+        case .denied:
+            return false
+        case .notDetermined:
+            return (try? await center.requestAuthorization(options: [.alert, .sound, .badge])) ?? false
+        @unknown default:
+            return false
+        }
+    }
+
+    /// Makes the scheduled alarm notifications match `alarms`. Returns whether notifications are allowed.
+    @discardableResult
+    func sync(_ alarms: [AlarmItem], now: Date = .now) async -> Bool {
+        guard await requestAuthorization() else { return false }
+        let center = UNUserNotificationCenter.current()
+        let pending = await center.pendingNotificationRequests().map(\.identifier).filter { $0.hasPrefix(Self.prefix) }
+        center.removePendingNotificationRequests(withIdentifiers: pending)
+
+        for (id, planned) in AlarmPlan.make(for: alarms, now: now) {
+            let item = planned.item
+            let content = UNMutableNotificationContent()
+            content.title = item.title
+            content.body = "Alarm · \(item.timeString)"
+            content.interruptionLevel = .timeSensitive
+            content.sound = item.sound.fileName.map { UNNotificationSound(named: UNNotificationSoundName($0)) } ?? .default
+            let trigger: UNNotificationTrigger
+            switch planned.kind {
+            case .weekly(let day):
+                trigger = UNCalendarNotificationTrigger(
+                    dateMatching: DateComponents(hour: item.hour, minute: item.minute, weekday: day.rawValue), repeats: true)
+            case .once(let date):
+                trigger = UNCalendarNotificationTrigger(
+                    dateMatching: Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date), repeats: false)
+            }
+            try? await center.add(UNNotificationRequest(identifier: Self.prefix + id.uuidString, content: content, trigger: trigger))
+        }
+        return true
+    }
+}
+#endif

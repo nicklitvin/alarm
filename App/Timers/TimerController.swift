@@ -1,6 +1,9 @@
+#if !targetEnvironment(macCatalyst)
 import ActivityKit
 import AlarmKit
+#endif
 import Foundation
+import UserNotifications
 import Observation
 import SwiftUI
 import WidgetKit
@@ -9,12 +12,17 @@ enum TimerError: LocalizedError {
     case notAuthorized
 
     var errorDescription: String? {
+        #if targetEnvironment(macCatalyst)
+        "Allow notifications for Alarmie in System Settings so timers can ring."
+        #else
         "Allow alarms for this app in Settings so timers can ring."
+        #endif
     }
 }
 
 /// Countdown timers backed by AlarmKit, so they ring through Silent mode and show a
-/// Live Activity on the lock screen and Dynamic Island.
+/// Live Activity on the lock screen and Dynamic Island. The Mac (Catalyst) build has no AlarmKit:
+/// there a timer is a notification with sound at its end (see the `MacTimers` extension).
 @MainActor
 @Observable
 final class TimerController {
@@ -24,7 +32,9 @@ final class TimerController {
     /// Timers used before, newest first (the Recents list).
     private(set) var recents: [RecentTimer]
 
+    #if !targetEnvironment(macCatalyst)
     @ObservationIgnored private let manager = AlarmManager.shared
+    #endif
     @ObservationIgnored private var pendingIDs: Set<UUID> = []
     @ObservationIgnored private var observation: Task<Void, Never>?
 
@@ -43,6 +53,15 @@ final class TimerController {
             }
         }
 
+        #if targetEnvironment(macCatalyst)
+        // No AlarmKit to report a finished timer: check once a second.
+        observation = Task { [weak self] in
+            while !Task.isCancelled {
+                self?.markFinishedTimers()
+                try? await Task.sleep(for: .seconds(1))
+            }
+        }
+        #else
         observation = Task { [weak self] in
             for await alarms in AlarmManager.shared.alarmUpdates {
                 self?.reconcile(with: alarms)
@@ -52,6 +71,7 @@ final class TimerController {
                 }
             }
         }
+        #endif
     }
 
     // MARK: - Actions
@@ -76,7 +96,11 @@ final class TimerController {
         save()
 
         do {
+            #if targetEnvironment(macCatalyst)
+            try await MacTimers.schedule(item)
+            #else
             _ = try await manager.schedule(id: item.id, configuration: Self.configuration(for: item))
+            #endif
         } catch {
             timers.removeAll { $0.id == item.id }
             save()
@@ -89,7 +113,11 @@ final class TimerController {
 
     func pause(_ id: UUID) {
         guard let index = timers.firstIndex(where: { $0.id == id }), timers[index].state == .running else { return }
+        #if targetEnvironment(macCatalyst)
+        MacTimers.unschedule(id)
+        #else
         try? manager.pause(id: id)
+        #endif
         timers[index].remaining = timers[index].timeLeft(at: .now)
         timers[index].state = .paused
         save()
@@ -97,20 +125,31 @@ final class TimerController {
 
     func resume(_ id: UUID) {
         guard let index = timers.firstIndex(where: { $0.id == id }), timers[index].state == .paused else { return }
+        #if !targetEnvironment(macCatalyst)
         try? manager.resume(id: id)
+        #endif
         timers[index].fireDate = Date().addingTimeInterval(timers[index].remaining)
         timers[index].state = .running
+        #if targetEnvironment(macCatalyst)
+        let resumed = timers[index]
+        Task { try? await MacTimers.schedule(resumed) }
+        #endif
         save()
     }
 
     /// Cancels a running or paused timer, or silences one that is ringing.
     func cancel(_ id: UUID) {
         guard let timer = timers.first(where: { $0.id == id }) else { return }
+        #if targetEnvironment(macCatalyst)
+        _ = timer
+        MacTimers.unschedule(id)
+        #else
         if timer.state == .ringing {
             try? manager.stop(id: id)
         } else {
             try? manager.cancel(id: id)
         }
+        #endif
         timers.removeAll { $0.id == id }
         save()
     }
@@ -143,6 +182,7 @@ final class TimerController {
 
     // MARK: - Sync with AlarmKit
 
+    #if !targetEnvironment(macCatalyst)
     /// Mirrors state changes made outside the app (Live Activity buttons, timer finishing, Stop tapped).
     private func reconcile(with alarms: [Alarm]) {
         let byID = Dictionary(alarms.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
@@ -176,11 +216,14 @@ final class TimerController {
         }
     }
 
+    #endif
+
     private func save() {
         TimerStorage.save(timers)
         WidgetCenter.shared.reloadAllTimelines()
     }
 
+    #if !targetEnvironment(macCatalyst)
     private static func configuration(for item: TimerItem) -> AlarmManager.AlarmConfiguration<AlarmPayload> {
         let title = LocalizedStringResource(stringLiteral: item.title)
 
@@ -213,4 +256,44 @@ final class TimerController {
             sound: .default
         )
     }
+    #endif
 }
+
+#if targetEnvironment(macCatalyst)
+/// Timers on the Mac: a notification with sound when the time is up (no AlarmKit there).
+@MainActor
+private enum MacTimers {
+    static func identifier(_ id: UUID) -> String { "alarmie.timer.\(id.uuidString)" }
+
+    static func schedule(_ item: TimerItem) async throws {
+        guard await AlarmKitScheduler.ensureAuthorized() else { throw TimerError.notAuthorized }
+        let content = UNMutableNotificationContent()
+        content.title = item.title
+        content.body = "Time's up"
+        content.sound = .default
+        content.interruptionLevel = .timeSensitive
+        let seconds = max(1, item.fireDate.timeIntervalSinceNow)
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: seconds, repeats: false)
+        try await UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: identifier(item.id), content: content, trigger: trigger))
+    }
+
+    static func unschedule(_ id: UUID) {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [identifier(id)])
+        center.removeDeliveredNotifications(withIdentifiers: [identifier(id)])
+    }
+}
+
+extension TimerController {
+    /// Running timers whose time is up show as ringing ("Time's up") until you stop them.
+    fileprivate func markFinishedTimers() {
+        let now = Date()
+        guard timers.contains(where: { $0.state == .running && $0.fireDate <= now }) else { return }
+        for index in timers.indices where timers[index].state == .running && timers[index].fireDate <= now {
+            timers[index].state = .ringing
+        }
+        save() // private, but reachable from an extension in this file
+
+    }
+}
+#endif

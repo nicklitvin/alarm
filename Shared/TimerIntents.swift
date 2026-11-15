@@ -1,4 +1,6 @@
+#if !targetEnvironment(macCatalyst)
 import AlarmKit
+#endif
 import AppIntents
 import Foundation
 
@@ -19,11 +21,13 @@ enum TimerIntentRunner {
                 handler(action, id)
                 return
             }
+            #if !targetEnvironment(macCatalyst)
             switch action {
             case .pause: try? AlarmManager.shared.pause(id: id)
             case .resume: try? AlarmManager.shared.resume(id: id)
             case .cancel: try? AlarmManager.shared.cancel(id: id)
             }
+            #endif
         }
     }
 }

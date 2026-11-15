@@ -1,3 +1,5 @@
+// Live Activities (AlarmKit timers) are iPhone and iPad only; the Mac build leaves them out.
+#if !targetEnvironment(macCatalyst)
 import ActivityKit
 import AlarmKit
 import AppIntents
@@ -137,3 +139,4 @@ private struct TimerButtons: View {
         .accessibilityLabel(title)
     }
 }
+#endif

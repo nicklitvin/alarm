@@ -17,8 +17,8 @@ settings:
     SWIFT_VERSION: "5.0"
     # Version: bump both for every release and add a matching entry to CHANGELOG.json
     # (Tests/run.sh fails if they don't match).
-    MARKETING_VERSION: "1.35.0"
-    CURRENT_PROJECT_VERSION: "83"
+    MARKETING_VERSION: "1.35.1"
+    CURRENT_PROJECT_VERSION: "84"
     # iPhone and iPad; the Mac app is the iPad build running on the Mac (Mac Catalyst), which
     # keeps AlarmKit alarms, widgets and Talk without a separate codebase.
     TARGETED_DEVICE_FAMILY: "1,2"

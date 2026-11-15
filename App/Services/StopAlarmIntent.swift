@@ -1,4 +1,6 @@
+#if !targetEnvironment(macCatalyst)
 import AlarmKit
+#endif
 import AppIntents
 import Foundation
 
@@ -19,9 +21,11 @@ struct StopAlarmIntent: LiveActivityIntent {
     init(alarmID: UUID) { self.alarmID = alarmID.uuidString }
 
     func perform() async throws -> some IntentResult {
+        #if !targetEnvironment(macCatalyst)
         if let id = UUID(uuidString: alarmID) {
             try? AlarmManager.shared.stop(id: id)
         }
+        #endif
         await NotificationScheduler.removeDeliveredForRungAlarms()
         await AlarmController.shared.reconcile()
         return .result()

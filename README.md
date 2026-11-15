@@ -125,8 +125,12 @@ can't use AppKit, so the item is a small AppKit bundle (`MenuBar/AlarmieMenuBar.
 `AlarmieMenuBar`) embedded in the Mac build's PlugIns folder and loaded at launch by
 `App/Services/MenuBarBridge.swift`; its items open Alarmie's own `alarmapp://` links.
 
-Alarms on the Mac depend on AlarmKit, which Apple lists for Mac Catalyst; a Mac that's asleep may not
-wake up to ring, so the iPhone remains the alarm clock.
+**Alarms and timers on the Mac.** AlarmKit and ActivityKit don't build for Mac Catalyst, so that
+code is compiled out of the Mac build (`#if !targetEnvironment(macCatalyst)`). On the Mac,
+`AlarmKitScheduler` schedules each planned alarm (same `AlarmPlan`, including a dismissed ring) as a
+time-sensitive notification with the alarm's sound, and timers end with a notification
+(`MacTimers` in `TimerController.swift`); there are no Live Activities. A sleeping Mac won't wake up
+for these, so the iPhone remains the alarm clock.
 
 ## Web preview
 

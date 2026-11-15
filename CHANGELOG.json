@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.35.1",
+      "build": 84,
+      "date": "2026-11-15",
+      "title": "Mac Alarms and Timers",
+      "notes": [
+        "On the Mac, alarms and timers alert you with a notification and sound, since Mac apps can't ring like iPhone alarms. Your iPhone still rings as usual."
+      ]
+    },
+    {
       "version": "1.35.0",
       "build": 83,
       "date": "2026-11-15",

@@ -197,7 +197,9 @@ struct AlarmWidgetBundle: WidgetBundle {
     var body: some Widget {
         NextAlarmWidget()
         UpNextWidget()
-        TimerLiveActivity()
+        #if !targetEnvironment(macCatalyst)
+        TimerLiveActivity() // AlarmKit timers' Live Activity: not on the Mac
+        #endif
         LiveTalkControl()
     }
 }

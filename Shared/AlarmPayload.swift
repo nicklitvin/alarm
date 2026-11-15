@@ -1,3 +1,5 @@
+// AlarmKit isn't available in the Mac (Catalyst) build; see AlarmKitScheduler.
+#if !targetEnvironment(macCatalyst)
 import AlarmKit
 import Foundation
 
@@ -8,3 +10,4 @@ struct AlarmPayload: AlarmMetadata {
     var label: String = ""
     var isTimer: Bool = false
 }
+#endif
