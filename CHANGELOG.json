@@ -1,6 +1,16 @@
 {
   "releases": [
     {
+      "version": "1.20.2",
+      "build": 34,
+      "date": "2026-11-15",
+      "title": "Slimmer Widget Alarm",
+      "notes": [
+        "In the Up Next widget, the alarm fits on one line (time, label and day), leaving more room for your to-dos.",
+        "The widget's Talk button uses the Live Talk waveform instead of the sparkle."
+      ]
+    },
+    {
       "version": "1.20.1",
       "build": 33,
       "date": "2026-11-15",

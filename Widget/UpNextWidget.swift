@@ -89,7 +89,7 @@ struct UpNextWidgetView: View {
         max(1, Int(height / Self.rowHeight))
     }
     private static let headerHeight: CGFloat = 22
-    private static let alarmHeight: CGFloat = 56
+    private static let alarmHeight: CGFloat = 36
     /// Generous rows, so items aren't crammed together.
     private static let rowHeight: CGFloat = 44
 
@@ -232,27 +232,22 @@ private struct AlarmHeader: View {
         let layout = stacked ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6)) : AnyLayout(HStackLayout(alignment: .center, spacing: 8))
         layout {
             Link(destination: DeepLink.alarms.url) {
-                VStack(alignment: .leading, spacing: 1) {
-                    HStack(alignment: .firstTextBaseline, spacing: 3) {
-                        Text(parts.time)
-                            .font(.system(size: stacked ? 34 : 30, weight: .semibold, design: .rounded))
-                            .monospacedDigit()
-                        if let period = parts.period {
-                            Text(period).font(.subheadline.weight(.semibold))
-                        }
+                if stacked {
+                    VStack(alignment: .leading, spacing: 1) {
+                        time(parts, size: 34)
+                        details.font(.caption2)
                     }
-                    .minimumScaleFactor(0.7)
-                    .lineLimit(1)
-                    HStack(spacing: 3) {
-                        Image(systemName: "alarm.fill").foregroundStyle(.orange)
-                        Text("\(upcoming.alarm.title) · \(TimeFormat.dayDescription(for: upcoming.date, relativeTo: now)), in \(upcoming.date, style: .relative)")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                } else {
+                    // Everything on one line: "7:00 AM  ⏰ Wake up · Tomorrow".
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        time(parts, size: 24)
+                        details.font(.subheadline)
                     }
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
             }
             .foregroundStyle(.primary)
 
@@ -272,6 +267,30 @@ private struct AlarmHeader: View {
             }
         }
     }
+
+    private func time(_ parts: (time: String, period: String?), size: CGFloat) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 2) {
+            Text(parts.time)
+                .font(.system(size: size, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+            if let period = parts.period {
+                Text(period).font(.system(size: size * 0.5, weight: .semibold))
+            }
+        }
+        .lineLimit(1)
+        .fixedSize()
+    }
+
+    /// "⏰ Wake up · Tomorrow". (The day, not a countdown: a widget only redraws now and then,
+    /// so a minute count would go stale.)
+    private var details: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "alarm.fill").foregroundStyle(.orange)
+            Text("\(upcoming.alarm.title) · \(TimeFormat.dayDescription(for: upcoming.date, relativeTo: now))")
+        }
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+    }
 }
 
 /// Opens Alarmie on the Talk tab. (Widgets can't show the system's type-a-request prompt,
@@ -279,7 +298,7 @@ private struct AlarmHeader: View {
 private struct AskButton: View {
     var body: some View {
         Link(destination: DeepLink.talk.url) {
-            Image(systemName: "sparkles")
+            Image(systemName: "waveform") // the Live Talk icon, as on the Talk tab
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: 34, height: 34)
@@ -426,7 +445,7 @@ struct UpNextWidget: Widget {
                 .widgetBackground()
         }
         .configurationDisplayName("Up Next")
-        .description("Your next alarm with a Dismiss button, then timers and to-dos. Tap ✦ to open Talk.")
+        .description("Your next alarm with a Dismiss button, then timers and to-dos. Tap the waveform to open Talk.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .accessoryRectangular, .accessoryInline])
     }
 }

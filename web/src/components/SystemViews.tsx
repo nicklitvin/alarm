@@ -116,12 +116,15 @@ function HomeScreen() {
   const layout = upNextLayout(items, now)
   const featured = layout.alarm
   // Variant B: the next alarm on top (within 24 hours) with Dismiss on its line, then the rest;
-  // ✦ in the bottom-right corner. Every tap opens the tab.
+  // the Live Talk waveform in the bottom-right corner. Every tap opens the tab.
   const alarmHeader = (stacked: boolean) => featured && (
     <div className={`v-top ${stacked ? 'stacked' : ''}`}>
       <div className="v-alarm" onClick={(e) => { e.stopPropagation(); open({ tab: 'alarms' }) }}>
-        <div className="v-alarm-time">{bigTime(featured.date).time}<small> {bigTime(featured.date).period}</small></div>
-        <div className="v-alarm-sub ellipsis">⏰ {alarmTitle(featured.alarm)} · {dayDescription(featured.date, now)}, in {countdown(now, featured.date)}</div>
+        {/* One line on medium and large ("7:00 AM  ⏰ Wake up · Tomorrow"); stacked on small. */}
+        <div className={stacked ? '' : 'v-alarm-line'}>
+          <div className="v-alarm-time">{bigTime(featured.date).time}<small> {bigTime(featured.date).period}</small></div>
+          <div className="v-alarm-sub ellipsis">⏰ {alarmTitle(featured.alarm)} · {dayDescription(featured.date, now)}</div>
+        </div>
       </div>
       {/* One skipped ring per alarm: once dismissed, the ring after it can't be dismissed too. */}
       {(featured.alarm.skippedOccurrence ?? 0) <= now &&
@@ -129,7 +132,7 @@ function HomeScreen() {
     </div>
   )
   const upNextWidget = (size: 'small' | 'medium' | 'large') => {
-    const rows = featured ? (size === 'medium' ? 1 : 6) : (size === 'medium' ? 2 : 7)
+    const rows = featured ? (size === 'medium' ? 2 : 7) : (size === 'medium' ? 2 : 7)
     const shown = layout.rows.slice(0, rows)
     if (size === 'small') {
       return (
@@ -149,7 +152,7 @@ function HomeScreen() {
         <div className={`wh ${featured ? 'small' : ''}`}><span>{featured ? 'To-Do' : 'Up Next'}{todoCount > 0 && <span className="count"> {todoCount} to-do{todoCount === 1 ? '' : 's'}</span>}</span></div>
         {shown.length === 0 ? <div style={{ marginTop: 6 }}>{featured ? <span className="muted" style={{ fontSize: 12 }}>Nothing to do.</span> : <><b>All clear</b><div className="muted" style={{ fontSize: 12 }}>Nothing coming up.</div></>}</div>
           : shown.map((i, n) => <div key={keyOf(i)} style={{ paddingRight: n === shown.length - 1 ? 40 : 0 }}><Row item={i} /></div>)}
-        <button className="ask corner" aria-label="Open Talk" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>✦</button>
+        <button className="ask corner" aria-label="Open Talk" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>〰︎</button>
       </div>
     )
   }
@@ -172,7 +175,7 @@ function HomeScreen() {
           {upNextWidget('large')}
         </div>
       </div>
-      <Caption>Next Alarm (small) and Up Next (small, medium, large). Your next alarm always sits on top, however far away, with a Dismiss button for that ring; to-dos and timers follow. Tapping anything opens its tab, a to-do's circle checks it off, and ✦ opens Talk.</Caption>
+      <Caption>Next Alarm (small) and Up Next (small, medium, large). Your next alarm always sits on top, however far away, with a Dismiss button for that ring; to-dos and timers follow. Tapping anything opens its tab, a to-do's circle checks it off, and the waveform button opens Talk.</Caption>
     </>
   )
 }
