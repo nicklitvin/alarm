@@ -123,11 +123,13 @@ function HomeScreen() {
         <div className="v-alarm-time">{bigTime(featured.date).time}<small> {bigTime(featured.date).period}</small></div>
         <div className="v-alarm-sub ellipsis">⏰ {alarmTitle(featured.alarm)} · {dayDescription(featured.date, now)}, in {countdown(now, featured.date)}</div>
       </div>
-      <button className="mini dismiss" onClick={(e) => { e.stopPropagation(); dismiss(featured.alarm.id, featured.date) }}>Dismiss</button>
+      {/* One skipped ring per alarm: once dismissed, the ring after it can't be dismissed too. */}
+      {(featured.alarm.skippedOccurrence ?? 0) <= now &&
+        <button className="mini dismiss" onClick={(e) => { e.stopPropagation(); dismiss(featured.alarm.id, featured.date) }}>Dismiss</button>}
     </div>
   )
   const upNextWidget = (size: 'small' | 'medium' | 'large') => {
-    const rows = featured ? (size === 'medium' ? 1 : 7) : (size === 'medium' ? 3 : 8)
+    const rows = featured ? (size === 'medium' ? 1 : 6) : (size === 'medium' ? 2 : 7)
     const shown = layout.rows.slice(0, rows)
     if (size === 'small') {
       return (
@@ -170,7 +172,7 @@ function HomeScreen() {
           {upNextWidget('large')}
         </div>
       </div>
-      <Caption>Next Alarm (small) and Up Next (small, medium, large). When an alarm rings within 24 hours it sits on top with a Dismiss button, which works for the next ring however far away it is; to-dos and timers follow. Tapping anything opens its tab, a to-do's circle checks it off, and ✦ opens Talk.</Caption>
+      <Caption>Next Alarm (small) and Up Next (small, medium, large). Your next alarm always sits on top, however far away, with a Dismiss button for that ring; to-dos and timers follow. Tapping anything opens its tab, a to-do's circle checks it off, and ✦ opens Talk.</Caption>
     </>
   )
 }

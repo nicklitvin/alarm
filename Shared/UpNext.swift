@@ -7,7 +7,7 @@ struct UpNextItem: Identifiable, Hashable, Sendable {
         case alarmSoon(AlarmItem, Date)
         case timer(TimerItem)
         case todo(TodoItem)
-        /// The next alarm, when it's more than an hour away.
+        /// The next alarm, when it's more than an hour away (however far).
         case nextAlarm(AlarmItem, Date)
     }
 
@@ -26,8 +26,6 @@ struct UpNextItem: Identifiable, Hashable, Sendable {
 enum UpNext {
     /// To-dos due within this window count as "soon" and move up.
     static let todoSoonWindow: TimeInterval = 3 * 3600
-    /// Show the next alarm when it's within this long.
-    static let nextAlarmWindow: TimeInterval = 24 * 3600
 
     /// What the widget shows (Alarm and To-Do settings → Widget).
     struct Options: Sendable {
@@ -91,9 +89,8 @@ enum UpNext {
         func item(_ todo: TodoItem) -> UpNextItem { UpNextItem(kind: .todo(original[todo.id] ?? todo)) }
         result += (overdue + dueSoon).map(item)
 
-        // 5. The next alarm, if it isn't already shown above.
-        if let next = alarms.filter({ !soonAlarmIDs.contains($0.id) }).nextFire(after: now),
-           next.date.timeIntervalSince(now) <= nextAlarmWindow {
+        // 5. The next alarm, if it isn't already shown above, however far away it is.
+        if let next = alarms.filter({ !soonAlarmIDs.contains($0.id) }).nextFire(after: now) {
             result.append(UpNextItem(kind: .nextAlarm(next.alarm, next.date)))
         }
 
@@ -103,8 +100,8 @@ enum UpNext {
         return result
     }
 
-    /// The widget's layout: the next alarm on top when one rings within 24 hours, and
-    /// everything else (to-dos, timers, any other alarm) as rows underneath.
+    /// The widget's layout: the next alarm on top (however far away), and everything else
+    /// (to-dos, timers, any other alarm) as rows underneath.
     struct Layout: Sendable {
         var alarm: UpcomingAlarm?
         var rows: [UpNextItem]
@@ -114,7 +111,6 @@ enum UpNext {
         for (index, item) in items.enumerated() {
             switch item.kind {
             case .alarmSoon(let alarm, let date), .nextAlarm(let alarm, let date):
-                guard date.timeIntervalSince(now) <= nextAlarmWindow else { continue }
                 var rows = items
                 rows.remove(at: index)
                 return Layout(alarm: UpcomingAlarm(alarm: alarm, date: date), rows: rows)
@@ -130,7 +126,7 @@ enum UpNext {
         var dates: [Date] = []
         for alarm in alarms where alarm.isEnabled {
             for ring in alarm.upcomingFireDates(after: now, limit: 2) {
-                dates += [ring.addingTimeInterval(-AlarmItem.headsUpInterval), ring, ring.addingTimeInterval(-nextAlarmWindow)]
+                dates += [ring.addingTimeInterval(-AlarmItem.headsUpInterval), ring]
             }
         }
         for timer in timers where timer.state == .running {

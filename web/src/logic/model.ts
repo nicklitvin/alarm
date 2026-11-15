@@ -447,9 +447,9 @@ export type UpNextItem =
   | { kind: 'todo'; todo: Todo }
   | { kind: 'nextAlarm'; alarm: Alarm; date: number }
 
-/** The widget layout (UpNext.layout): the next alarm on top when it rings within 24 hours, the rest below. */
-export function upNextLayout(items: UpNextItem[], now: number): { alarm?: { alarm: Alarm; date: number }; rows: UpNextItem[] } {
-  const index = items.findIndex((i) => (i.kind === 'alarmSoon' || i.kind === 'nextAlarm') && i.date - now <= 24 * 3600_000)
+/** The widget layout (UpNext.layout): the next alarm on top (however far away), the rest below. */
+export function upNextLayout(items: UpNextItem[], _now?: number): { alarm?: { alarm: Alarm; date: number }; rows: UpNextItem[] } {
+  const index = items.findIndex((i) => i.kind === 'alarmSoon' || i.kind === 'nextAlarm')
   if (index === -1) return { rows: items }
   const featured = items[index] as { alarm: Alarm; date: number }
   return { alarm: { alarm: featured.alarm, date: featured.date }, rows: items.filter((_, n) => n !== index) }
@@ -496,7 +496,7 @@ export function upNext(allAlarms: Alarm[], allTodos: Todo[], timers: TimerItem[]
   result.push(...[...overdue, ...dueSoon].map(real))
 
   const next = nextAlarm(alarms.filter((a) => !soonIDs.has(a.id)), now)
-  if (next && next.date - now <= DAY) result.push({ kind: 'nextAlarm', alarm: next.alarm, date: next.date })
+  if (next) result.push({ kind: 'nextAlarm', alarm: next.alarm, date: next.date }) // however far away
 
   const shown = new Set([...overdue, ...dueSoon].map((t) => t.id))
   result.push(...open.filter((t) => !shown.has(t.id)).map(real))

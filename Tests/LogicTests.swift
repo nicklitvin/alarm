@@ -304,8 +304,8 @@ let upNext = UpNext.items(alarms: [evening, wakeAlarm], todos: [somedayTodo, lat
 check(kinds(upNext) == ["soon:Wake", "timer:Tea", "timer:Bread", "todo:Pay bill", "todo:Leave for train", "next:Wind down", "todo:Dentist", "todo:Read book"],
       "up next order → \(kinds(upNext))")
 var skippedWake = wakeAlarm; skippedWake.skippedOccurrence = d(2026, 11, 12, 7, 0)
-check(kinds(UpNext.items(alarms: [skippedWake], todos: [], timers: [], now: unNow)).isEmpty,
-      "dismissed ring disappears (next ring is Fri 7:00, beyond the 24h next-alarm window)")
+check(kinds(UpNext.items(alarms: [skippedWake], todos: [], timers: [], now: unNow)) == ["next:Wake"],
+      "dismissed ring leaves the soon slot; the following ring (Fri 7:00) shows as the next alarm")
 check(kinds(UpNext.items(alarms: [wakeAlarm], todos: [], timers: [], now: d(2026, 11, 12, 5, 0))) == ["next:Wake"], "alarm 2h away → next alarm, not dismissable")
 check(kinds(UpNext.items(alarms: [], todos: [], timers: [], now: unNow)).isEmpty, "nothing → empty")
 let changes = UpNext.changeDates(alarms: [wakeAlarm], todos: [soonTodo], timers: [runningTimer], now: unNow)
@@ -449,8 +449,10 @@ let morning = AlarmItem(hour: 7, minute: 0, weekdays: Set(Weekday.allCases))
 let layoutTodo = TodoItem(title: "Pay rent")
 let withAlarm = UpNext.layout([UpNextItem(kind: .todo(layoutTodo)), UpNextItem(kind: .nextAlarm(morning, d(2026, 11, 18, 7, 0)))], now: layoutNow)
 check(withAlarm.alarm?.alarm.id == morning.id && withAlarm.rows.count == 1, "alarm within 24 h goes on top, the rest below")
-let farAlarm = UpNext.layout([UpNextItem(kind: .nextAlarm(morning, d(2026, 11, 19, 7, 0)))], now: layoutNow)
-check(farAlarm.alarm == nil && farAlarm.rows.count == 1, "no alarm on top when it's more than 24 h away")
+let farAlarm = UpNext.layout([UpNextItem(kind: .nextAlarm(morning, d(2026, 11, 25, 7, 0)))], now: layoutNow)
+check(farAlarm.alarm != nil && farAlarm.rows.isEmpty, "the next alarm is on top even when it's days away")
+let weekly = AlarmItem(hour: 9, minute: 0, weekdays: [.saturday])
+check(UpNext.items(alarms: [weekly], todos: [], timers: [], now: layoutNow).contains { if case .nextAlarm = $0.kind { true } else { false } }, "a far-off next alarm is still listed")
 
 print(failures == 0 ? "\nALL PASSED" : "\n\(failures) FAILED")
 exit(failures == 0 ? 0 : 1)

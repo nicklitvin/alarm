@@ -250,7 +250,7 @@ button.due { padding: 0; margin-top: 2px; }
 .widget .wh { color: var(--orange); font-weight: 600; font-size: 14px; display: flex; justify-content: space-between; }
 .widget .big { font-size: 40px; font-weight: 600; letter-spacing: -0.5px; margin-top: auto; }
 .widget .big small { font-size: 17px; }
-.widget-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+.widget-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
 .widget-row .t { font-size: 14px; font-weight: 500; }
 .widget-row .s { font-size: 11px; color: var(--secondary); }
 .widget-row .mini { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--orange); color: #fff; }

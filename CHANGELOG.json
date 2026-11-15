@@ -1,6 +1,17 @@
 {
   "releases": [
     {
+      "version": "1.19.0",
+      "build": 29,
+      "date": "2026-11-15",
+      "title": "Next Alarm Always on Top",
+      "notes": [
+        "The Up Next widget always shows your next alarm at the top with its Dismiss button, even when it's days away.",
+        "Items in the widget have more space between them.",
+        "Once you dismiss an alarm's next ring, the widget shows the ring after it without a Dismiss button, so you can't accidentally bring the dismissed ring back."
+      ]
+    },
+    {
       "version": "1.18.3",
       "build": 28,
       "date": "2026-11-14",

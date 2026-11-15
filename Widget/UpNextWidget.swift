@@ -2,7 +2,7 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
-// The "Up Next" widget: the next alarm on top when it rings within 24 hours (with Dismiss), then
+// The "Up Next" widget: the next alarm on top, however far away (with Dismiss), then
 // running timers, overdue and soon-due to-dos and the rest of the to-do list. Taps open the tab.
 // It keeps the To-Do widget's kind, so widgets already on the home screen upgrade in place.
 
@@ -90,9 +90,10 @@ struct UpNextWidgetView: View {
     }
     private static let headerHeight: CGFloat = 22
     private static let alarmHeight: CGFloat = 56
-    private static let rowHeight: CGFloat = 34
+    /// Generous rows, so items aren't crammed together.
+    private static let rowHeight: CGFloat = 44
 
-    // Medium / large: the next alarm on top (when within 24 hours) with Dismiss on its line,
+    // Medium / large: the next alarm on top with Dismiss on its line,
     // then as many rows as fit, and the ✦ (open Talk) button in the bottom-right corner.
     private var list: some View {
         GeometryReader { geometry in
@@ -120,7 +121,7 @@ struct UpNextWidgetView: View {
                     // No gaps between rows: every point of a row opens its tab.
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(shown) { item in
-                            UpNextRow(item: item, now: entry.date, tapPadding: 1)
+                            UpNextRow(item: item, now: entry.date, tapPadding: 5)
                                 // The last row leaves room for ✦.
                                 .padding(.trailing, item.id == shown.last?.id ? 40 : 0)
                                 .transition(.opacity.combined(with: .move(edge: .trailing)))
@@ -136,7 +137,7 @@ struct UpNextWidgetView: View {
         }
     }
 
-    // Small: the next alarm (within 24 hours) with Dismiss, otherwise the most relevant thing.
+    // Small: the next alarm with Dismiss, otherwise (no alarms) the most relevant thing.
     // (No ✦: there's no room for it.)
     private var small: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -218,8 +219,8 @@ struct UpNextWidgetView: View {
     }
 }
 
-/// The next alarm across the top: big time, label and when, with Dismiss on the right.
-/// Dismiss always works for the next ring, however far away it is.
+/// The next alarm across the top (however far away): big time, label and when, with Dismiss on
+/// the right. Dismiss always works for the next ring, however far away it is.
 private struct AlarmHeader: View {
     let upcoming: UpcomingAlarm
     let now: Date
@@ -255,6 +256,9 @@ private struct AlarmHeader: View {
             }
             .foregroundStyle(.primary)
 
+            // One skipped ring per alarm: once its next ring is dismissed, the one after it
+            // (shown here) can't be dismissed too.
+            if (upcoming.alarm.skippedOccurrence ?? .distantPast) <= now {
             Button(intent: DismissNextAlarmIntent(alarmID: upcoming.alarm.id)) {
                 Text("Dismiss")
                     .font(.caption.weight(.semibold))
@@ -265,6 +269,7 @@ private struct AlarmHeader: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Dismiss the \(TimeFormat.string(for: upcoming.date)) alarm")
+            }
         }
     }
 }

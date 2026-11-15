@@ -101,7 +101,10 @@ final class AlarmController {
         guard alarm.isEnabled,
               let ring = alarm.nextFireDate(after: min(referenceDate, now)),
               ring > now,
-              anyTime || ring.timeIntervalSince(referenceDate) <= AlarmItem.headsUpInterval + 60
+              anyTime || ring.timeIntervalSince(referenceDate) <= AlarmItem.headsUpInterval + 60,
+              // Only one ring of an alarm can be skipped at a time: dismissing the one after
+              // a skipped ring would bring the skipped one back.
+              (alarm.skippedOccurrence ?? .distantPast) <= now
         else { return }
 
         if alarm.isRepeating {
