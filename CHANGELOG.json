@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.24.2",
+      "build": 56,
+      "date": "2026-11-15",
+      "title": "Lower Dismiss",
+      "notes": [
+        "In the small Up Next widget, the Dismiss button sits closer to the bottom edge."
+      ]
+    },
+    {
       "version": "1.24.1",
       "build": 55,
       "date": "2026-11-15",

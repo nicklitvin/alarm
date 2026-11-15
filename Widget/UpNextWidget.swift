@@ -374,6 +374,8 @@ private struct SmallAlarm: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Dismiss the \(TimeFormat.string(for: upcoming.date)) alarm")
+                // Down into the widget's bottom margin, so the button sits near the bottom edge.
+                .padding(.bottom, -8)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

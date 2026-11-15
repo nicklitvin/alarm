@@ -512,3 +512,4 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .alarm-glyph { filter: grayscale(1) brightness(0); }
 :root[data-theme='dark'] .alarm-glyph { filter: grayscale(1) brightness(0) invert(1); }
 .upnext-foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 500; color: var(--secondary); }
+.widget.small .dismiss-full { margin-bottom: -6px; }
