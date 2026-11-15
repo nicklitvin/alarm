@@ -536,3 +536,18 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .list-menu button { display: flex; width: 100%; justify-content: space-between; align-items: center; padding: 12px 16px; font-size: 16px; color: var(--label); text-align: left; }
 .list-menu button + button { border-top: 0.5px solid var(--separator, rgba(0, 0, 0, 0.12)); }
 .list-menu-icon { color: var(--secondary); font-weight: 600; width: 22px; text-align: center; }
+/* Up Next ideas: medium widgets with four equal lines of content. */
+.ideas { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 18px 16px; }
+.ideas .widget { grid-column: auto; }
+.idea-title { font-size: 14px; font-weight: 700; color: var(--page-text); margin: 0 2px 8px; }
+.idea-lines .idea-line { gap: 6px; }
+.idea-lines .idea-line > .widget-row { flex: 1; min-width: 0; }
+.idea-lines .idea-line > :not(.widget-row) { flex: none; }
+.idea-alarm { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.idea-alarm .v-alarm { flex: 1; }
+.idea-count { font-size: 11px; font-weight: 700; color: var(--secondary); background: var(--fill, rgba(120, 120, 128, 0.14)); padding: 2px 7px; border-radius: 999px; }
+.idea-corner { position: absolute; right: 14px; bottom: 17.75px; line-height: 0; } /* centred on the last of four 35.5px lines */
+.idea-corner-space { width: 30px; }
+.idea-rail-wrap { flex: 1; min-height: 0; display: flex; gap: 10px; }
+.idea-rail-wrap .idea-lines { flex: 1; min-width: 0; }
+.idea-rail { display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 4px 0 0; }

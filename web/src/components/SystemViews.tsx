@@ -21,6 +21,10 @@ const SECTIONS: { id: string; label: string; examples: Example[]; view: () => Re
     ['No alarms: Next Alarm shows zzz', ex.noAlarms],
     ['Nothing at all', ex.empty],
   ] },
+  { id: 'ideas', label: 'Up Next Ideas (4 rows of content)', view: () => <UpNextIdeas />, examples: [
+    ['With an alarm', ex.alarmSoon],
+    ['Just to-dos', ex.noAlarms],
+  ] },
   { id: 'lock', label: 'Lock Screen', view: () => <LockScreen />, examples: [
     ['Alarm within the widget window, with a running timer', ex.timerRunning],
     ['No alarm within the widget window: zzz', ex.alarmFar],
@@ -249,6 +253,88 @@ function Zzz({ size, muted }: { size: number; muted?: boolean }) {
       <path d={z(12, 6, 8)} />
       <path d={z(1, 14, 6)} />
     </svg>
+  )
+}
+
+// MARK: - Up Next ideas
+
+type Idea = 'corner' | 'cornerCount' | 'topButton' | 'rail' | 'noButton'
+const IDEAS: [Idea, string, string][] = [
+  ['corner', 'A · Corner button', 'The Live Talk button floats in the bottom-right corner; the last row stops short of it. No "+N": tap the widget to see everything.'],
+  ['cornerCount', 'B · Corner button + count', 'Like A, with a small "+N" (the to-dos that don’t fit) just left of the button on the last row.'],
+  ['topButton', 'C · Button on the top row', 'The button sits at the end of the first line (after Dismiss, or after the first to-do); "+N" is a small badge at the end of the last row.'],
+  ['rail', 'D · Side rail', 'A narrow column on the right holds "+N" and the button; every row is a little narrower.'],
+  ['noButton', 'E · No button', 'Just content: "+N" as a badge at the end of the last row. Live Talk stays in Control Center and the app.'],
+]
+
+/** One medium Up Next widget in each idea, all with four equal lines of content. */
+function UpNextIdeas() {
+  return (
+    <div className="ideas">
+      {IDEAS.map(([idea, title, caption]) => (
+        <div key={idea}>
+          <div className="idea-title">{title}</div>
+          <UpNextIdea idea={idea} />
+          <p className="view-caption">{caption}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function UpNextIdea({ idea }: { idea: Idea }) {
+  const { now, items, open, dismiss, data } = useSystem()
+  const layout = upNextLayout(items, now)
+  const featured = layout.alarm
+  const shown = layout.rows.slice(0, 4 - (featured ? 1 : 0))
+  const hidden = layout.rows.length - shown.length
+  const ask = (
+    <button className="ask line-ask" aria-label="Open Talk" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>〰︎</button>
+  )
+  const count = hidden > 0 ? <span className="idea-count">+{hidden}</span> : null
+  const canDismiss = featured && (featured.alarm.skippedOccurrence ?? 0) <= now && featured.date - now <= alarmWindow(data.settings)
+  // Each line is a quarter of the widget. `last` and `first` mark where the button or count goes.
+  const lines: ReactNode[] = []
+  if (featured) {
+    lines.push(
+      <div className="v-top idea-alarm" key="alarm">
+        <div className="v-alarm" onClick={(e) => { e.stopPropagation(); open({ tab: 'alarms' }) }}>
+          <div className="v-alarm-line">
+            <span className="v-alarm-icon alarm-glyph">⏰</span>
+            <div className="v-alarm-time">{bigTime(featured.date).time}<small> {bigTime(featured.date).period}</small></div>
+            <div className="v-alarm-sub ellipsis">{featured.alarm.label.trim() ? `${featured.alarm.label.trim()} · ` : ''}in {countdown(now, featured.date)}</div>
+          </div>
+        </div>
+        {canDismiss && <button className="mini dismiss" onClick={(e) => { e.stopPropagation(); dismiss(featured.alarm.id, featured.date) }}>Dismiss</button>}
+        {idea === 'topButton' && ask}
+      </div>,
+    )
+  }
+  shown.forEach((item, index) => {
+    const isFirstLine = !featured && index === 0
+    const isLast = index === shown.length - 1 && lines.length + 1 === 4
+    lines.push(
+      <div className="line idea-line" key={keyOf(item)}>
+        <Row item={item} single />
+        {idea === 'topButton' && isFirstLine && ask}
+        {isLast && (idea === 'topButton' || idea === 'noButton') && count}
+        {isLast && idea === 'cornerCount' && count}
+        {isLast && (idea === 'corner' || idea === 'cornerCount') && <span className="idea-corner-space" />}
+      </div>,
+    )
+  })
+  if (lines.length === 0) lines.push(<div key="clear"><b>All clear</b><div className="muted" style={{ fontSize: 12 }}>Nothing coming up.</div></div>)
+  const grid = <div className="upnext-lines idea-lines" style={{ gridTemplateRows: 'repeat(4, 1fr)' }}>{lines}</div>
+  return (
+    <div className={`widget upnext medium idea ${idea}`} onClick={() => open(featured ? { tab: 'alarms' } : { tab: 'todos' })}>
+      {idea === 'rail' ? (
+        <div className="idea-rail-wrap">
+          {grid}
+          <div className="idea-rail">{count ?? <span />}{ask}</div>
+        </div>
+      ) : grid}
+      {(idea === 'corner' || idea === 'cornerCount') && <div className="idea-corner">{ask}</div>}
+    </div>
   )
 }
 
