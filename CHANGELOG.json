@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.22.2",
+      "build": 48,
+      "date": "2026-11-15",
+      "title": "Aligned To-Dos",
+      "notes": [
+        "A to-do's title now lines up with the middle of its circle instead of sitting below it."
+      ]
+    },
+    {
       "version": "1.22.1",
       "build": 47,
       "date": "2026-11-15",

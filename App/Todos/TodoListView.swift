@@ -202,7 +202,9 @@ private struct TodoRow: View {
 
     var body: some View {
         let overdue = todo.isOverdue(at: now)
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
+        // The circle is centered on the title's first line: both are top-aligned in boxes of
+        // known height (the circle's box is the first line's height plus a little).
+        HStack(alignment: .top, spacing: 12) {
             Button {
                 Task { await controller.toggle(todo.id) }
             } label: {
@@ -210,9 +212,9 @@ private struct TodoRow: View {
                     .font(compact ? .body : .title2)
                     .foregroundStyle(todo.isDone ? Color.orange : (overdue ? Color.red : Color.secondary))
                     .contentTransition(.symbolEffect(.replace))
+                    .frame(width: compact ? 22 : 28, height: compact ? 22 : 28)
             }
             .buttonStyle(.borderless)
-            .alignmentGuide(.firstTextBaseline) { $0[.bottom] - (compact ? 3 : 5) }
             .sensoryFeedback(.success, trigger: todo.isDone) { _, done in done }
             .accessibilityLabel(todo.isDone ? "Mark as not done" : "Mark as done")
 
@@ -260,6 +262,7 @@ private struct TodoRow: View {
                     .buttonStyle(.borderless)
                 }
             }
+            .padding(.top, compact ? 1 : 3) // first line (20 / 22 pt) centered on the circle (22 / 28 pt)
 
             Spacer(minLength: 0)
 
@@ -271,6 +274,7 @@ private struct TodoRow: View {
                     Image(systemName: "calendar")
                         .font(.title3)
                         .foregroundStyle(.orange)
+                        .frame(height: 28) // level with the circle and the first line
                 }
                 .buttonStyle(.borderless)
                 .accessibilityLabel("Deadline and more")
@@ -331,6 +335,7 @@ private struct NewTodoRow: View {
             Image(systemName: "circle")
                 .font(.title2)
                 .foregroundStyle(.tertiary)
+                .frame(width: 28, height: 28)
 
             VStack(alignment: .leading, spacing: 2) {
                 TextField("New To-Do", text: $title, axis: .vertical)
@@ -371,6 +376,7 @@ private struct NewTodoRow: View {
                 Image(systemName: "calendar")
                     .font(.title3)
                     .foregroundStyle(.orange)
+                    .frame(height: 28)
             }
             .buttonStyle(.borderless)
             .accessibilityLabel("Deadline")
