@@ -193,24 +193,21 @@ export function Alert({ title, message, action, onConfirm, onCancel }: {
 }
 
 
-/** To-Do settings → Quick Times: always three, on one row. Tap one to change it. */
+/** To-Do settings → Quick Times: three compact time pickers side by side; tap one to change it. */
 function QuickTimesSection() {
   const { data, update } = useStore()
   const times = cleanQuickTimes(data.settings.todoQuickTimes)
-  const [editing, setEditing] = useState<{ original: number; value: number } | null>(null)
   const save = (list: number[]) => update((d) => ({ ...d, settings: { ...d.settings, todoQuickTimes: cleanQuickTimes(list) } }))
+  const pad = (n: number) => String(n).padStart(2, '0')
   return (
     <Section header="Quick Times" footer="One-tap times under a to-do's deadline. Tap one to change it.">
       <div className="row quick-times">
-        {times.map((m) => <button key={m} className="qt-chip" onClick={() => setEditing({ original: m, value: m })}>{quickTimeLabel(m)}</button>)}
+        {times.map((m, index) => (
+          <input key={index} className="time-pill" type="time" step={300} aria-label={`Quick time ${index + 1}`}
+            value={`${pad(Math.floor(m / 60))}:${pad(m % 60)}`}
+            onChange={(e) => { const [h, mm] = e.target.value.split(':').map(Number); if (!isNaN(h)) save(times.map((x, n) => (n === index ? h * 60 + mm : x))) }} />
+        ))}
       </div>
-      {editing && (
-        <Sheet title="Quick Time" medium onClose={() => setEditing(null)}
-          left={<button onClick={() => setEditing(null)}>Cancel</button>}
-          right={<button onClick={() => { save(times.map((x) => (x === editing.original ? editing.value : x))); setEditing(null) }}>Save</button>}>
-          <TimeWheel hour={Math.floor(editing.value / 60)} minute={editing.value % 60} onChange={(h, mm) => setEditing({ ...editing, value: h * 60 + mm })} />
-        </Sheet>
-      )}
     </Section>
   )
 }

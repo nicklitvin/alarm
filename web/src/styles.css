@@ -462,3 +462,4 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .sheet-bottom .btn:disabled { opacity: 0.4; box-shadow: none; }
 .gear:disabled { color: var(--secondary); opacity: 0.6; }
 .header .gear + .gear { margin-left: -2px; }
+.quick-times .time-pill { text-align: center; width: 100%; }

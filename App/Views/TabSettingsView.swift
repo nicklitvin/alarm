@@ -261,92 +261,61 @@ private struct TodoSettingsSection: View {
     }
 }
 
-/// The three quick times shown under a deadline (8 AM, 2 PM and 9 PM by default), on one row.
-/// Tap one to change it.
+/// The three quick times shown under a deadline (8 AM, 2 PM and 9 PM by default), side by side.
+/// Each is the system's compact time picker: tap one and pick a new time right there.
 private struct QuickTimesSection: View {
     @AppStorage(AppSettings.todoQuickTimesKey, store: AppSettings.store) private var stored = ""
-    @State private var editing: QuickTimeEdit?
 
     private var times: [Int] { AppSettings.parseQuickTimes(stored) }
 
     var body: some View {
         Section {
-            HStack(spacing: 8) {
-                ForEach(times, id: \.self) { minutes in
-                    Button {
-                        editing = QuickTimeEdit(original: minutes)
-                    } label: {
-                        Text(QuickTime(minutes: minutes).label)
-                            .font(.subheadline.weight(.semibold))
-                            .lineLimit(1)
-                            .fixedSize()
-                            .frame(maxWidth: .infinity, minHeight: 34)
-                            .foregroundStyle(Color.primary)
-                            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color(.tertiarySystemFill)))
+            HStack(spacing: 0) {
+                ForEach(Array(times.enumerated()), id: \.offset) { index, minutes in
+                    QuickTimePicker(minutes: minutes) { newValue in
+                        var list = times
+                        list[index] = newValue
+                        stored = AppSettings.formatQuickTimes(AppSettings.parseQuickTimes(AppSettings.formatQuickTimes(list)))
                     }
-                    .buttonStyle(.plain)
+                    .frame(maxWidth: .infinity)
                 }
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, 2)
         } header: {
             Text("Quick Times")
         } footer: {
             Text("One-tap times under a to-do's deadline. Tap one to change it.")
         }
-        .sheet(item: $editing) { edit in
-            QuickTimeEditor(edit: edit) { result in
-                let list = times.map { $0 == edit.original ? result : $0 }
-                stored = AppSettings.formatQuickTimes(AppSettings.parseQuickTimes(AppSettings.formatQuickTimes(list)))
-            }
-            .presentationDetents([.height(320)])
-        }
     }
 }
 
-private struct QuickTimeEdit: Identifiable {
-    /// The time being changed.
-    let original: Int
-    var id: Int { original }
-}
-
-/// Change one quick time.
-private struct QuickTimeEditor: View {
-    @Environment(\.dismiss) private var dismiss
-    let edit: QuickTimeEdit
-    /// The new time in minutes after midnight.
-    let onDone: (Int) -> Void
+/// One quick time as a compact time picker (5-minute steps).
+private struct QuickTimePicker: View {
+    let minutes: Int
+    let onChange: (Int) -> Void
     @State private var date: Date
 
-    init(edit: QuickTimeEdit, onDone: @escaping (Int) -> Void) {
-        self.edit = edit
-        self.onDone = onDone
-        let minutes = edit.original
-        _date = State(initialValue: Calendar.current.date(
-            bySettingHour: minutes / 60, minute: minutes % 60, second: 0, of: .now) ?? .now)
+    init(minutes: Int, onChange: @escaping (Int) -> Void) {
+        self.minutes = minutes
+        self.onChange = onChange
+        _date = State(initialValue: Self.date(for: minutes))
+    }
+
+    private static func date(for minutes: Int) -> Date {
+        Calendar.current.date(bySettingHour: minutes / 60, minute: minutes % 60, second: 0, of: .now) ?? .now
     }
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 12) {
-                IntervalDatePicker(selection: $date, mode: .time, style: .wheels, minuteInterval: 5)
-                    .frame(maxWidth: .infinity)
+        IntervalDatePicker(selection: $date, mode: .time, style: .compact, minuteInterval: 5)
+            .onChange(of: date) { _, newDate in
+                let c = Calendar.current.dateComponents([.hour, .minute], from: newDate)
+                let value = (c.hour ?? 0) * 60 + (c.minute ?? 0)
+                if value != minutes { onChange(value) }
             }
-            .padding(.horizontal)
-            .navigationTitle("Quick Time")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        let c = Calendar.current.dateComponents([.hour, .minute], from: date)
-                        onDone((c.hour ?? 0) * 60 + (c.minute ?? 0))
-                        dismiss()
-                    }
-                    .fontWeight(.semibold)
-                }
+            .onChange(of: minutes) { _, newMinutes in
+                // The list re-sorts after a change: follow the time now in this spot.
+                date = Self.date(for: newMinutes)
             }
-        }
-        .tint(.orange)
     }
 }
 

@@ -1,6 +1,17 @@
 {
   "releases": [
     {
+      "version": "1.19.1",
+      "build": 30,
+      "date": "2026-11-15",
+      "title": "To-Do Fixes",
+      "notes": [
+        "When you add a to-do, the text you type now sits beside the circle and the calendar button instead of below them.",
+        "Picking a deadline for a new to-do no longer closes by itself.",
+        "Quick times in To-Do settings are three time pickers side by side: tap one and choose a new time right there."
+      ]
+    },
+    {
       "version": "1.19.0",
       "build": 29,
       "date": "2026-11-15",

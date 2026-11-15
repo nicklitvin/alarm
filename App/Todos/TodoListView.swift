@@ -19,6 +19,10 @@ struct TodoListView: View {
     @State private var editing: TodoItem?
     /// True while a new, not yet saved to-do is being typed at the end of the list.
     @State private var addingNew = false
+    /// The new to-do's deadline, and whether its deadline sheet is up. Kept here (not in the
+    /// row) so the sheet belongs to the screen and can't close when the list redraws.
+    @State private var newDue: Date?
+    @State private var pickingNewDeadline = false
     @FocusState private var focus: TodoField?
 
     var body: some View {
@@ -47,6 +51,10 @@ struct TodoListView: View {
             .sheet(item: $editing) { todo in
                 TodoEditorView(todo: todo)
             }
+            .sheet(isPresented: $pickingNewDeadline, onDismiss: { if addingNew { focus = .newTitle } }) {
+                DeadlineSheet(date: newDue ?? QuickTime.nextDefault()) { picked in newDue = picked }
+                    .presentationDetents([.medium, .large])
+            }
             .task(id: AppNavigation.shared.pendingTodoID) {
                 // Opened from a widget, notification or chat event: show that to-do.
                 guard let id = AppNavigation.shared.pendingTodoID else { return }
@@ -59,6 +67,7 @@ struct TodoListView: View {
     }
 
     private func startNew() {
+        newDue = nil
         addingNew = true
         focus = .newTitle
     }
@@ -72,7 +81,10 @@ struct TodoListView: View {
                 }
 
                 if addingNew {
-                    NewTodoRow(focus: $focus) { addingNew = false }
+                    NewTodoRow(focus: $focus, due: $newDue, pickingDeadline: $pickingNewDeadline) {
+                        addingNew = false
+                        newDue = nil
+                    }
                         .id("new")
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
@@ -288,21 +300,23 @@ private struct TodoRow: View {
 private struct NewTodoRow: View {
     @Environment(TodoController.self) private var controller
     var focus: FocusState<TodoField?>.Binding
+    @Binding var due: Date?
+    @Binding var pickingDeadline: Bool
     let onFinish: () -> Void
 
     @State private var title = ""
     @State private var details = ""
-    @State private var due: Date?
-    @State private var pickingDeadline = false
 
     private var isEditing: Bool { focus.wrappedValue == .newTitle || focus.wrappedValue == .newDetails }
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
+        // Top-aligned with a fixed nudge, so the empty field sits beside the circle and the
+        // calendar button instead of dropping below them (an empty multi-line field has no
+        // text baseline to line up with).
+        HStack(alignment: .top, spacing: 12) {
             Image(systemName: "circle")
                 .font(.title2)
                 .foregroundStyle(.tertiary)
-                .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 5 }
 
             VStack(alignment: .leading, spacing: 2) {
                 TextField("New To-Do", text: $title, axis: .vertical)
@@ -334,8 +348,8 @@ private struct NewTodoRow: View {
                     .foregroundStyle(.secondary)
                 }
             }
-
-            Spacer(minLength: 0)
+            .padding(.top, 3)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             Button {
                 pickingDeadline = true
@@ -350,12 +364,15 @@ private struct NewTodoRow: View {
         .padding(.vertical, 7)
         .padding(.leading, 4)
         .onChange(of: focus.wrappedValue) { _, new in
-            // Finished typing (and not just picking a deadline): save or discard.
-            if new != .newTitle, new != .newDetails, !pickingDeadline { finish() }
-        }
-        .sheet(isPresented: $pickingDeadline, onDismiss: { focus.wrappedValue = .newTitle }) {
-            DeadlineSheet(date: due ?? QuickTime.nextDefault()) { picked in due = picked }
-                .presentationDetents([.medium, .large])
+            // Finished typing (and not just opening the deadline): save or discard. Checked a
+            // moment later, because tapping the calendar button ends typing just before the
+            // button's own action runs.
+            guard new != .newTitle, new != .newDetails else { return }
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(300))
+                let stillTyping = focus.wrappedValue == .newTitle || focus.wrappedValue == .newDetails
+                if !stillTyping, !pickingDeadline { finish() }
+            }
         }
     }
 
