@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.28.6",
+      "build": 72,
+      "date": "2026-11-15",
+      "title": "Aligned Note Checkboxes",
+      "notes": [
+        "Checkboxes in notes now line up with their text."
+      ]
+    },
+    {
       "version": "1.28.5",
       "build": 71,
       "date": "2026-11-15",

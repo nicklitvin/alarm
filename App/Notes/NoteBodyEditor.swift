@@ -51,9 +51,26 @@ final class ChecklistTextView: UITextView {
             let checked = items[index].kind == .checked
             circle.image = UIImage(systemName: checked ? "checkmark.circle.fill" : "circle", withConfiguration: symbolConfig)
             circle.tintColor = checked ? .systemOrange : .secondaryLabel
-            circle.frame = CGRect(x: box.midX - size / 2, y: box.midY - size / 2, width: size, height: size)
+            // Center on the text's capital letters (from the line's baseline), not on the box
+            // character's line box: ☐ comes from a symbol font with a taller line.
+            let capHeight = (font ?? UIFont.preferredFont(forTextStyle: .body)).capHeight
+            let fromBaseline = baseline(atOffset: items[index].range.location).map { $0 - capHeight / 2 }
+            let centerY = fromBaseline.flatMap { (box.minY...box.maxY).contains($0) ? $0 : nil } ?? box.midY
+            circle.frame = CGRect(x: box.midX - size / 2, y: centerY - size / 2, width: size, height: size)
             circle.isHidden = false
         }
+    }
+
+    /// The baseline (in this view's coordinates) of the line that starts at `offset`.
+    private func baseline(atOffset offset: Int) -> CGFloat? {
+        guard let layout = textLayoutManager,
+              let content = layout.textContentManager,
+              let location = content.location(content.documentRange.location, offsetBy: offset) else { return nil }
+        layout.ensureLayout(for: NSTextRange(location: location))
+        guard let fragment = layout.textLayoutFragment(for: location),
+              let line = fragment.textLineFragments.first else { return nil }
+        return fragment.layoutFragmentFrame.minY + line.typographicBounds.minY + line.glyphOrigin.y
+            + textContainerInset.top
     }
 }
 
