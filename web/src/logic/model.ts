@@ -320,6 +320,12 @@ export function todosInListOrder(todos: Todo[]) {
   })
 }
 
+/** The To-Do tab's two open sections (tabSections): no deadline in your order, then deadlines soonest first. */
+export function todoSections(todos: Todo[]) {
+  const open = todos.filter((t) => !t.isDone)
+  return { todos: todosInListOrder(open.filter((t) => t.due === undefined)), deadlines: sortTodos(open.filter((t) => t.due !== undefined)) }
+}
+
 /** Where a new to-do goes: just before the first with a later deadline (or none); otherwise last. */
 export function sortIndexForNew(open: Todo[], due: number | undefined) {
   const list = todosInListOrder(open)

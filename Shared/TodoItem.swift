@@ -95,6 +95,14 @@ extension Array where Element == TodoItem {
         }
     }
 
+    /// The To-Do tab's two open sections: to-dos without a deadline in your order (drag to
+    /// arrange), then those with a deadline, soonest first.
+    var tabSections: (todos: [TodoItem], deadlines: [TodoItem]) {
+        let open = filter { !$0.isDone }
+        return (open.filter { $0.due == nil }.inListOrder,
+                open.filter { $0.due != nil }.sortedForDisplay)
+    }
+
     /// Open to-dos first, soonest deadline first (no deadline last), then by creation.
     var sortedForDisplay: [TodoItem] {
         sorted { a, b in

@@ -495,6 +495,10 @@ check([tA, tB, tC].sortIndex(forNew: TodoItem(title: "Later")) > 2, "a new to-do
 let legacy = [TodoItem(title: "Late", due: d(2026, 11, 18, 9, 0)), TodoItem(title: "Soon", due: d(2026, 11, 17, 11, 0))]
 check(legacy.inListOrder.map(\.title) == ["Soon", "Late"], "to-dos from before reordering keep deadline order")
 _ = oNow
+let doneD = { var t = TodoItem(title: "Done", due: d(2026, 11, 17, 8, 0)); t.isDone = true; return t }()
+let sections = [tB, tC, TodoItem(title: "D", sortIndex: 0.5), tA, doneD].tabSections
+check(sections.todos.map(\.title) == ["D", "C"], "To-Do tab: to-dos without a deadline first, in your order")
+check(sections.deadlines.map(\.title) == ["A", "B"], "To-Do tab: to-dos with a deadline below, soonest first; done ones left out")
 
 // Stopwatch.
 let sw0 = d(2026, 11, 17, 9, 0)

@@ -23,6 +23,9 @@ final class TodoController {
 
     /// Open to-dos in the order on the To-Do tab (drag to rearrange).
     var openTodos: [TodoItem] { todos.filter { !$0.isDone }.inListOrder }
+    /// The To-Do tab's sections: no deadline (your order), then deadlines (soonest first).
+    var undatedTodos: [TodoItem] { todos.tabSections.todos }
+    var deadlineTodos: [TodoItem] { todos.tabSections.deadlines }
     var completedTodos: [TodoItem] {
         todos.filter(\.isDone).sorted { ($0.completedAt ?? .distantPast) > ($1.completedAt ?? .distantPast) }
     }
@@ -68,9 +71,10 @@ final class TodoController {
         await commit().value
     }
 
-    /// Drag-to-reorder on the To-Do tab (offsets into `openTodos`).
-    func moveOpen(from source: IndexSet, to destination: Int) {
-        let placed = Dictionary(uniqueKeysWithValues: openTodos.moving(from: source, to: destination).map { ($0.id, $0.sortIndex) })
+    /// Drag-to-reorder on the To-Do tab (offsets into `undatedTodos`: to-dos with a deadline
+    /// stay in deadline order).
+    func moveUndated(from source: IndexSet, to destination: Int) {
+        let placed = Dictionary(uniqueKeysWithValues: undatedTodos.moving(from: source, to: destination).map { ($0.id, $0.sortIndex) })
         for index in todos.indices {
             if let sortIndex = placed[todos[index].id] { todos[index].sortIndex = sortIndex }
         }

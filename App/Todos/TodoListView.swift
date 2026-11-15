@@ -74,13 +74,23 @@ struct TodoListView: View {
     private func list(now: Date) -> some View {
         ScrollViewReader { _ in
             List {
-                // Open to-dos in your order: press and hold one, then drag it. New ones slot in by
-                // deadline. No sections.
-                ForEach(controller.openTodos) { todo in
+                // To-dos without a deadline, in your order: press and hold one, then drag it.
+                ForEach(controller.undatedTodos) { todo in
                     row(todo, now: now)
                 }
                 .onMove { source, destination in
-                    controller.moveOpen(from: source, to: destination)
+                    controller.moveUndated(from: source, to: destination)
+                }
+
+                // To-dos with a deadline, below them: soonest first.
+                if !controller.deadlineTodos.isEmpty {
+                    Section {
+                        ForEach(controller.deadlineTodos) { todo in
+                            row(todo, now: now)
+                        }
+                    } header: {
+                        sectionHeader("Deadlines")
+                    }
                 }
 
                 if !controller.completedTodos.isEmpty {
@@ -89,16 +99,7 @@ struct TodoListView: View {
                             row(todo, now: now)  // same size as open to-dos
                         }
                     } header: {
-                        HStack {
-                            Text("Completed")
-                            Spacer()
-                            Button("Clear") { withAnimation { controller.clearCompleted() } }
-                                .font(.footnote.weight(.semibold))
-                                .textCase(nil)
-                        }
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .padding(.top, 12)
+                        sectionHeader("Completed") { withAnimation { controller.clearCompleted() } }
                     }
                 }
 
@@ -123,6 +124,22 @@ struct TodoListView: View {
             }
             .animation(.snappy, value: controller.todos)
         }
+    }
+
+    /// "Deadlines" and "Completed" (with Clear) above their rows.
+    private func sectionHeader(_ title: String, clear: (() -> Void)? = nil) -> some View {
+        HStack {
+            Text(title)
+            Spacer()
+            if let clear {
+                Button("Clear", action: clear)
+                    .font(.footnote.weight(.semibold))
+                    .textCase(nil)
+            }
+        }
+        .font(.footnote.weight(.semibold))
+        .foregroundStyle(.secondary)
+        .padding(.top, 12)
     }
 
     private func row(_ todo: TodoItem, now: Date) -> some View {

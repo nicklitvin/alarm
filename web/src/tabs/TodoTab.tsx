@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { SwipeRow } from '../components/SwipeRow'
 import { BottomAction, DeadlineInputs, Section, Sheet, Switch, TabHeader, TimeOfDayChips } from '../components/ui'
-import { dueDescription, isOverdue, moveTodo, nextQuickTime, roundTo5, sortIndexForNew, todosInListOrder, uid, type Todo } from '../logic/model'
+import { dueDescription, isOverdue, moveTodo, nextQuickTime, roundTo5, sortIndexForNew, todoSections, uid, type Todo } from '../logic/model'
 import { useStore } from '../logic/store'
 
 // A flat list on the gray background: each to-do is a checkbox and its text. New To-Do adds an
@@ -19,7 +19,8 @@ export function TodoTab() {
     clearPending()
   }, [pending, data.todos, clearPending])
 
-  const open = todosInListOrder(data.todos.filter((t) => !t.isDone))
+  const sections = todoSections(data.todos)
+  const open = [...sections.todos, ...sections.deadlines]
   const done = data.todos.filter((t) => t.isDone).sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0))
   const overdue = open.filter((t) => isOverdue(t, now)).length
   const toggle = (id: string) => update((d) => ({
@@ -41,7 +42,8 @@ export function TodoTab() {
       if (d?.overId && d.overId !== d.id) {
         const { id, overId } = d
         update((s) => {
-          const places = moveTodo(s.todos.filter((t) => !t.isDone), id, overId)
+          // Only to-dos without a deadline are arranged by hand; deadlines stay soonest first.
+          const places = moveTodo(s.todos.filter((t) => !t.isDone && t.due === undefined), id, overId)
           return { ...s, todos: s.todos.map((t) => (places.has(t.id) ? { ...t, sortIndex: places.get(t.id) } : t)) }
         })
       }
@@ -56,7 +58,7 @@ export function TodoTab() {
       document.body.style.userSelect = ''
     }
   }, [drag?.id, update]) // eslint-disable-line react-hooks/exhaustive-deps
-  const order = open.map((t) => t.id)
+  const order = sections.todos.map((t) => t.id)
   const dragClass = (t: Todo) => {
     if (!drag) return ''
     if (drag.id === t.id) return 'lifted'
@@ -64,9 +66,9 @@ export function TodoTab() {
     return order.indexOf(drag.id) < order.indexOf(t.id) ? 'drop-after' : 'drop-before'
   }
 
-  const row = (t: Todo, completed = false) => (
+  const row = (t: Todo, draggable = false) => (
     <TodoRow key={t.id} todo={t} now={now} onToggle={() => toggle(t.id)} onDue={() => setEditingDue(t)} onDetails={() => setEditing(t)}
-      dragClass={completed ? '' : dragClass(t)} onHold={completed ? undefined : () => setDrag({ id: t.id, overId: null })}
+      dragClass={draggable ? dragClass(t) : ''} onHold={draggable ? () => setDrag({ id: t.id, overId: null }) : undefined}
       onDelete={() => update((d) => ({ ...d, todos: d.todos.filter((x) => x.id !== t.id) }))} />
   )
 
@@ -75,13 +77,19 @@ export function TodoTab() {
       <TabHeader title="To-Do" tab="todos" detail={open.length ? (overdue ? `${overdue} overdue · ${open.length} left` : `${open.length} left`) : null} />
       {data.todos.length === 0 && <div className="talk-empty"><div className="big">☑︎</div><h3>Nothing To Do</h3></div>}
       <div className="todo-flat">
-        {open.map((t) => row(t))}
+        {sections.todos.map((t) => row(t, true))}
       </div>
+      {sections.deadlines.length > 0 && (
+        <div className="todo-flat">
+          <div className="todo-flat-header"><span>Deadlines</span></div>
+          {sections.deadlines.map((t) => row(t))}
+        </div>
+      )}
       {done.length > 0 && (
         <div className="todo-flat">
           <div className="todo-flat-header"><span>Completed</span>
             <button className="text-btn" onClick={() => update((d) => ({ ...d, todos: d.todos.filter((t) => !t.isDone) }))}>Clear</button></div>
-          {done.map((t) => row(t, true))}
+          {done.map((t) => row(t))}
         </div>
       )}
       <BottomAction label="New To-Do" onClick={() => setAdding(true)} />
