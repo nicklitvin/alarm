@@ -21,7 +21,7 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
   - Open any tab's settings → **About & Updates** to see your version and the patch notes for every release.
   - A "What's New" screen appears the first time you open a new version.
 - **Control Center button.**
-  - **Live Talk:** a pop-up at the top of the screen with your conversation. Tap **Type a Message** to talk to the assistant without opening the app, or 🎙 to open the app for hands-free Live Talk.
+  - **Ask Alarmie:** like the Reminders quick add, a text box drops in from the top of the screen. Type or dictate a request and the reply shows right there, without opening the app.
   - You can also ask the assistant through Siri ("Ask Alarmie"), Spotlight, Shortcuts and the Action button.
 - **Talk tab.** A private assistant that runs entirely on your iPhone using Apple's on-device model:
   - Tap the waveform for hands-free **Live Talk**: it listens, replies out loud and listens again. You can still type at any time.
@@ -57,7 +57,7 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 5. To add widgets:
    - **Home screen:** long-press an empty spot → **Edit** → **Add Widget** → **Alarm**.
    - **Lock screen:** long-press the lock screen → **Customize** → **Lock Screen** → tap the widget area → **Alarm**.
-   - **Control Center:** swipe down from the top-right corner → tap **+** (top left) → **Add a Control** → search "Alarm" → pick **Live Talk**.
+   - **Control Center:** swipe down from the top-right corner → tap **+** (top left) → **Add a Control** → search "Alarm" → pick **Ask Alarmie**.
 
 ## How it works
 

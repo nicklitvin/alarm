@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.20.0",
+      "build": 32,
+      "date": "2026-11-15",
+      "title": "Ask from Control Center",
+      "notes": [
+        "The Control Center button is now Ask Alarmie. Like the Reminders quick add, it drops a text box in from the top of the screen: type a request (or dictate it) and the assistant's reply shows right there, without opening the app. If you already added the button, it switches over by itself."
+      ]
+    },
+    {
       "version": "1.19.2",
       "build": 31,
       "date": "2026-11-15",

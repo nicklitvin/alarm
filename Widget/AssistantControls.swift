@@ -2,16 +2,17 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
-/// Control Center button: a popup at the top of the screen with your conversation and a
-/// button to type to the assistant, without opening the app.
+/// Control Center button: like the Reminders quick add, a text box at the top of the screen to
+/// type to the assistant, with its reply shown right there. The app doesn't open.
+/// (Same kind as before, so a button already in Control Center switches over by itself.)
 struct LiveTalkControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(kind: "LiveTalkControl") {
-            ControlWidgetButton(action: TalkPopupIntent()) {
-                Label("Live Talk", systemImage: "waveform")
+            ControlWidgetButton(action: AskAssistantIntent()) {
+                Label("Ask Alarmie", systemImage: "waveform")
             }
         }
-        .displayName("Live Talk")
-        .description("See your conversation and type to the assistant without opening the app.")
+        .displayName("Ask Alarmie")
+        .description("Type to the assistant from Control Center and get the reply without opening the app.")
     }
 }

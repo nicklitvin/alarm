@@ -375,44 +375,49 @@ function LiveActivity() {
 // MARK: - Control Center
 
 function ControlCenter() {
-  const { data } = useSystem()
   const ask = useAsk()
-  const [popup, setPopup] = useState(false)
-  const [typing, setTyping] = useState(false)
+  // Like the Reminders quick add: a text box drops in from the top; after sending, the reply
+  // shows in the same place. The app never opens.
+  const [stage, setStage] = useState<'closed' | 'typing' | 'thinking' | 'reply'>('closed')
   const [draft, setDraft] = useState('')
-  const [waiting, setWaiting] = useState(false)
+  const [asked, setAsked] = useState('')
+  const [reply, setReply] = useState('')
   const send = async () => {
     const text = draft.trim()
-    setTyping(false)
-    setDraft('')
     if (!text) return
-    setWaiting(true)
-    await ask(text)
-    setWaiting(false)
+    setAsked(text)
+    setDraft('')
+    setStage('thinking')
+    setReply(await ask(text))
+    setStage('reply')
   }
-  const recent = data.chat.slice(-4)
+  const close = () => { setStage('closed'); setDraft('') }
   return (
     <>
       <div className="cc">
-        {popup && (
-          // iOS shows this at the top of the screen; the app doesn't open.
-          <div className="talk-popup" role="dialog" aria-label="Talk popup">
-            <div className="talk-popup-head"><span>〰︎ Alarmie</span><button aria-label="Close" onClick={() => { setPopup(false); setTyping(false) }}>✕</button></div>
-            {recent.length === 0 && <div className="talk-popup-empty">Ask me anything: “wake me up at 7 on weekdays” or “remind me to call mom at 6”.</div>}
-            {recent.map((m) => m.role === 'event'
-              ? <div key={m.id} className="talk-popup-event">{m.text}</div>
-              : <div key={m.id} className={`talk-popup-bubble ${m.role}`}>{m.text}</div>)}
-            {waiting && <div className="talk-popup-bubble assistant">…</div>}
-            {typing ? (
-              <div className="talk-popup-input">
-                <input autoFocus placeholder="Message Alarmie" value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} />
-                <button onClick={send} aria-label="Send">↑</button>
-              </div>
+        {stage !== 'closed' && (
+          <div className="quick-prompt" role="dialog" aria-label="Ask Alarmie">
+            <div className="qp-head"><img src="/icon.png" alt="" /><b>Alarmie</b></div>
+            {stage === 'typing' ? (
+              <>
+                <div className="qp-question">What can I do for you?</div>
+                <input autoFocus className="qp-input" placeholder="Request" value={draft} onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') send(); if (e.key === 'Escape') close() }} />
+                <div className="qp-buttons">
+                  <button onClick={close}>Cancel</button>
+                  <button className="primary" disabled={!draft.trim()} onClick={send}>Done</button>
+                </div>
+              </>
             ) : (
-              <div className="talk-popup-actions">
-                <button className="prominent" onClick={() => setTyping(true)}>⌨︎ Type a Message</button>
-                <button aria-label="Live Talk in the app">🎙</button>
-              </div>
+              <>
+                <div className="qp-asked">“{asked}”</div>
+                <div className="qp-reply">{stage === 'thinking' ? <span className="qp-dots">•••</span> : reply}</div>
+                {stage === 'reply' && (
+                  <div className="qp-buttons single">
+                    <button className="primary" onClick={close}>Done</button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
@@ -427,14 +432,14 @@ function ControlCenter() {
           <div className="cc-slider"><span>🔊</span></div>
           <div className="cc-tile small">🔦</div>
           <div className="cc-tile small">⏱</div>
-          <button className="cc-tile small cc-app" onClick={() => setPopup(true)} aria-label="Live Talk">〰︎</button>
+          <button className="cc-tile small cc-app" onClick={() => setStage('typing')} aria-label="Ask Alarmie">〰︎</button>
           <div className="cc-tile small">📷</div>
           <div className="cc-tile small">🌙</div>
           <div className="cc-tile small">🧮</div>
         </div>
-        <div className="cc-label">Live Talk · Alarmie</div>
+        <div className="cc-label">Ask Alarmie</div>
       </div>
-      <Caption>Alarmie adds one control: Live Talk (orange, bottom row). Tapping it shows your conversation in a popup at the top of the screen, where you can type to the assistant without opening the app (🎙 opens the app for hands-free Live Talk). The other tiles are stand-ins for system controls.</Caption>
+      <Caption>Alarmie adds one control, Ask Alarmie (orange, bottom row). Like the Reminders quick add, tapping it drops a text box in from the top of the screen: type a request, tap Done, and the assistant's reply appears in the same box. The app doesn't open. The other tiles are stand-ins for system controls.</Caption>
     </>
   )
 }
