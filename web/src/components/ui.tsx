@@ -281,7 +281,7 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
   )
 
   return (
-    <Sheet title={TITLES[tab]} onClose={onClose} right={<button onClick={onClose}>Done</button>}>
+    <Sheet title={TITLES[tab]} onClose={onClose}>
       {tab === 'alarms' && (
         <Section header="Notifications" footer={s.alarmHeadsUpEnabled
           ? `You'll get a notification ${leadTimeName(s.alarmHeadsUpMinutes)} before each alarm, with a button to dismiss that ring.`

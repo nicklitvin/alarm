@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.21.1",
+      "build": 37,
+      "date": "2026-11-15",
+      "title": "Cleaner Settings",
+      "notes": [
+        "Settings no longer has a Done button. Swipe it down to close."
+      ]
+    },
+    {
       "version": "1.21.0",
       "build": 36,
       "date": "2026-11-15",

@@ -3,7 +3,6 @@ import WidgetKit
 
 /// Settings for one tab (mostly when to notify), plus About & Updates.
 struct TabSettingsView: View {
-    @Environment(\.dismiss) private var dismiss
     let tab: AppTab
 
     var body: some View {
@@ -45,11 +44,7 @@ struct TabSettingsView: View {
             }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }.fontWeight(.semibold)
-                }
-            }
+            // No Done button: swipe the sheet down to close it.
         }
         .tint(.orange)
     }
