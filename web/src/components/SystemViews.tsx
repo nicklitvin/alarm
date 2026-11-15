@@ -121,9 +121,11 @@ function HomeScreen() {
     <div className={`v-top ${stacked ? 'stacked' : ''}`}>
       <div className="v-alarm" onClick={(e) => { e.stopPropagation(); open({ tab: 'alarms' }) }}>
         {/* One line on medium and large ("7:00 AM  ⏰ Wake up · Tomorrow"); stacked on small. */}
+        {/* "⏰ 7:00 AM  in 2h 4m": the clock before the time, the label only if it has one. */}
         <div className={stacked ? '' : 'v-alarm-line'}>
+          {!stacked && <span className="v-alarm-icon">⏰</span>}
           <div className="v-alarm-time">{bigTime(featured.date).time}<small> {bigTime(featured.date).period}</small></div>
-          <div className="v-alarm-sub ellipsis">⏰ {alarmTitle(featured.alarm)} · in {countdown(now, featured.date)}</div>
+          <div className="v-alarm-sub ellipsis">{featured.alarm.label.trim() ? `${featured.alarm.label.trim()} · ` : ''}in {countdown(now, featured.date)}</div>
         </div>
       </div>
       {/* One skipped ring per alarm: once dismissed, the ring after it can't be dismissed too. */}
@@ -142,7 +144,7 @@ function HomeScreen() {
             <div className="small-alarm">
               <div className="wh"><span>⏰</span><span className="muted" style={{ fontSize: 12 }}>in {countdown(now, featured.date)}</span></div>
               <div className="big">{bigTime(featured.date).time}<small> {bigTime(featured.date).period}</small></div>
-              <div className="muted ellipsis" style={{ fontSize: 14, fontWeight: 500 }}>{alarmTitle(featured.alarm)}</div>
+              {featured.alarm.label.trim() && <div className="muted ellipsis" style={{ fontSize: 14, fontWeight: 500 }}>{featured.alarm.label.trim()}</div>}
               {(featured.alarm.skippedOccurrence ?? 0) <= now &&
                 <button className="dismiss-full" onClick={(e) => { e.stopPropagation(); dismiss(featured.alarm.id, featured.date) }}>Dismiss</button>}
             </div>

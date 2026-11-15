@@ -239,15 +239,20 @@ private struct AlarmHeader: View {
                 if stacked {
                     VStack(alignment: .leading, spacing: 1) {
                         time(parts, size: 34)
-                        details.font(.caption2)
+                        details.font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
                 } else {
-                    // Everything on one line: "7:00 AM  ⏰ Wake up · Tomorrow".
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    // Everything on one line: "⏰ 7:00 AM  in 2h 4m" (with the label, if it has one).
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Image(systemName: "alarm.fill")
+                            .font(.headline)
+                            .foregroundStyle(.orange)
                         time(parts, size: 24)
                         details.font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
@@ -285,14 +290,10 @@ private struct AlarmHeader: View {
         .fixedSize()
     }
 
-    /// "⏰ Wake up · in 2h 4m" (two units at most: "in 1d 5h" when it's days away).
+    /// "in 2h 4m" (two units at most: "in 1d 5h" when it's days away), after the alarm's own
+    /// label if it has one ("Gym · in 2h 4m"). An unlabeled alarm doesn't say "Alarm".
     private var details: some View {
-        HStack(spacing: 3) {
-            Image(systemName: "alarm.fill").foregroundStyle(.orange)
-            Text("\(upcoming.alarm.title) · in \(TimeFormat.countdown(from: now, to: upcoming.date))")
-        }
-        .foregroundStyle(.secondary)
-        .lineLimit(1)
+        Text(upcoming.alarm.customLabel.map { "\($0) · " } ?? "") + Text("in \(TimeFormat.countdown(from: now, to: upcoming.date))")
     }
 }
 
@@ -324,10 +325,12 @@ private struct SmallAlarm: View {
             }
             .lineLimit(1)
             .minimumScaleFactor(0.7)
-            Text(upcoming.alarm.title)
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
+            if let label = upcoming.alarm.customLabel {
+                Text(label)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
             Spacer(minLength: 6)
             // One skipped ring per alarm (see AlarmHeader).
             if (upcoming.alarm.skippedOccurrence ?? .distantPast) <= now {

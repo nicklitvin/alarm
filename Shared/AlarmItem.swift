@@ -92,6 +92,12 @@ struct AlarmItem: Identifiable, Codable, Hashable, Sendable {
 
     var isRepeating: Bool { !weekdays.isEmpty }
 
+    /// The label you gave it, or nil if it has none (unlike `title`, never "Alarm").
+    var customLabel: String? {
+        let trimmed = label.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
     var title: String {
         let trimmed = label.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? "Alarm" : trimmed

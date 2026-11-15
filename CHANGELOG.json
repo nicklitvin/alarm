@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.21.5",
+      "build": 41,
+      "date": "2026-11-15",
+      "title": "Tidier Widget Alarm",
+      "notes": [
+        "In the Up Next widget, the alarm clock icon now comes before the time, and an alarm without a label no longer says \"Alarm\". Alarms you've named still show their name."
+      ]
+    },
+    {
       "version": "1.21.4",
       "build": 40,
       "date": "2026-11-15",

@@ -490,3 +490,4 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .small-alarm { display: flex; flex-direction: column; height: 100%; }
 .small-alarm .big { margin-top: auto; font-size: 36px; }
 .dismiss-full { margin-top: 8px; width: 100%; padding: 8px; border-radius: 999px; background: var(--orange); color: #fff; font-weight: 600; font-size: 14px; }
+.v-alarm-icon { font-size: 18px; flex: none; align-self: center; }
