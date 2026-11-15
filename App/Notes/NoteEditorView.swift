@@ -21,6 +21,11 @@ struct NoteEditorView: View {
 
     private var isTyping: Bool { focus != nil || bodyEditing }
 
+    private func makeList(_ style: NoteChecklist.ListStyle) {
+        focus = nil
+        commands.toggleList(style)
+    }
+
     private func goToFirstLine() {
         focus = nil
         bodyEditing = true
@@ -63,13 +68,15 @@ struct NoteEditorView: View {
         }
         .padding(.horizontal, 20)
         .padding(.top, 8)
-        // Floating above the keyboard: bulleted list and checklist buttons, and while typing a
-        // round checkmark that finishes.
+        // Floating above the keyboard: one list button (numbered, bulleted or checklist), and
+        // while typing a round checkmark that finishes.
         .overlay(alignment: .bottomTrailing) {
             HStack(spacing: 12) {
-                Button {
-                    focus = nil
-                    commands.toggleBullets()
+                Menu {
+                    // Choosing the kind the lines already are turns them back into text.
+                    Button("Numbered List", systemImage: "list.number") { makeList(.numbers) }
+                    Button("Bulleted List", systemImage: "list.bullet") { makeList(.bullets) }
+                    Button("Checklist", systemImage: "checklist") { makeList(.checklist) }
                 } label: {
                     Image(systemName: "list.bullet")
                         .font(.title3.weight(.semibold))
@@ -78,20 +85,8 @@ struct NoteEditorView: View {
                         .background(Circle().fill(.regularMaterial))
                         .shadow(color: .black.opacity(0.12), radius: 6, y: 2)
                 }
-                .accessibilityLabel("Bulleted List")
-
-                Button {
-                    focus = nil
-                    commands.toggleChecklist()
-                } label: {
-                    Image(systemName: "checklist")
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(.orange)
-                        .frame(width: 50, height: 50)
-                        .background(Circle().fill(.regularMaterial))
-                        .shadow(color: .black.opacity(0.12), radius: 6, y: 2)
-                }
-                .accessibilityLabel("Checklist")
+                .menuOrder(.fixed)
+                .accessibilityLabel("Lists")
 
                 if isTyping {
                     Button {

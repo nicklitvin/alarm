@@ -119,36 +119,60 @@ enum NoteStorage {
     }
 }
 
-/// Lists inside a note, like Apple Notes: checklists and bulleted lists. A checklist item is a
-/// line that starts with "☐ " (to do) or "☑ " (done); a bullet is a line that starts with "• ".
-/// Both stay readable when copied or read by the assistant. Positions are UTF-16 offsets, as
-/// UITextView uses.
+/// Lists inside a note, like Apple Notes: checklists, bulleted and numbered lists. A checklist
+/// item is a line that starts with "☐ " (to do) or "☑ " (done), a bullet starts with "• " and a
+/// numbered line with "1. ". All stay readable when copied or read by the assistant. Positions
+/// are UTF-16 offsets, as UITextView uses.
 enum NoteChecklist {
     static let uncheckedPrefix = "☐ "
     static let checkedPrefix = "☑ "
     static let bulletPrefix = "• "
-    /// All prefixes are two UTF-16 units long.
+    /// Checkbox and bullet prefixes are two UTF-16 units long (numbers vary: see prefixLength(of:)).
     static let prefixLength = 2
 
-    enum LineKind: Equatable { case plain, unchecked, checked, bullet }
+    enum LineKind: Equatable { case plain, unchecked, checked, bullet, numbered }
 
-    /// Which kind of list the list buttons make.
-    enum ListStyle { case checklist, bullets }
+    /// Which kind of list the list button makes.
+    enum ListStyle: CaseIterable { case checklist, bullets, numbers }
 
     static func kind(of line: String) -> LineKind {
         if line.hasPrefix(uncheckedPrefix) { return .unchecked }
         if line.hasPrefix(checkedPrefix) { return .checked }
         if line.hasPrefix(bulletPrefix) { return .bullet }
+        if numberPrefixLength(line) != nil { return .numbered }
         return .plain
+    }
+
+    /// The length of the line's list marker ("☐ ", "• ", "12. "), 0 for plain text.
+    static func prefixLength(of line: String) -> Int {
+        switch kind(of: line) {
+        case .plain: 0
+        case .numbered: numberPrefixLength(line) ?? 0
+        case .unchecked, .checked, .bullet: prefixLength
+        }
+    }
+
+    /// "12. milk" → 4: one to three digits, a dot and a space.
+    private static func numberPrefixLength(_ line: String) -> Int? {
+        let units = Array(line.utf16.prefix(5))
+        var digits = 0
+        while digits < units.count, digits < 3, (48...57).contains(units[digits]) { digits += 1 }
+        guard digits > 0, units.count >= digits + 2, units[digits] == 46, units[digits + 1] == 32 else { return nil }
+        return digits + 2
+    }
+
+    /// The number of a numbered line ("3. eggs" → 3).
+    private static func number(of line: String) -> Int? {
+        guard let length = numberPrefixLength(line) else { return nil }
+        return Int(line.prefix(length - 2))
     }
 
     private static func isItem(_ kind: LineKind) -> Bool { kind == .unchecked || kind == .checked }
 
     /// Where the cursor goes when you press Return in the title: the start of the first line's
-    /// text (after its checkbox or bullet, if it has one).
+    /// text (after its checkbox, bullet or number, if it has one).
     static func firstLineCaret(in text: String) -> Int {
-        let first = (text as NSString).substring(with: lineRange(in: text, at: 0))
-        return kind(of: first) == .plain ? 0 : prefixLength
+        prefixLength(of: (text as NSString).substring(with: lineRange(in: text, at: 0)))
     }
 
     /// The line containing `location`, without its line break.
@@ -182,69 +206,114 @@ enum NoteChecklist {
         switch kind(of: ns.substring(with: range)) {
         case .unchecked: return ns.replacingCharacters(in: prefixRange, with: checkedPrefix)
         case .checked: return ns.replacingCharacters(in: prefixRange, with: uncheckedPrefix)
-        case .plain, .bullet: return nil
+        case .plain, .bullet, .numbered: return nil
         }
     }
 
-    /// The checklist button: turns the selected lines into items, or back into plain text when
+    /// The checklist option: turns the selected lines into items, or back into plain text when
     /// they all are items already. Returns the new text and where the cursor goes.
     static func toggleChecklist(in text: String, selection: NSRange) -> (text: String, selection: NSRange) {
         toggleList(.checklist, in: text, selection: selection)
     }
 
-    /// The bullet button: turns the selected lines into bullets (•), or back into plain text.
+    /// The bulleted list option: turns the selected lines into bullets (•), or back into plain text.
     static func toggleBullets(in text: String, selection: NSRange) -> (text: String, selection: NSRange) {
         toggleList(.bullets, in: text, selection: selection)
     }
 
+    /// Turns the selected lines into a list of `style`, or back into plain text when they all are
+    /// that kind already. Other list kinds switch over. Numbers always count 1, 2, 3…
     static func toggleList(_ style: ListStyle, in text: String, selection: NSRange) -> (text: String, selection: NSRange) {
         let ns = text as NSString
         let first = lineRange(in: text, at: selection.location)
         let last = lineRange(in: text, at: selection.location + selection.length)
         let block = NSRange(location: first.location, length: last.location + last.length - first.location)
         let blockLines = ns.substring(with: block).components(separatedBy: "\n")
-        let matches: (LineKind) -> Bool = { style == .checklist ? isItem($0) : $0 == .bullet }
+        let matches: (LineKind) -> Bool = { kind in
+            switch style {
+            case .checklist: isItem(kind)
+            case .bullets: kind == .bullet
+            case .numbers: kind == .numbered
+            }
+        }
         let allAlready = blockLines.allSatisfy { matches(kind(of: $0)) }
-        let prefix = style == .checklist ? uncheckedPrefix : bulletPrefix
 
         var delta = 0
+        var counter = 0
         let changed = blockLines.map { line -> String in
             let lineKind = kind(of: line)
+            let oldLength = prefixLength(of: line)
             if allAlready {
-                delta -= prefixLength
-                return String(line.dropFirst(prefixLength))
+                delta -= oldLength
+                return String(line.dropFirst(oldLength))
             }
+            counter += 1
             if matches(lineKind) { return line }
-            if lineKind != .plain {
-                // A bullet becomes an item and the other way round: swap the prefix.
-                return prefix + line.dropFirst(prefixLength)
+            let prefix = switch style {
+            case .checklist: uncheckedPrefix
+            case .bullets: bulletPrefix
+            case .numbers: "\(counter). "
             }
-            delta += prefixLength
-            return prefix + line
+            // Another kind of list switches over: swap the marker.
+            delta += (prefix as NSString).length - oldLength
+            return prefix + line.dropFirst(oldLength)
         }
         let newText = ns.replacingCharacters(in: block, with: changed.joined(separator: "\n"))
         let caret = max(block.location, selection.location + selection.length + delta)
-        return (newText, NSRange(location: min(caret, (newText as NSString).length), length: 0))
+        let result = renumbered(newText, caret: min(caret, (newText as NSString).length))
+        return (result.text, NSRange(location: result.caret, length: 0))
     }
 
-    /// Return on an item (or bullet) starts the next one; Return on an empty one ends the list.
-    /// Nil when the line isn't part of a list (a normal line break).
+    /// Numbers every run of numbered lines 1, 2, 3… (a line that isn't numbered ends a run),
+    /// keeping the cursor on the same text.
+    static func renumbered(_ text: String, caret: Int) -> (text: String, caret: Int) {
+        var lines = text.components(separatedBy: "\n")
+        var count = 0
+        var position = 0
+        var newCaret = caret
+        for index in lines.indices {
+            let line = lines[index]
+            let lineLength = (line as NSString).length
+            if let length = numberPrefixLength(line) {
+                count += 1
+                let prefix = "\(count). "
+                if !line.hasPrefix(prefix) {
+                    lines[index] = prefix + line.dropFirst(length)
+                    if caret >= position + length { newCaret += (prefix as NSString).length - length }
+                }
+            } else {
+                count = 0
+            }
+            position += lineLength + 1
+        }
+        return (lines.joined(separator: "\n"), newCaret)
+    }
+
+    /// Return on a list line starts the next one (the next number for numbered lists); Return on
+    /// an empty one ends the list. Nil when the line isn't part of a list (a normal line break).
     static func handleReturn(in text: String, at location: Int) -> (text: String, caret: Int)? {
         let ns = text as NSString
         let range = lineRange(in: text, at: location)
         let line = ns.substring(with: range)
         let lineKind = kind(of: line)
-        guard lineKind != .plain, location >= range.location + prefixLength else { return nil }
-        if line.dropFirst(prefixLength).trimmingCharacters(in: .whitespaces).isEmpty {
+        let length = prefixLength(of: line)
+        guard lineKind != .plain, location >= range.location + length else { return nil }
+        if line.dropFirst(length).trimmingCharacters(in: .whitespaces).isEmpty {
             let newText = ns.replacingCharacters(in: range, with: "")
-            return (newText, range.location)
+            return renumbered(newText, caret: range.location)
         }
-        let insert = "\n" + (lineKind == .bullet ? bulletPrefix : uncheckedPrefix)
+        let next: String = switch lineKind {
+        case .bullet: bulletPrefix
+        case .numbered: "\((number(of: line) ?? 0) + 1). "
+        case .plain, .unchecked, .checked: uncheckedPrefix
+        }
+        let insert = "\n" + next
         let newText = ns.replacingCharacters(in: NSRange(location: location, length: 0), with: insert)
-        return (newText, location + (insert as NSString).length)
+        return renumbered(newText, caret: location + (insert as NSString).length)
     }
 
-    /// Typing "- " or "* " at the start of a line makes a bullet, like Apple Notes.
+    /// Typing "- " or "* " at the start of a line makes a bullet, like Apple Notes. ("1. " is
+    /// already a numbered line.)
     static func autoBullet(in text: String, at location: Int, typing: String) -> (text: String, caret: Int)? {
         guard typing == " " else { return nil }
         let ns = text as NSString
@@ -255,8 +324,8 @@ enum NoteChecklist {
         return (newText, range.location + prefixLength)
     }
 
-    /// Adds text to the end of a note. If the note ends with a checklist (or bullets), each new
-    /// line becomes an item (or bullet) too ("add milk to my grocery list").
+    /// Adds text to the end of a note. If the note ends with a list, each new line joins it
+    /// ("add milk to my grocery list").
     static func appending(_ addition: String, to body: String) -> String {
         let trimmedBody = body.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedBody.isEmpty else { return addition }
@@ -264,14 +333,18 @@ enum NoteChecklist {
         var lines = addition.components(separatedBy: "\n")
         let lastKind = kind(of: lastLine)
         if lastKind != .plain {
-            let prefix = lastKind == .bullet ? bulletPrefix : uncheckedPrefix
             lines = lines.map { line in
                 let item = line.trimmingCharacters(in: .whitespaces)
                 if item.isEmpty || kind(of: item) != .plain { return item }
-                return prefix + item.replacingOccurrences(of: #"^[-*]\s*"#, with: "", options: .regularExpression)
+                let text = item.replacingOccurrences(of: #"^[-*]\s*"#, with: "", options: .regularExpression)
+                return switch lastKind {
+                case .bullet: bulletPrefix + text
+                case .numbered: "1. " + text // renumbered below
+                case .plain, .unchecked, .checked: uncheckedPrefix + text
+                }
             }
         }
-        return trimmedBody + "\n" + lines.joined(separator: "\n")
+        return renumbered(trimmedBody + "\n" + lines.joined(separator: "\n"), caret: 0).text
     }
 
     /// "2 of 5 done" for a note with a checklist.

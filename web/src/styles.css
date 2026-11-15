@@ -530,3 +530,9 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .upnext-lines .line .widget-row { height: 100%; padding: 0; }
 .upnext-lines .upnext-foot { margin-top: 0; }
 .ask.line-ask { width: 28px; height: 28px; border-radius: 14px; font-size: 13px; }
+/* Notes: the list button's menu (Numbered List, Bulleted List, Checklist), opening upward like iOS. */
+.list-menu-anchor { position: relative; pointer-events: auto; }
+.list-menu { position: absolute; bottom: 60px; right: 0; width: 220px; background: var(--card); border-radius: 14px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.22); overflow: hidden; }
+.list-menu button { display: flex; width: 100%; justify-content: space-between; align-items: center; padding: 12px 16px; font-size: 16px; color: var(--label); text-align: left; }
+.list-menu button + button { border-top: 0.5px solid var(--separator, rgba(0, 0, 0, 0.12)); }
+.list-menu-icon { color: var(--secondary); font-weight: 600; width: 22px; text-align: center; }

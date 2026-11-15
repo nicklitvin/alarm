@@ -408,19 +408,28 @@ export function notePreview(n: Note) {
   return lines.join(' ')
 }
 
-// Checklists in notes (NoteChecklist in App/Notes/Note.swift): "☐ " to do, "☑ " done.
+// Lists in notes (NoteChecklist in App/Notes/Note.swift): "☐ " to do, "☑ " done, "• " bullet, "1. " numbered.
 export const UNCHECKED = '☐ '
 export const CHECKED = '☑ '
 export const BULLET = '• '
-export type LineKind = 'plain' | 'unchecked' | 'checked' | 'bullet'
-/** Where Return in a note's title puts the cursor: the start of the first line's text (after its box or bullet). */
-export function firstLineCaret(body: string): number {
-  return lineKind(body.split('\n')[0]) === 'plain' ? 0 : 2
-}
+export type LineKind = 'plain' | 'unchecked' | 'checked' | 'bullet' | 'numbered'
+export type ListStyle = 'checklist' | 'bullets' | 'numbers'
+const NUMBER = /^(\d{1,3})\. /
 
 export const lineKind = (line: string): LineKind =>
-  line.startsWith(UNCHECKED) ? 'unchecked' : line.startsWith(CHECKED) ? 'checked' : line.startsWith(BULLET) ? 'bullet' : 'plain'
+  line.startsWith(UNCHECKED) ? 'unchecked' : line.startsWith(CHECKED) ? 'checked' : line.startsWith(BULLET) ? 'bullet'
+    : NUMBER.test(line) ? 'numbered' : 'plain'
+/** The length of the line's list marker ("☐ ", "• ", "12. "), 0 for plain text. */
+export const prefixLength = (line: string) => {
+  const k = lineKind(line)
+  return k === 'plain' ? 0 : k === 'numbered' ? line.match(NUMBER)![0].length : 2
+}
 const isItem = (k: LineKind) => k === 'unchecked' || k === 'checked'
+
+/** Where Return in a note's title puts the cursor: the start of the first line's text (after its box, bullet or number). */
+export function firstLineCaret(body: string): number {
+  return prefixLength(body.split('\n')[0])
+}
 
 /** [start, end) of the line containing `at`, without its line break. */
 export function lineBounds(text: string, at: number): [number, number] {
@@ -436,34 +445,53 @@ export function toggleItem(text: string, at: number): string | null {
   return text.slice(0, s) + (kind === 'unchecked' ? CHECKED : UNCHECKED) + text.slice(s + 2)
 }
 
-/** The checklist / bullet buttons: make the selected lines that kind of list, or back into text. */
-export function toggleList(style: 'checklist' | 'bullets', text: string, selStart: number, selEnd: number): { text: string; caret: number } {
+/** Numbers every run of numbered lines 1, 2, 3…, keeping the cursor on the same text. */
+export function renumber(text: string, caret: number): { text: string; caret: number } {
+  let count = 0, pos = 0, newCaret = caret
+  const lines = text.split('\n').map((line) => {
+    const m = line.match(NUMBER)
+    const start = pos
+    pos += line.length + 1
+    if (!m) { count = 0; return line }
+    const prefix = `${++count}. `
+    if (m[0] === prefix) return line
+    if (caret >= start + m[0].length) newCaret += prefix.length - m[0].length
+    return prefix + line.slice(m[0].length)
+  })
+  return { text: lines.join('\n'), caret: newCaret }
+}
+
+/** The list button's options: make the selected lines that kind of list, or back into text. */
+export function toggleList(style: ListStyle, text: string, selStart: number, selEnd: number): { text: string; caret: number } {
   const [s] = lineBounds(text, selStart)
   const [, e] = lineBounds(text, selEnd)
   const lines = text.slice(s, e).split('\n')
-  const matches = (k: LineKind) => (style === 'checklist' ? isItem(k) : k === 'bullet')
-  const prefix = style === 'checklist' ? UNCHECKED : BULLET
+  const matches = (k: LineKind) => (style === 'checklist' ? isItem(k) : style === 'bullets' ? k === 'bullet' : k === 'numbered')
   const all = lines.every((l) => matches(lineKind(l)))
-  let delta = 0
+  let delta = 0, n = 0
   const changed = lines.map((l) => {
-    if (all) { delta -= 2; return l.slice(2) }
+    const old = prefixLength(l)
+    if (all) { delta -= old; return l.slice(old) }
+    n++
     if (matches(lineKind(l))) return l
-    if (lineKind(l) !== 'plain') return prefix + l.slice(2)
-    delta += 2
-    return prefix + l
+    const prefix = style === 'checklist' ? UNCHECKED : style === 'bullets' ? BULLET : `${n}. `
+    delta += prefix.length - old
+    return prefix + l.slice(old)
   })
   const out = text.slice(0, s) + changed.join('\n') + text.slice(e)
-  return { text: out, caret: Math.min(out.length, Math.max(s, selEnd + delta)) }
+  return renumber(out, Math.min(out.length, Math.max(s, selEnd + delta)))
 }
 
-/** Return on an item starts the next one; on an empty item it ends the checklist. */
+/** Return on a list line starts the next one (the next number for numbered lists); on an empty one it ends the list. */
 export function checklistReturn(text: string, at: number): { text: string; caret: number } | null {
   const [s, e] = lineBounds(text, at)
   const line = text.slice(s, e)
   const kind = lineKind(line)
-  if (kind === 'plain' || at < s + 2) return null
-  if (!line.slice(2).trim()) return { text: text.slice(0, s) + text.slice(e), caret: s }
-  return { text: text.slice(0, at) + '\n' + (kind === 'bullet' ? BULLET : UNCHECKED) + text.slice(at), caret: at + 3 }
+  const len = prefixLength(line)
+  if (kind === 'plain' || at < s + len) return null
+  if (!line.slice(len).trim()) return renumber(text.slice(0, s) + text.slice(e), s)
+  const next = kind === 'bullet' ? BULLET : kind === 'numbered' ? `${Number(line.match(NUMBER)![1]) + 1}. ` : UNCHECKED
+  return renumber(text.slice(0, at) + '\n' + next + text.slice(at), at + 1 + next.length)
 }
 
 /** Typing "- " or "* " at the start of a line makes a bullet. */

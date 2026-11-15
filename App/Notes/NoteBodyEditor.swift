@@ -6,11 +6,8 @@ import UIKit
 final class NoteEditorCommands {
     fileprivate weak var coordinator: NoteBodyEditor.Coordinator?
 
-    /// Turns the current line(s) into checklist items, or back into text.
-    func toggleChecklist() { coordinator?.toggleList(.checklist) }
-
-    /// Turns the current line(s) into bullets (•), or back into text.
-    func toggleBullets() { coordinator?.toggleList(.bullets) }
+    /// Turns the current line(s) into a numbered, bulleted or checklist list, or back into text.
+    func toggleList(_ style: NoteChecklist.ListStyle) { coordinator?.toggleList(style) }
 
     /// Starts typing at the beginning of the first line (Return in the title).
     func editFirstLine() { coordinator?.editFirstLine() }
@@ -166,7 +163,7 @@ struct NoteBodyEditor: UIViewRepresentable {
             var selection = textView.selectedRange
             var base = textView.text ?? ""
             if !textView.isFirstResponder {
-                // Not typing: start a checklist on a new line at the end.
+                // Not typing: start the list on a new line at the end.
                 let length = (base as NSString).length
                 if !base.isEmpty, !base.hasSuffix("\n") { base += "\n" }
                 selection = NSRange(location: max(length, (base as NSString).length), length: 0)

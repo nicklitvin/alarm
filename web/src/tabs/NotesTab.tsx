@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { SwipeRow } from '../components/SwipeRow'
 import { Alert, BottomAction, Section, TabHeader } from '../components/ui'
-import { firstLineCaret, checklistProgress, checklistReturn, lineBounds, lineKind, noteCopyText, notePreview, noteTitle, sortNotes, toggleItem, toggleList, autoBullet, uid, type Note } from '../logic/model'
+import { firstLineCaret, checklistProgress, checklistReturn, lineBounds, lineKind, noteCopyText, notePreview, noteTitle, sortNotes, toggleItem, toggleList, autoBullet, uid, type ListStyle, type Note } from '../logic/model'
 import { useStore } from '../logic/store'
 
 const progressLabel = (n: Note) => {
@@ -127,7 +127,9 @@ function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
     pendingCaret.current = caret
     edit({ body: text })
   }
-  const makeList = (style: 'checklist' | 'bullets') => {
+  const [listMenu, setListMenu] = useState(false)
+  const makeList = (style: ListStyle) => {
+    setListMenu(false)
     const t = body.current
     if (!t) return
     const focused = document.activeElement === t
@@ -195,10 +197,20 @@ function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
             }} />
         </div>
       </div>
-      {/* Floating above the keyboard: the checklist button, and while typing a checkmark that finishes. */}
+      {/* Floating above the keyboard: one list button (numbered, bulleted or checklist), and while typing a checkmark that finishes. */}
       <div className="float-check-wrap">
-        <button className="float-list" aria-label="Bulleted List" onMouseDown={(e) => e.preventDefault()} onClick={() => makeList('bullets')}>•≡</button>
-        <button className="float-list" aria-label="Checklist" onMouseDown={(e) => e.preventDefault()} onClick={() => makeList('checklist')}>☑︎</button>
+        <div className="list-menu-anchor">
+          {listMenu && (
+            <div className="list-menu" role="menu">
+              {([['numbers', 'Numbered List', '1.'], ['bullets', 'Bulleted List', '•'], ['checklist', 'Checklist', '◯']] as const).map(([style, label, icon]) => (
+                <button key={style} role="menuitem" onMouseDown={(e) => e.preventDefault()} onClick={() => makeList(style)}>
+                  <span>{label}</span><span className="list-menu-icon">{icon}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <button className="float-list" aria-label="Lists" aria-expanded={listMenu} onMouseDown={(e) => e.preventDefault()} onClick={() => setListMenu(!listMenu)}>•≡</button>
+        </div>
         {typing && <button className="float-check" aria-label="Done" onMouseDown={(e) => e.preventDefault()}
           onClick={() => (document.activeElement as HTMLElement | null)?.blur()}>✓</button>}
       </div>
