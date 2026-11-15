@@ -93,7 +93,7 @@ function Row({ item, compact = false, light = false, single = false }: { item: U
       {item.kind === 'todo'
         ? <button className={`check ${done ? 'done' : subRed ? 'overdue' : ''}`} style={{ width: 20, height: 20, fontSize: 11 }} aria-label="Complete"
             onClick={(e) => { e.stopPropagation(); complete(item.todo.id) }}>{done ? '✓' : ''}</button>
-        : <span style={{ width: 20, textAlign: 'center' }}>{icon}</span>}
+        : <span className={item.kind === 'timer' ? '' : 'alarm-glyph'} style={{ width: 20, textAlign: 'center' }}>{icon}</span>}
       {single ? (
         <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'baseline', gap: 6 }}>
           <div className="t ellipsis" style={{ flex: 1, minWidth: 0, fontSize: 14, textDecoration: done ? 'line-through' : undefined, opacity: done ? 0.6 : 1 }}>{title}</div>
@@ -133,7 +133,7 @@ function HomeScreen() {
         {/* One line on medium and large ("7:00 AM  ⏰ Wake up · Tomorrow"); stacked on small. */}
         {/* "⏰ 7:00 AM  in 2h 4m": the clock before the time, the label only if it has one. */}
         <div className={stacked ? '' : 'v-alarm-line'}>
-          {!stacked && <span className="v-alarm-icon">⏰</span>}
+          {!stacked && <span className="v-alarm-icon alarm-glyph">⏰</span>}
           <div className="v-alarm-time">{bigTime(featured.date).time}<small> {bigTime(featured.date).period}</small></div>
           <div className="v-alarm-sub ellipsis">{featured.alarm.label.trim() ? `${featured.alarm.label.trim()} · ` : ''}in {countdown(now, featured.date)}</div>
         </div>
@@ -153,7 +153,7 @@ function HomeScreen() {
           {featured ? (
             // Fills the widget like Next Alarm: day, big time, label, then a full-width Dismiss.
             <div className="small-alarm">
-              <div className="wh"><span>⏰</span><span className="muted" style={{ fontSize: 12 }}>in {countdown(now, featured.date)}</span></div>
+              <div className="wh"><span className="alarm-glyph">⏰</span><span className="muted" style={{ fontSize: 12 }}>in {countdown(now, featured.date)}</span></div>
               <div className="big">{bigTime(featured.date).time}<small> {bigTime(featured.date).period}</small></div>
               {featured.alarm.label.trim() && <div className="muted ellipsis" style={{ fontSize: 14, fontWeight: 500 }}>{featured.alarm.label.trim()}</div>}
               {(featured.alarm.skippedOccurrence ?? 0) <= now &&

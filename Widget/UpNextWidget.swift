@@ -259,7 +259,7 @@ private struct AlarmHeader: View {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Image(systemName: "alarm.fill")
                             .font(.headline)
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(.primary) // black (white in dark mode)
                         time(parts, size: 24)
                         details.font(.subheadline)
                             .foregroundStyle(.secondary)
@@ -319,7 +319,7 @@ private struct SmallAlarm: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Image(systemName: "alarm.fill")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(.primary)
                 Spacer(minLength: 4)
                 Text("in \(TimeFormat.countdown(from: now, to: upcoming.date))")
                     .font(.caption.weight(.semibold))
@@ -439,11 +439,11 @@ private struct UpNextRow: View {
             .buttonStyle(.plain)
             .accessibilityLabel(todo.isDone ? "Mark \(todo.title) as not done" : "Mark \(todo.title) as done")
         case .alarmSoon:
-            icon("alarm.fill")
+            icon("alarm.fill", tint: .primary)
         case .timer(let timer):
             icon(timer.state == .ringing ? "bell.fill" : "timer")
         case .nextAlarm:
-            icon("alarm")
+            icon("alarm.fill", tint: .primary)
         }
     }
 

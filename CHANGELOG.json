@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.23.4",
+      "build": 53,
+      "date": "2026-11-15",
+      "title": "Black Alarm Icon",
+      "notes": [
+        "The alarm icons in the Up Next widget are now black (white in dark mode) instead of orange."
+      ]
+    },
+    {
       "version": "1.23.3",
       "build": 52,
       "date": "2026-11-15",

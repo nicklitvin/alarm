@@ -508,3 +508,6 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .header-pill .icon-btn { background: none; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
 .sheet.small { height: 300px; }
 .widget-row .s.red { color: var(--red); }
+/* Up Next's alarm icons are black (white in dark mode), like the SF Symbol in the app. */
+.alarm-glyph { filter: grayscale(1) brightness(0); }
+:root[data-theme='dark'] .alarm-glyph { filter: grayscale(1) brightness(0) invert(1); }
