@@ -15,13 +15,55 @@ final class NoteEditorCommands {
 
 /// The note's body: a text view that draws checklist items (☐ / ☑ lines) as tappable boxes,
 /// strikes through done items, and continues checklists and bulleted lists (•) on Return.
+/// A text view that draws round checkboxes (like the To-Do tab's) over checklist items. The box
+/// characters stay in the text, invisible, so the note's text and copying are unchanged.
+final class ChecklistTextView: UITextView {
+    private var circles: [UIImageView] = []
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        updateCircles()
+    }
+
+    /// Puts a circle (or a filled orange checkmark) over each checklist item's box.
+    func updateCircles() {
+        let text = self.text ?? ""
+        let items = NoteChecklist.lines(in: text).filter { $0.kind == .unchecked || $0.kind == .checked }
+        while circles.count < items.count {
+            let image = UIImageView()
+            image.contentMode = .scaleAspectFit
+            image.isUserInteractionEnabled = false
+            addSubview(image)
+            circles.append(image)
+        }
+        let size = (font?.pointSize ?? 17) * 1.25
+        let symbolConfig = UIImage.SymbolConfiguration(pointSize: size * 0.9, weight: .regular)
+        for (index, circle) in circles.enumerated() {
+            guard index < items.count,
+                  let start = position(from: beginningOfDocument, offset: items[index].range.location),
+                  let end = position(from: start, offset: 1),
+                  let range = textRange(from: start, to: end) else {
+                circle.isHidden = true
+                continue
+            }
+            let box = firstRect(for: range)
+            guard !box.isNull, !box.isInfinite else { circle.isHidden = true; continue }
+            let checked = items[index].kind == .checked
+            circle.image = UIImage(systemName: checked ? "checkmark.circle.fill" : "circle", withConfiguration: symbolConfig)
+            circle.tintColor = checked ? .systemOrange : .secondaryLabel
+            circle.frame = CGRect(x: box.midX - size / 2, y: box.midY - size / 2, width: size, height: size)
+            circle.isHidden = false
+        }
+    }
+}
+
 struct NoteBodyEditor: UIViewRepresentable {
     @Binding var text: String
     @Binding var isEditing: Bool
     let commands: NoteEditorCommands
 
     func makeUIView(context: Context) -> UITextView {
-        let view = UITextView()
+        let view = ChecklistTextView()
         view.backgroundColor = .clear
         view.font = Coordinator.bodyFont
         view.adjustsFontForContentSizeCategory = true
@@ -177,11 +219,12 @@ struct NoteBodyEditor: UIViewRepresentable {
             let storage = textView.textStorage
             let text = textView.text ?? ""
             let font = Self.bodyFont
-            let boxFont = UIFont.systemFont(ofSize: font.pointSize * 1.15, weight: .regular)
+            let boxFont = UIFont.systemFont(ofSize: font.pointSize * 1.3, weight: .regular)
             storage.beginEditing()
             storage.setAttributes([.font: font, .foregroundColor: UIColor.label], range: NSRange(location: 0, length: storage.length))
             for line in NoteChecklist.lines(in: text) where line.kind == .unchecked || line.kind == .checked {
-                storage.addAttributes([.foregroundColor: UIColor.systemOrange, .font: boxFont],
+                // The box character is invisible: a round checkbox is drawn over it.
+                storage.addAttributes([.foregroundColor: UIColor.clear, .font: boxFont],
                                       range: NSRange(location: line.range.location, length: 1))
                 if line.kind == .checked, line.range.length > NoteChecklist.prefixLength {
                     storage.addAttributes([.strikethroughStyle: NSUnderlineStyle.single.rawValue,
@@ -192,6 +235,7 @@ struct NoteBodyEditor: UIViewRepresentable {
             }
             storage.endEditing()
             textView.typingAttributes = [.font: font, .foregroundColor: UIColor.label]
+            (textView as? ChecklistTextView)?.setNeedsLayout() // move the round checkboxes
         }
     }
 }

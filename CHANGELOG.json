@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.27.3",
+      "build": 64,
+      "date": "2026-11-15",
+      "title": "Round Checkboxes in Notes",
+      "notes": [
+        "Checklists in notes now use round checkboxes, like the To-Do tab: an empty circle, or an orange checkmark when done."
+      ]
+    },
+    {
       "version": "1.27.2",
       "build": 63,
       "date": "2026-11-15",

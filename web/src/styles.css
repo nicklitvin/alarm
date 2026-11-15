@@ -516,3 +516,7 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .bottom-action.two { display: flex; gap: 10px; }
 .bottom-action.two .btn.prominent { flex: 1; }
 .bottom-action.two .btn.gray { width: auto; padding: 15px 18px; font-size: 17px; font-weight: 600; box-shadow: none; background: var(--card); color: var(--orange); white-space: nowrap; }
+/* Note checklist boxes drawn as round checkboxes, like the To-Do tab's (the box character stays, invisible) */
+.note-backdrop .box { position: relative; color: transparent; }
+.note-backdrop .box::after { content: ''; position: absolute; left: 50%; top: 50%; width: 1.05em; height: 1.05em; transform: translate(-50%, -48%); border-radius: 50%; border: 1.6px solid var(--tertiary); box-sizing: border-box; }
+.note-backdrop .box.checked::after { background: var(--orange); border-color: var(--orange); color: #fff; content: '✓'; font-size: 11px; line-height: 1; font-weight: 700; display: grid; place-items: center; }

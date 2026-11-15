@@ -163,7 +163,7 @@ function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
             {note.body.split('\n').map((line, i) => {
               const kind = lineKind(line)
               return <div key={i}>{kind === 'plain' || kind === 'bullet' ? (line || '\u200b')
-                : <><span className="box">{line[0]}</span> <span className={kind === 'checked' ? 'done' : ''}>{line.slice(2) || '\u200b'}</span></>}</div>
+                : <><span className={`box ${kind}`}>{line[0]}</span> <span className={kind === 'checked' ? 'done' : ''}>{line.slice(2) || '\u200b'}</span></>}</div>
             })}
           </div>
           <textarea ref={body} placeholder="Start writing…" value={note.body} onChange={(e) => edit({ body: e.target.value })}
