@@ -142,6 +142,7 @@ private struct DeleteAllSection: View {
 private struct AlarmSettingsSection: View {
     @AppStorage(AppSettings.alarmHeadsUpEnabledKey, store: AppSettings.store) private var headsUpEnabled = true
     @AppStorage(AppSettings.alarmHeadsUpMinutesKey, store: AppSettings.store) private var headsUpMinutes = 60
+    @AppStorage(AppSettings.alarmWidgetHoursKey, store: AppSettings.store) private var widgetHours = 12
 
     var body: some View {
         Section {
@@ -161,6 +162,22 @@ private struct AlarmSettingsSection: View {
         }
         .onChange(of: headsUpEnabled) { AlarmController.shared.refresh() }
         .onChange(of: headsUpMinutes) { AlarmController.shared.refresh() }
+
+        Section {
+            Picker("Show Alarm", selection: $widgetHours) {
+                ForEach(AppSettings.alarmWidgetHourChoices, id: \.self) { hours in
+                    Text(hours == 1 ? "1 hour before" : "\(hours) hours before").tag(hours)
+                }
+            }
+        } header: {
+            Text("Widgets")
+        } footer: {
+            Text("Your next alarm appears in the widgets \(widgetHours == 1 ? "1 hour" : "\(widgetHours) hours") before it rings, with a Dismiss button. The Alarms tab shows Dismiss from then too.")
+        }
+        .onChange(of: widgetHours) {
+            AlarmController.shared.refresh()
+            WidgetCenter.shared.reloadAllTimelines()
+        }
 
         WidgetToggles(rows: [
             ("Show Alarms", AppSettings.widgetShowsAlarmsKey),

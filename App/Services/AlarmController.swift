@@ -101,7 +101,8 @@ final class AlarmController {
         guard alarm.isEnabled,
               let ring = alarm.nextFireDate(after: min(referenceDate, now)),
               ring > now,
-              ring.timeIntervalSince(referenceDate) <= AlarmItem.dismissWindow + 60,
+              // The widgets' window, or the heads-up's if that comes earlier (its Dismiss Alarm button).
+              ring.timeIntervalSince(referenceDate) <= max(AlarmItem.dismissWindow, AlarmItem.headsUpInterval) + 60,
               // Only one ring of an alarm can be skipped at a time: dismissing the one after
               // a skipped ring would bring the skipped one back.
               (alarm.skippedOccurrence ?? .distantPast) <= now

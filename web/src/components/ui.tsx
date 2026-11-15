@@ -347,6 +347,15 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
         </Section>
       )}
       {tab === 'alarms' && (
+        <Section header="Widgets" footer={`Your next alarm appears in the widgets ${s.alarmWidgetHours === 1 ? '1 hour' : `${s.alarmWidgetHours} hours`} before it rings, with a Dismiss button. The Alarms tab shows Dismiss from then too.`}>
+          <div className="row"><span className="grow">Show Alarm</span>
+            <select className="ios" value={s.alarmWidgetHours} onChange={(e) => set('alarmWidgetHours', Number(e.target.value))}>
+              {[1, 3, 6, 12, 24].map((h) => <option key={h} value={h}>{h === 1 ? '1 hour before' : `${h} hours before`}</option>)}
+            </select>
+          </div>
+        </Section>
+      )}
+      {tab === 'alarms' && (
         <Section header="Up Next Widget" footer="Whether alarms appear in the Up Next widget.">
           <div className="row"><span className="grow">Show Alarms</span><Switch label="Show alarms in widget" on={s.widgetShowsAlarms} onChange={(v) => set('widgetShowsAlarms', v)} /></div>
         </Section>

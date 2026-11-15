@@ -100,6 +100,8 @@ export type NotesSort = 'edited' | 'created' | 'title'
 export interface Settings {
   alarmHeadsUpEnabled: boolean
   alarmHeadsUpMinutes: number
+  /** Hours before a ring that the alarm shows in the widgets, with Dismiss (Alarm settings). */
+  alarmWidgetHours: number
   todoDueAlertEnabled: boolean
   todoEarlyReminderMinutes: number
   notesSort: NotesSort
@@ -119,6 +121,7 @@ export interface Settings {
 export const defaultSettings: Settings = {
   alarmHeadsUpEnabled: true,
   alarmHeadsUpMinutes: 60,
+  alarmWidgetHours: 12,
   todoDueAlertEnabled: true,
   todoEarlyReminderMinutes: 0,
   notesSort: 'edited',
@@ -501,14 +504,14 @@ export function upNextLayout(items: UpNextItem[], _now?: number): { alarm?: { al
   return { alarm: { alarm: featured.alarm, date: featured.date }, rows: items.filter((_, n) => n !== index) }
 }
 
-/** How long before a ring it can be dismissed (AlarmItem.dismissWindow). */
-export const DISMISS_WINDOW = 12 * 3600_000
+/** How long before a ring the alarm shows in the widgets and can be dismissed (AlarmItem.dismissWindow). */
+export const alarmWindow = (settings: Settings) => (settings.alarmWidgetHours ?? 12) * 3600_000
 
 /** A to-do checked off this recently stays (shown checked) before leaving the widget. */
 export const COMPLETED_LINGER = 2000
 
 export function upNext(allAlarms: Alarm[], allTodos: Todo[], timers: TimerItem[], now: number, settings: Settings): UpNextItem[] {
-  const headsUp = DISMISS_WINDOW // alarms within 12 hours can be dismissed
+  const headsUp = alarmWindow(settings) // alarms within the widget window can be dismissed
   const alarms = settings.widgetShowsAlarms ? allAlarms : []
   const todos = allTodos.filter((t) => (t.due === undefined ? settings.widgetShowsUntimedTodos : settings.widgetShowsTimedTodos))
   const result: UpNextItem[] = []
@@ -544,8 +547,8 @@ export function upNext(allAlarms: Alarm[], allTodos: Todo[], timers: TimerItem[]
   const dueSoon = open.filter((t) => t.due !== undefined && t.due > now && t.due - now <= 3 * 3600_000)
   result.push(...[...overdue, ...dueSoon].map(real))
 
-  const next = nextAlarm(alarms.filter((a) => !soonIDs.has(a.id)), now)
-  if (next) result.push({ kind: 'nextAlarm', alarm: next.alarm, date: next.date }) // however far away
+  // Alarms further away than the widget window don't show.
+  void soonIDs
 
   const shown = new Set([...overdue, ...dueSoon].map((t) => t.id))
   result.push(...open.filter((t) => !shown.has(t.id)).map(real))

@@ -301,13 +301,13 @@ func kinds(_ items: [UpNextItem]) -> [String] {
 }
 let upNext = UpNext.items(alarms: [evening, wakeAlarm], todos: [somedayTodo, laterTodo, soonTodo, overdueTodo],
                           timers: [pausedTimer, runningTimer], now: unNow)
-check(kinds(upNext) == ["soon:Wake", "timer:Tea", "timer:Bread", "todo:Pay bill", "todo:Leave for train", "next:Wind down", "todo:Dentist", "todo:Read book"],
+check(kinds(upNext) == ["soon:Wake", "timer:Tea", "timer:Bread", "todo:Pay bill", "todo:Leave for train", "todo:Dentist", "todo:Read book"],
       "up next order → \(kinds(upNext))")
 var skippedWake = wakeAlarm; skippedWake.skippedOccurrence = d(2026, 11, 12, 7, 0)
-check(kinds(UpNext.items(alarms: [skippedWake], todos: [], timers: [], now: unNow)) == ["next:Wake"],
-      "dismissed ring leaves the soon slot; the following ring (Fri 7:00) shows as the next alarm")
+check(kinds(UpNext.items(alarms: [skippedWake], todos: [], timers: [], now: unNow)).isEmpty,
+      "dismissed ring disappears; the following ring (Fri 7:00) is beyond the widget window")
 check(kinds(UpNext.items(alarms: [wakeAlarm], todos: [], timers: [], now: d(2026, 11, 12, 5, 0))) == ["soon:Wake"], "alarm 2h away → can be dismissed (within 12 h)")
-check(kinds(UpNext.items(alarms: [wakeAlarm], todos: [], timers: [], now: d(2026, 11, 11, 18, 0))) == ["next:Wake"], "alarm 13h away → next alarm, not dismissable yet")
+check(kinds(UpNext.items(alarms: [wakeAlarm], todos: [], timers: [], now: d(2026, 11, 11, 18, 0))).isEmpty, "alarm 13h away → not in the widget yet (12 h window)")
 check(kinds(UpNext.items(alarms: [], todos: [], timers: [], now: unNow)).isEmpty, "nothing → empty")
 let changes = UpNext.changeDates(alarms: [wakeAlarm], todos: [soonTodo], timers: [runningTimer], now: unNow)
 check(changes.first == unNow.addingTimeInterval(120) && changes.contains(d(2026, 11, 12, 7, 0)) && changes.contains(d(2026, 11, 12, 8, 0))
@@ -441,7 +441,7 @@ check(withAlarm.alarm?.alarm.id == morning.id && withAlarm.rows.count == 1, "ala
 let farAlarm = UpNext.layout([UpNextItem(kind: .nextAlarm(morning, d(2026, 11, 25, 7, 0)))], now: layoutNow)
 check(farAlarm.alarm != nil && farAlarm.rows.isEmpty, "the next alarm is on top even when it's days away")
 let weekly = AlarmItem(hour: 9, minute: 0, weekdays: [.saturday])
-check(UpNext.items(alarms: [weekly], todos: [], timers: [], now: layoutNow).contains { if case .nextAlarm = $0.kind { true } else { false } }, "a far-off next alarm is still listed")
+check(UpNext.items(alarms: [weekly], todos: [], timers: [], now: layoutNow).isEmpty, "an alarm days away isn't in the widget")
 
 // Timer quick times.
 check(AppSettings.parseTimerQuickTimes(nil) == [300, 600, 900], "default timer quick times are 5, 10 and 15 min")

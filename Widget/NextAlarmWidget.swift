@@ -30,15 +30,14 @@ struct NextAlarmProvider: TimelineProvider {
             return
         }
 
-        // Refresh when each alarm rings (move on to the next one) and when it comes within 24 hours
+        // Refresh when each alarm rings (move on to the next one) and when it comes within the widget window
         // (the lock screen shows zzz until then).
         // Also every minute for the next hour, so the small widget's "in 2h 4m" stays right; then
         // a fresh timeline.
         let horizon = now.addingTimeInterval(3600)
         let minute = Calendar.current.dateInterval(of: .minute, for: now)?.start ?? now
         let ticks = (1...60).map { minute.addingTimeInterval(TimeInterval($0 * 60)) }
-        let moments = Set(upcoming.flatMap { [$0.date, $0.date.addingTimeInterval(-NextAlarmWidgetView.lockScreenWindow),
-                                              $0.date.addingTimeInterval(-AlarmItem.dismissWindow)] }
+        let moments = Set(upcoming.flatMap { [$0.date, $0.date.addingTimeInterval(-NextAlarmWidgetView.lockScreenWindow)] }
             .filter { $0 > now && $0 < horizon } + ticks)
         let entries = ([now] + moments.sorted()).map { date in
             NextAlarmEntry(date: date, next: upcoming.first { $0.date > date })
@@ -60,10 +59,10 @@ struct NextAlarmWidgetView: View {
     @Environment(\.widgetFamily) private var family
     let entry: NextAlarmEntry
 
-    /// Lock screen widgets only show an alarm within this window; otherwise zzz.
-    static let lockScreenWindow: TimeInterval = 24 * 3600
+    /// The widgets only show an alarm this long before it rings (Alarm settings); otherwise zzz.
+    static var lockScreenWindow: TimeInterval { AlarmItem.dismissWindow }
 
-    /// The next alarm, if it rings within 24 hours.
+    /// The next alarm, if it rings within the widget window.
     private var soon: UpcomingAlarm? {
         guard let next = entry.next, next.date.timeIntervalSince(entry.date) <= Self.lockScreenWindow else { return nil }
         return next
@@ -85,7 +84,7 @@ struct NextAlarmWidgetView: View {
     // Home screen: the next alarm with a full-width Dismiss button (same as Up Next's alarm).
     @ViewBuilder
     private var small: some View {
-        if let next = entry.next {
+        if let next = soon {
             SmallAlarm(upcoming: next, now: entry.date)
         } else {
             // No alarms: just zzz.
@@ -105,7 +104,7 @@ struct NextAlarmWidgetView: View {
             Label(isToday ? TimeFormat.string(for: next.date) : "\(day) \(TimeFormat.string(for: next.date))",
                   systemImage: "alarm.fill")
         } else {
-            Label(entry.next == nil ? "No alarms" : "No alarm today", systemImage: "zzz")
+            Label(entry.next == nil ? "No alarms" : "No alarm soon", systemImage: "zzz")
         }
     }
 
@@ -162,12 +161,12 @@ struct NextAlarmWidgetView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             } else {
-                // Nothing in the next 24 hours: just zzz.
+                // Nothing within the widget window: just zzz.
                 HStack(spacing: 8) {
                     Image(systemName: "zzz")
                         .font(.system(size: 26, weight: .semibold))
                         .widgetAccentable()
-                    Text(entry.next == nil ? "No alarms" : "No alarm in the next 24 hours")
+                    Text(entry.next == nil ? "No alarms" : "No alarm soon")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(.secondary)
                         .lineLimit(2)

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { SwipeRow } from '../components/SwipeRow'
 import { BottomAction, Section, Sheet, Switch, TabHeader, TimeWheel } from '../components/ui'
 import {
-  ALARM_SOUNDS, alarmTitle, countdown, DISMISS_WINDOW, dayDescription, nextAlarm, nextFire, repeatSummary, roundTo5, soundName, timeOf, timeParts, uid,
+  ALARM_SOUNDS, alarmTitle, countdown, alarmWindow, dayDescription, nextAlarm, nextFire, repeatSummary, roundTo5, soundName, timeOf, timeParts, uid,
   weekdayInitial, type Alarm, type Weekday,
 } from '../logic/model'
 import { useLandscape } from '../logic/orientation'
@@ -14,7 +14,7 @@ export function AlarmsTab() {
   const { data, update, now, pending, clearPending } = useStore()
   const [editing, setEditing] = useState<Alarm | 'new' | null>(null)
   const landscape = useLandscape()
-  const headsUp = DISMISS_WINDOW // the Dismiss card shows from 12 hours before a ring
+  const headsUp = alarmWindow(data.settings) // the Dismiss card shows from the widget window on
   const next = nextAlarm(data.alarms, now)
   const sorted = [...data.alarms].sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute))
 

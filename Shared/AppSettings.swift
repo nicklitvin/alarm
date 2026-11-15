@@ -15,6 +15,15 @@ enum AppSettings {
     static var alarmHeadsUpEnabled: Bool { bool(alarmHeadsUpEnabledKey, default: true) }
     /// How long before an alarm the heads-up arrives and the Dismiss button appears.
 
+    /// How many hours before a ring the alarm shows in the widgets (with Dismiss); the Alarms
+    /// tab's Dismiss card appears at the same time.
+    static let alarmWidgetHoursKey = "settings.alarm.widgetHours"
+    static let alarmWidgetHourChoices = [1, 3, 6, 12, 24]
+    static var alarmWidgetHours: Int {
+        let value = int(alarmWidgetHoursKey, default: 12)
+        return alarmWidgetHourChoices.contains(value) ? value : 12
+    }
+
     static var alarmHeadsUpMinutes: Int {
         let value = int(alarmHeadsUpMinutesKey, default: 60)
         return alarmHeadsUpChoices.contains(value) ? value : 60

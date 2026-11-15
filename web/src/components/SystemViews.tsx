@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import {
   alarmTitle, clock, countdown, dayDescription, dueDescription, durationName, isOverdue, leadTimeName, nextAlarm, nextFire,
-  timeOf, timeParts, upNext, upNextLayout, DISMISS_WINDOW, type Alarm, type TimerItem, type Todo, type UpNextItem,
+  timeOf, timeParts, upNext, upNextLayout, alarmWindow, type Alarm, type TimerItem, type Todo, type UpNextItem,
 } from '../logic/model'
 import * as ex from '../logic/examples'
 import { ExampleStore, useStore, type AppData, type Link } from '../logic/store'
@@ -16,14 +16,14 @@ type Example = [label: string, make: (now: number) => AppData]
 
 const SECTIONS: { id: string; label: string; examples: Example[]; view: () => ReactNode }[] = [
   { id: 'home', label: 'Home Screen', view: () => <HomeScreen />, examples: [
-    ['Alarm within 12 hours: Dismiss shows; more to-dos than fit', ex.alarmSoon],
-    ['Next alarm days away: no Dismiss yet; Live Talk button off', ex.alarmFar],
+    ['Alarm within 12 hours (the widget window): it shows, with Dismiss; more to-dos than fit', ex.alarmSoon],
+    ['Next alarm days away: not in the widgets yet (zzz); Live Talk button off', ex.alarmFar],
     ['No alarms: Next Alarm shows zzz', ex.noAlarms],
     ['Nothing at all', ex.empty],
   ] },
   { id: 'lock', label: 'Lock Screen', view: () => <LockScreen />, examples: [
-    ['Alarm within 24 hours, with a running timer', ex.timerRunning],
-    ['No alarm in the next 24 hours: zzz', ex.alarmFar],
+    ['Alarm within the widget window, with a running timer', ex.timerRunning],
+    ['No alarm within the widget window: zzz', ex.alarmFar],
   ] },
   { id: 'notifications', label: 'Notifications', view: () => <Notifications />, examples: [['', ex.notifications]] },
   { id: 'live', label: 'Live Activity', view: () => <LiveActivity />, examples: [
@@ -47,7 +47,8 @@ function useSystem() {
   const store = useStore()
   const { data, update, now } = store
   const next = nextAlarm(data.alarms, now)
-  const within24h = next && next.date - now <= 24 * 3600_000 ? next : undefined
+  // The widgets only show the next alarm within the widget window (Alarm settings).
+  const within24h = next && next.date - now <= alarmWindow(data.settings) ? next : undefined
   const items = upNext(data.alarms, data.todos, data.timers, now, data.settings)
   const dismiss = (id: string, date: number) => update((s) => ({
     ...s, alarms: s.alarms.map((a) => (a.id === id ? (a.weekdays.length ? { ...a, skippedOccurrence: date } : { ...a, isEnabled: false }) : a)),
@@ -141,6 +142,7 @@ function bigTime(date: number) {
 
 function HomeScreen() {
   const { now, items, open, dismiss, data, next } = useSystem()
+  const shownNext = next && next.date - now <= alarmWindow(data.settings) ? next : undefined
   const first = items[0]
   const layout = upNextLayout(items, now)
   const featured = layout.alarm
@@ -158,7 +160,7 @@ function HomeScreen() {
         </div>
       </div>
       {/* One skipped ring per alarm: once dismissed, the ring after it can't be dismissed too. */}
-      {(featured.alarm.skippedOccurrence ?? 0) <= now && featured.date - now <= DISMISS_WINDOW &&
+      {(featured.alarm.skippedOccurrence ?? 0) <= now && featured.date - now <= alarmWindow(data.settings) &&
         <button className="mini dismiss" onClick={(e) => { e.stopPropagation(); dismiss(featured.alarm.id, featured.date) }}>Dismiss</button>}
     </div>
   )
@@ -181,7 +183,7 @@ function HomeScreen() {
               <div className="wh"><span className="alarm-glyph">⏰</span><span className="muted" style={{ fontSize: 12 }}>in {countdown(now, featured.date)}</span></div>
               <div className="big">{bigTime(featured.date).time}<small> {bigTime(featured.date).period}</small></div>
               {featured.alarm.label.trim() && <div className="muted ellipsis" style={{ fontSize: 14, fontWeight: 500 }}>{featured.alarm.label.trim()}</div>}
-              {(featured.alarm.skippedOccurrence ?? 0) <= now && featured.date - now <= DISMISS_WINDOW &&
+              {(featured.alarm.skippedOccurrence ?? 0) <= now && featured.date - now <= alarmWindow(data.settings) &&
                 <button className="dismiss-full" onClick={(e) => { e.stopPropagation(); dismiss(featured.alarm.id, featured.date) }}>Dismiss</button>}
             </div>
           ) : (
@@ -209,15 +211,15 @@ function HomeScreen() {
     <>
       <div className="home">
         <div className="widgets">
-          {/* Next Alarm (small): the next alarm with a full-width Dismiss. */}
+          {/* Next Alarm (small): the next alarm (within the widget window) with a full-width Dismiss; otherwise zzz. */}
           <div className="widget upnext small" onClick={() => open({ tab: 'alarms' })}>
-            {next ? (
+            {shownNext ? (
               <div className="small-alarm">
-                <div className="wh"><span className="alarm-glyph">⏰</span><span className="muted" style={{ fontSize: 12 }}>in {countdown(now, next.date)}</span></div>
-                <div className="big">{bigTime(next.date).time}<small> {bigTime(next.date).period}</small></div>
-                {next.alarm.label.trim() && <div className="muted ellipsis" style={{ fontSize: 14, fontWeight: 500 }}>{next.alarm.label.trim()}</div>}
-                {(next.alarm.skippedOccurrence ?? 0) <= now && next.date - now <= DISMISS_WINDOW &&
-                  <button className="dismiss-full" onClick={(e) => { e.stopPropagation(); dismiss(next.alarm.id, next.date) }}>Dismiss</button>}
+                <div className="wh"><span className="alarm-glyph">⏰</span><span className="muted" style={{ fontSize: 12 }}>in {countdown(now, shownNext.date)}</span></div>
+                <div className="big">{bigTime(shownNext.date).time}<small> {bigTime(shownNext.date).period}</small></div>
+                {shownNext.alarm.label.trim() && <div className="muted ellipsis" style={{ fontSize: 14, fontWeight: 500 }}>{shownNext.alarm.label.trim()}</div>}
+                {(shownNext.alarm.skippedOccurrence ?? 0) <= now &&
+                  <button className="dismiss-full" onClick={(e) => { e.stopPropagation(); dismiss(shownNext.alarm.id, shownNext.date) }}>Dismiss</button>}
               </div>
             ) : <div className="small-alarm" style={{ alignItems: 'center', justifyContent: 'center' }}><div className="big muted" style={{ margin: 0 }}>zzz</div></div>}
           </div>
@@ -225,7 +227,7 @@ function HomeScreen() {
           {upNextWidget('large')}
         </div>
       </div>
-      <Caption>Next Alarm (small, with Dismiss) and Up Next (medium, large). In Up Next, your next alarm always sits on top, however far away, with a Dismiss button for that ring; to-dos and timers follow. Tapping anything opens its tab, a to-do's circle checks it off, and the waveform button opens Talk.</Caption>
+      <Caption>Next Alarm (small, with Dismiss) and Up Next (medium, large). Your next alarm shows (with Dismiss) from 12 hours before it rings, or whatever Alarm settings → Show Alarm says; to-dos and timers follow. Tapping anything opens its tab, a to-do's circle checks it off, and the waveform button opens Talk.</Caption>
     </>
   )
 }
@@ -268,7 +270,7 @@ function LockScreen() {
         </div>
         {timer && <div style={{ marginTop: 14 }}><TimerLockActivity timer={timer} /></div>}
       </div>
-      <Caption>Inline text above the clock, Next Alarm (circular and rectangular) and Up Next (rectangular). They show zzz when no alarm rings in the next 24 hours.{timer ? ' The running timer shows as a Live Activity.' : ''}</Caption>
+      <Caption>Inline text above the clock, Next Alarm (circular and rectangular) and Up Next (rectangular). They show zzz when no alarm is within the widget window (12 hours unless changed in Alarm settings).{timer ? ' The running timer shows as a Live Activity.' : ''}</Caption>
     </>
   )
 }

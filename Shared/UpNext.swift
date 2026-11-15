@@ -51,7 +51,7 @@ enum UpNext {
         let alarms = options.alarms ? alarms : []
         let todos = todos.filter { $0.due == nil ? options.todosWithoutDeadline : options.todosWithDeadline }
 
-        // 1. Alarms ringing within 12 hours (they can be dismissed). A dismissed ring is skipped, so it simply disappears.
+        // 1. Alarms ringing within the widget window (12 hours unless changed); they can be dismissed. A dismissed ring is skipped, so it simply disappears.
         var soonAlarmIDs = Set<UUID>()
         var urgentAlarms: [(Date, UpNextItem)] = []
         for alarm in alarms where alarm.isEnabled {
@@ -89,10 +89,8 @@ enum UpNext {
         func item(_ todo: TodoItem) -> UpNextItem { UpNextItem(kind: .todo(original[todo.id] ?? todo)) }
         result += (overdue + dueSoon).map(item)
 
-        // 5. The next alarm, if it isn't already shown above, however far away it is.
-        if let next = alarms.filter({ !soonAlarmIDs.contains($0.id) }).nextFire(after: now) {
-            result.append(UpNextItem(kind: .nextAlarm(next.alarm, next.date)))
-        }
+        // 5. Alarms further away than the widget window (Alarm settings) don't show.
+        _ = soonAlarmIDs
 
         // 6. Everything else on the to-do list.
         let shownTodoIDs = Set((overdue + dueSoon).map(\.id))
@@ -100,7 +98,7 @@ enum UpNext {
         return result
     }
 
-    /// The widget's layout: the next alarm on top (however far away), and everything else
+    /// The widget's layout: the next alarm on top (when within the widget window), and everything else
     /// (to-dos, timers, any other alarm) as rows underneath.
     struct Layout: Sendable {
         var alarm: UpcomingAlarm?

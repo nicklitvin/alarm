@@ -1,6 +1,16 @@
 {
   "releases": [
     {
+      "version": "1.28.0",
+      "build": 66,
+      "date": "2026-11-15",
+      "title": "Choose When Alarms Show",
+      "notes": [
+        "New in Alarm settings: Show Alarm. Pick when your next alarm appears in the widgets: 1, 3, 6, 12 (the default) or 24 hours before it rings.",
+        "Whenever an alarm appears, you can dismiss it, in the widgets and on the Alarms tab. Before then, the widgets show zzz."
+      ]
+    },
+    {
       "version": "1.27.4",
       "build": 65,
       "date": "2026-11-15",
