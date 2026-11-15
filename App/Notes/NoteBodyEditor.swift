@@ -11,6 +11,9 @@ final class NoteEditorCommands {
 
     /// Turns the current line(s) into bullets (•), or back into text.
     func toggleBullets() { coordinator?.toggleList(.bullets) }
+
+    /// Starts typing at the beginning of the first line (Return in the title).
+    func editFirstLine() { coordinator?.editFirstLine() }
 }
 
 /// The note's body: a text view that draws checklist items (☐ / ☑ lines) as tappable boxes,
@@ -171,6 +174,13 @@ struct NoteBodyEditor: UIViewRepresentable {
             let result = NoteChecklist.toggleList(style, in: base, selection: selection)
             replace(with: result.text, caret: result.selection.location)
             if !textView.isFirstResponder { textView.becomeFirstResponder() }
+        }
+
+        func editFirstLine() {
+            guard let textView else { return }
+            textView.selectedRange = NSRange(location: NoteChecklist.firstLineCaret(in: textView.text ?? ""), length: 0)
+            if !textView.isFirstResponder { textView.becomeFirstResponder() }
+            textView.scrollRangeToVisible(textView.selectedRange)
         }
 
         private func replace(with newText: String, caret: Int) {

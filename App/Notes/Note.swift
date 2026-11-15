@@ -144,6 +144,13 @@ enum NoteChecklist {
 
     private static func isItem(_ kind: LineKind) -> Bool { kind == .unchecked || kind == .checked }
 
+    /// Where the cursor goes when you press Return in the title: the start of the first line's
+    /// text (after its checkbox or bullet, if it has one).
+    static func firstLineCaret(in text: String) -> Int {
+        let first = (text as NSString).substring(with: lineRange(in: text, at: 0))
+        return kind(of: first) == .plain ? 0 : prefixLength
+    }
+
     /// The line containing `location`, without its line break.
     static func lineRange(in text: String, at location: Int) -> NSRange {
         let ns = text as NSString

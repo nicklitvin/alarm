@@ -413,6 +413,11 @@ export const UNCHECKED = '☐ '
 export const CHECKED = '☑ '
 export const BULLET = '• '
 export type LineKind = 'plain' | 'unchecked' | 'checked' | 'bullet'
+/** Where Return in a note's title puts the cursor: the start of the first line's text (after its box or bullet). */
+export function firstLineCaret(body: string): number {
+  return lineKind(body.split('\n')[0]) === 'plain' ? 0 : 2
+}
+
 export const lineKind = (line: string): LineKind =>
   line.startsWith(UNCHECKED) ? 'unchecked' : line.startsWith(CHECKED) ? 'checked' : line.startsWith(BULLET) ? 'bullet' : 'plain'
 const isItem = (k: LineKind) => k === 'unchecked' || k === 'checked'

@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { SwipeRow } from '../components/SwipeRow'
 import { Alert, BottomAction, Section, TabHeader } from '../components/ui'
-import { checklistProgress, checklistReturn, lineBounds, lineKind, noteCopyText, notePreview, noteTitle, sortNotes, toggleItem, toggleList, autoBullet, uid, type Note } from '../logic/model'
+import { firstLineCaret, checklistProgress, checklistReturn, lineBounds, lineKind, noteCopyText, notePreview, noteTitle, sortNotes, toggleItem, toggleList, autoBullet, uid, type Note } from '../logic/model'
 import { useStore } from '../logic/store'
 
 const progressLabel = (n: Note) => {
@@ -156,7 +156,16 @@ function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
       <div className="note-editor" style={{ background: 'var(--bg)', minHeight: '100%' }}
         onFocus={() => setTyping(true)} onBlur={() => setTyping(false)}
         onClick={(e) => { if (e.target === e.currentTarget) { const t = body.current; t?.focus(); t?.setSelectionRange(t.value.length, t.value.length) } }}>
-        <input autoFocus={!note.title && !note.body} placeholder="Title" value={note.title} onChange={(e) => edit({ title: e.target.value })} />
+        <input autoFocus={!note.title && !note.body} placeholder="Title" value={note.title} onChange={(e) => edit({ title: e.target.value })}
+          onKeyDown={(e) => {
+            // Return in the title goes to the start of the note's first line.
+            if (e.key !== 'Enter') return
+            e.preventDefault()
+            const t = body.current
+            if (!t) return
+            const caret = firstLineCaret(t.value)
+            t.focus(); t.setSelectionRange(caret, caret)
+          }} />
         {/* Checklist boxes and strikethrough are drawn by a copy of the text behind the (transparent) textarea. */}
         <div className="note-body">
           <div className="note-backdrop" aria-hidden>

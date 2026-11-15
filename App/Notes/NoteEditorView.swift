@@ -21,16 +21,32 @@ struct NoteEditorView: View {
 
     private var isTyping: Bool { focus != nil || bodyEditing }
 
+    private func goToFirstLine() {
+        focus = nil
+        bodyEditing = true
+        DispatchQueue.main.async { commands.editFirstLine() }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             TextField("Title", text: $title, axis: .vertical)
                 .font(.title.weight(.bold))
                 .focused($focus, equals: .title)
                 .submitLabel(.next)
-                .onSubmit {
-                    focus = nil
-                    bodyEditing = true
+                // A multi-line field types a line break on Return: instead, keep the title on its
+                // own and go to the first line of the note.
+                .onChange(of: title) { old, text in
+                    guard text.contains("\n") else { return }
+                    let withoutBreaks = text.replacingOccurrences(of: "\n", with: "")
+                    // Return adds one line break; pasted line breaks become spaces.
+                    if withoutBreaks == old {
+                        title = old
+                        goToFirstLine()
+                    } else {
+                        title = text.replacingOccurrences(of: "\n", with: " ")
+                    }
                 }
+                .onSubmit { goToFirstLine() }
 
             // The body fills the rest of the screen (tap anywhere below the text to keep writing),
             // scrolls to follow the cursor, and draws checklist items as tappable boxes.

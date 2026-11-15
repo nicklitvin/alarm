@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.28.7",
+      "build": 73,
+      "date": "2026-11-15",
+      "title": "Return From the Title",
+      "notes": [
+        "Pressing Return in a note's title now takes you to the first line of the note instead of starting a new title line."
+      ]
+    },
+    {
       "version": "1.28.6",
       "build": 72,
       "date": "2026-11-15",
