@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.19.2",
+      "build": 31,
+      "date": "2026-11-15",
+      "title": "Done Means Done",
+      "notes": [
+        "Checking off a to-do clears its due notification from your lock screen and Notification Center, wherever you check it off: in the app, the widget or by asking the assistant. Deleting a to-do does the same."
+      ]
+    },
+    {
       "version": "1.19.1",
       "build": 30,
       "date": "2026-11-15",

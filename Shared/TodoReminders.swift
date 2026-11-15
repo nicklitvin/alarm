@@ -41,6 +41,7 @@ enum TodoReminders {
         center.removePendingNotificationRequests(
             withIdentifiers: pending.map(\.identifier).filter { $0.hasPrefix(idPrefix) }
         )
+        await removeDeliveredForFinished(todos)
         let upcoming = todos
             .filter { !$0.isDone && ($0.due ?? .distantPast) > now }
             .sorted { $0.due! < $1.due! }
@@ -65,6 +66,21 @@ enum TodoReminders {
     }
 
     private static func earlyIdentifier(for id: UUID) -> String { identifier(for: id) + ".early" }
+
+    /// Clears notifications already on screen for to-dos that are now done (or deleted):
+    /// a "Due now" banner for something you've checked off is just noise.
+    static func removeDeliveredForFinished(_ todos: [TodoItem]) async {
+        let center = UNUserNotificationCenter.current()
+        let open = Set(todos.filter { !$0.isDone }.map(\.id.uuidString))
+        let finished = await center.deliveredNotifications()
+            .filter { $0.request.content.categoryIdentifier == categoryID }
+            .filter { notification in
+                guard let id = notification.request.content.userInfo[todoIDKey] as? String else { return false }
+                return !open.contains(id)
+            }
+            .map(\.request.identifier)
+        if !finished.isEmpty { center.removeDeliveredNotifications(withIdentifiers: finished) }
+    }
 
     /// The at-deadline alert and the optional earlier reminder, per To-Do settings.
     private static func requests(for todo: TodoItem, now: Date) -> [UNNotificationRequest] {
