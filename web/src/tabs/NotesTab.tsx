@@ -33,7 +33,6 @@ export function NotesTab() {
   const { data, update, now, pending, clearPending } = useStore()
   const [openID, setOpenID] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  const { copied, copy } = useCopy()
   const sort = data.settings.notesSort
 
   useEffect(() => {
@@ -74,7 +73,6 @@ export function NotesTab() {
       leading={{ label: n.isPinned ? 'Unpin' : 'Pin', color: 'var(--orange)', onAction: () => setNotes((ns) => ns.map((x) => (x.id === n.id ? { ...x, isPinned: !x.isPinned } : x))) }}
       trailing={{ label: 'Delete', color: 'var(--red)', onAction: () => setNotes((ns) => ns.filter((x) => x.id !== n.id)) }}>
       {info(n)}
-      <button className="copy-btn" aria-label="Copy All" onClick={(e) => { e.stopPropagation(); copy(n) }}>{copied === n.id ? '✓' : '⧉'}</button>
     </SwipeRow>
   )
 

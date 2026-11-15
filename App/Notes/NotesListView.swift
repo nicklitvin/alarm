@@ -120,9 +120,7 @@ private struct SearchField: View {
 }
 
 private struct NoteRow: View {
-    @Environment(NotesController.self) private var controller
     let note: Note
-    @State private var copied = false
 
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
@@ -148,40 +146,7 @@ private struct NoteRow: View {
                 .lineLimit(1)
             }
             Spacer(minLength: 0)
-            CopyButton(copied: $copied) { controller.copy(note) }
         }
         .padding(.vertical, 2)
-    }
-}
-
-/// A copy icon that briefly turns into a checkmark.
-struct CopyButton: View {
-    @Binding var copied: Bool
-    var label: String? = nil
-    let action: () -> Void
-
-    var body: some View {
-        Button {
-            action()
-            copied = true
-            Task {
-                try? await Task.sleep(for: .seconds(1.5))
-                copied = false
-            }
-        } label: {
-            if let label {
-                Label(copied ? "Copied" : label, systemImage: copied ? "checkmark" : "doc.on.doc")
-            } else {
-                Image(systemName: copied ? "checkmark" : "doc.on.doc")
-                    .font(.body.weight(.medium))
-                    .frame(width: 36, height: 36)
-                    .background(Circle().fill(Color.orange.opacity(0.12)))
-            }
-        }
-        .buttonStyle(.borderless)
-        .foregroundStyle(.orange)
-        .contentTransition(.symbolEffect(.replace))
-        .sensoryFeedback(.success, trigger: copied) { _, now in now }
-        .accessibilityLabel(copied ? "Copied" : "Copy All")
     }
 }

@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.27.2",
+      "build": 63,
+      "date": "2026-11-15",
+      "title": "Cleaner Notes List",
+      "notes": [
+        "The notes list no longer has a copy button on each note. Copy All is still in the note itself."
+      ]
+    },
+    {
       "version": "1.27.1",
       "build": 62,
       "date": "2026-11-15",
