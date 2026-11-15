@@ -77,7 +77,6 @@ export type NotesSort = 'manual' | 'edited' | 'created' | 'title'
 export interface Settings {
   alarmHeadsUpEnabled: boolean
   alarmHeadsUpMinutes: number
-  alarmTapToDismiss: boolean
   todoDueAlertEnabled: boolean
   todoEarlyReminderMinutes: number
   notesSort: NotesSort
@@ -94,7 +93,6 @@ export interface Settings {
 export const defaultSettings: Settings = {
   alarmHeadsUpEnabled: true,
   alarmHeadsUpMinutes: 60,
-  alarmTapToDismiss: false,
   todoDueAlertEnabled: true,
   todoEarlyReminderMinutes: 0,
   notesSort: 'edited',

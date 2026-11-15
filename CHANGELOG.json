@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.20.3",
+      "build": 35,
+      "date": "2026-11-15",
+      "title": "Simpler Heads-Up",
+      "notes": [
+        "Tapping the alarm heads-up notification opens the Alarms tab, where the Dismiss button is already waiting. The Tap Notification to Dismiss setting is gone."
+      ]
+    },
+    {
       "version": "1.20.2",
       "build": 34,
       "date": "2026-11-15",

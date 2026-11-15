@@ -243,10 +243,8 @@ function Notifications() {
   const ring = alarmWithRing?.t ?? now + 3600_000
   const todo: Todo | undefined = data.todos.find((t) => !t.isDone && t.due !== undefined)
 
-  const tapAlarm = () => {
-    if (s.alarmTapToDismiss && alarm) dismiss(alarm.id, ring)
-    open({ tab: 'alarms' })
-  }
+  // Tapping opens the Alarms tab, where the Dismiss card is already showing.
+  const tapAlarm = () => open({ tab: 'alarms' })
 
   return (
     <>
@@ -309,7 +307,7 @@ function Notifications() {
         )}
       </div>
       <Caption>
-        Tap a notification to open it{s.alarmTapToDismiss ? ' (the alarm one also dismisses that ring, because Tap Notification to Dismiss is on)' : ''}.
+        Tap a notification to open it: the alarm one opens the Alarms tab, which already shows its Dismiss card.
         Right-click, or tap "Touch and hold…", to see the actions you'd get by pressing and holding on iPhone.
         Which notifications appear follows each tab's settings{!s.todoEarlyReminderMinutes ? ' (to-do early reminders are off)' : ''}.
         The alarm heads-up clears itself once that alarm rings.

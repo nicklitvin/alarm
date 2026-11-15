@@ -75,12 +75,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
             await TodoController.shared.snooze(id, by: 24 * 3600)
 
         case UNNotificationDefaultActionIdentifier:
-            // Tapping the alarm heads-up dismisses that ring when "Tap Notification to Dismiss" is on.
-            // (Swiping a notification away is never reported to the app, so it never dismisses.)
-            if content.categoryIdentifier == NotificationScheduler.categoryID, AppSettings.alarmTapToDismiss,
-               let id = (userInfo[NotificationScheduler.alarmIDKey] as? String).flatMap(UUID.init(uuidString:)) {
-                await AlarmController.shared.dismissNextRing(of: id, referenceDate: response.notification.date)
-            }
+            // Tapping opens the app: the alarm heads-up opens the Alarms tab, where the Dismiss
+            // card is already showing; a to-do's opens that to-do.
             let todoID = (userInfo[TodoReminders.todoIDKey] as? String).flatMap(UUID.init(uuidString:))
             await MainActor.run {
                 if content.categoryIdentifier == TodoReminders.categoryID {
