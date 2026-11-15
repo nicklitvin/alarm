@@ -21,15 +21,17 @@ export function Section({ header, footer, children, headerClass }: { header?: Re
   )
 }
 
-export function Sheet({ title, onClose, left, right, medium, bottom, children }: {
+export function Sheet({ title, onClose, left, right, medium, small, bottom, children }: {
   title: string; onClose: () => void; left?: ReactNode; right?: ReactNode; medium?: boolean
+  /** A short sheet (about 300 pt), e.g. just a to-do's deadline. */
+  small?: boolean
   /** A big button pinned to the bottom of the sheet, like the tabs' New … buttons. */
   bottom?: { label: string; onClick: () => void; disabled?: boolean }
   children: ReactNode
 }) {
   return (
     <div className="sheet-backdrop" onClick={onClose}>
-      <div className={`sheet ${medium ? 'medium' : ''}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-label={title}>
+      <div className={`sheet ${medium ? 'medium' : ''} ${small ? 'small' : ''}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-label={title}>
         <div className="grabber" />
         <div className="sheet-nav">
           <div className="left">{left ?? <span />}</div>

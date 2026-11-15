@@ -17,6 +17,8 @@ enum TodoField: Hashable {
 struct TodoListView: View {
     @Environment(TodoController.self) private var controller
     @State private var editing: TodoItem?
+    /// The to-do whose time was tapped: a small sheet with just the deadline.
+    @State private var editingDue: TodoItem?
     /// True while a new, not yet saved to-do is being typed at the end of the list.
     @State private var addingNew = false
     /// The new to-do's deadline, and whether its deadline sheet is up. Kept here (not in the
@@ -50,6 +52,11 @@ struct TodoListView: View {
             .animation(.snappy, value: focus == nil)
             .sheet(item: $editing) { todo in
                 TodoEditorView(todo: todo)
+            }
+            .sheet(item: $editingDue) { todo in
+                DueSheet(todo: todo)
+                    .presentationDetents([.height(290)])
+                    .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $pickingNewDeadline, onDismiss: { if addingNew { focus = .newTitle } }) {
                 DeadlineSheet(date: newDue ?? QuickTime.nextDefault()) { picked in newDue = picked }
@@ -140,7 +147,10 @@ struct TodoListView: View {
     }
 
     private func row(_ todo: TodoItem, now: Date, compact: Bool = false) -> some View {
-        TodoRow(todo: todo, now: now, compact: compact, focus: $focus) {
+        TodoRow(todo: todo, now: now, compact: compact, focus: $focus, onShowDue: {
+            focus = nil
+            editingDue = todo
+        }) {
             focus = nil
             editing = todo
         }
@@ -170,12 +180,15 @@ private struct TodoRow: View {
     let now: Date
     let compact: Bool
     var focus: FocusState<TodoField?>.Binding
+    let onShowDue: () -> Void
     let onShowDetails: () -> Void
 
     @State private var title: String
     @State private var details: String
 
-    init(todo: TodoItem, now: Date, compact: Bool, focus: FocusState<TodoField?>.Binding, onShowDetails: @escaping () -> Void) {
+    init(todo: TodoItem, now: Date, compact: Bool, focus: FocusState<TodoField?>.Binding,
+         onShowDue: @escaping () -> Void, onShowDetails: @escaping () -> Void) {
+        self.onShowDue = onShowDue
         self.todo = todo
         self.now = now
         self.compact = compact
@@ -234,7 +247,8 @@ private struct TodoRow: View {
                 }
 
                 if let due = todo.due, !todo.isDone {
-                    Button(action: onShowDetails) {
+                    // Tapping the time opens just the deadline, in a small sheet.
+                    Button(action: onShowDue) {
                         // Icon right next to the time (a Label leaves a wide gap).
                         HStack(spacing: 3) {
                             Image(systemName: overdue ? "exclamationmark.circle.fill" : "clock")
@@ -386,6 +400,36 @@ private struct NewTodoRow: View {
 }
 
 // MARK: - Deadline
+
+/// The small sheet from tapping a to-do's time: quick times, date and time, nothing else.
+/// Saves as you change it; swipe down to close.
+struct DueSheet: View {
+    @Environment(TodoController.self) private var controller
+    let todo: TodoItem
+    @State private var date: Date
+
+    init(todo: TodoItem) {
+        self.todo = todo
+        _date = State(initialValue: (todo.due ?? QuickTime.nextDefault()).roundedToMinutes(5))
+    }
+
+    var body: some View {
+        Form {
+            Section {
+                TimeOfDayChips(date: $date)
+                    .padding(.vertical, 4)
+                DeadlineDateTimeRows(date: $date)
+            }
+        }
+        .contentMargins(.top, 8, for: .scrollContent)
+        .tint(.orange)
+        .onChange(of: date) { _, newDate in
+            guard var current = controller.todos.first(where: { $0.id == todo.id }) else { return }
+            current.due = newDate
+            controller.update(current)
+        }
+    }
+}
 
 /// Deadline for a new to-do: your quick times, a custom time (5-minute steps) and the date.
 struct DeadlineSheet: View {

@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.22.0",
+      "build": 46,
+      "date": "2026-11-15",
+      "title": "Quick Deadline Changes",
+      "notes": [
+        "Tap a to-do's time to change it in a small sheet with just your quick times, the date and the time. It saves as you go; swipe down to close. The calendar button still opens all the details."
+      ]
+    },
+    {
       "version": "1.21.9",
       "build": 45,
       "date": "2026-11-15",

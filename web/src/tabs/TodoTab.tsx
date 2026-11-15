@@ -9,6 +9,7 @@ import { useStore } from '../logic/store'
 export function TodoTab() {
   const { data, update, now, pending, clearPending } = useStore()
   const [editing, setEditing] = useState<Todo | null>(null)
+  const [editingDue, setEditingDue] = useState<Todo | null>(null)
   const [adding, setAdding] = useState(false)
 
   useEffect(() => {
@@ -26,7 +27,7 @@ export function TodoTab() {
   }))
 
   const row = (t: Todo, compact = false) => (
-    <TodoRow key={t.id} todo={t} now={now} compact={compact} onToggle={() => toggle(t.id)} onDetails={() => setEditing(t)}
+    <TodoRow key={t.id} todo={t} now={now} compact={compact} onToggle={() => toggle(t.id)} onDue={() => setEditingDue(t)} onDetails={() => setEditing(t)}
       onDelete={() => update((d) => ({ ...d, todos: d.todos.filter((x) => x.id !== t.id) }))} />
   )
 
@@ -47,6 +48,7 @@ export function TodoTab() {
       )}
       {!adding && <BottomAction label="New To-Do" onClick={() => setAdding(true)} />}
       {editing && <TodoEditor todo={editing} onClose={() => setEditing(null)} />}
+      {editingDue && <DueSheet todo={editingDue} onClose={() => setEditingDue(null)} />}
     </>
   )
 }
@@ -90,8 +92,8 @@ function CustomDeadline({ value, onPick, onClose }: { value: number; onPick: (v:
 }
 
 /** Edit right in the list, like Reminders: tap to type, details underneath, 📅 opens the deadline sheet. */
-function TodoRow({ todo, now, compact, onToggle, onDelete, onDetails }: {
-  todo: Todo; now: number; compact: boolean; onToggle: () => void; onDelete: () => void; onDetails: () => void
+function TodoRow({ todo, now, compact, onToggle, onDelete, onDue, onDetails }: {
+  todo: Todo; now: number; compact: boolean; onToggle: () => void; onDelete: () => void; onDue: () => void; onDetails: () => void
 }) {
   const { update } = useStore()
   const [editing, setEditing] = useState(false)
@@ -130,7 +132,7 @@ function TodoRow({ todo, now, compact, onToggle, onDelete, onDetails }: {
           </>
         )}
         {todo.due && !todo.isDone && (
-          <button className={`sub due ${late ? 'red' : ''}`} style={{ fontSize: 12 }} onClick={(e) => { e.stopPropagation(); onDetails() }}>
+          <button className={`sub due ${late ? 'red' : ''}`} style={{ fontSize: 12 }} onClick={(e) => { e.stopPropagation(); onDue() }}>
             <span>{late ? '⚠︎' : '🕒'}</span>{dueDescription(todo.due, now)}
           </button>
         )}
@@ -140,6 +142,22 @@ function TodoRow({ todo, now, compact, onToggle, onDelete, onDetails }: {
           onClick={(e) => { e.stopPropagation(); commit(); onDetails() }}>📅</button>
       )}
     </SwipeRow>
+  )
+}
+
+/** Tapping a to-do's time: a small sheet with just quick times, date and time. Saves as you go. */
+function DueSheet({ todo, onClose }: { todo: Todo; onClose: () => void }) {
+  const { data, update, now } = useStore()
+  const live = data.todos.find((t) => t.id === todo.id) ?? todo
+  const due = live.due ?? nextQuickTime(now, data.settings.todoQuickTimes)
+  const setDue = (v: number) => update((d) => ({ ...d, todos: d.todos.map((t) => (t.id === todo.id ? { ...t, due: v } : t)) }))
+  return (
+    <Sheet title="" small onClose={onClose}>
+      <Section>
+        <div style={{ padding: 12 }}><TimeOfDayChips value={due} onChange={setDue} /></div>
+        <DeadlineInputs value={due} onChange={setDue} />
+      </Section>
+    </Sheet>
   )
 }
 
