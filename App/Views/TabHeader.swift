@@ -59,13 +59,15 @@ struct TabHeader<Accessory: View>: View {
             if actions.isEmpty {
                 SettingsButton { showSettings = true }
             } else {
+                // One Liquid Glass pill, like the buttons above a note.
                 HStack(spacing: 0) {
                     ForEach(actions) { item in
                         Button(action: item.action) {
                             Image(systemName: item.systemImage)
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(.system(size: 17, weight: .medium))
                                 .foregroundStyle(item.isDisabled ? Color.secondary : Color.orange)
-                                .frame(width: 40, height: 36)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                         .disabled(item.isDisabled)
@@ -74,7 +76,7 @@ struct TabHeader<Accessory: View>: View {
                     SettingsButton(inPill: true) { showSettings = true }
                 }
                 .padding(.horizontal, 2)
-                .background(Capsule().fill(Color(.tertiarySystemFill)))
+                .glassEffect(.regular.interactive(), in: .capsule)
             }
         }
         .padding(.horizontal, 20)
@@ -104,10 +106,12 @@ struct SettingsButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: "gearshape")
-                .font(.system(size: 17, weight: .semibold))
+                .font(.system(size: 17, weight: .medium))
                 .foregroundStyle(.orange)
-                .frame(width: inPill ? 40 : 36, height: 36)
-                .background(Circle().fill(Color(.tertiarySystemFill)).opacity(inPill ? 0 : 1))
+                .frame(width: 44, height: 44)
+                .contentShape(Circle())
+                // Liquid Glass, like the system's toolbar buttons (e.g. above a note).
+                .glassEffect(.regular.interactive(), in: .circle, isEnabled: !inPill)
                 .overlay(alignment: .topTrailing) {
                     Circle()
                         .fill(Color.red)

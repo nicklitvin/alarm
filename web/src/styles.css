@@ -491,3 +491,18 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .small-alarm .big { margin-top: auto; font-size: 36px; }
 .dismiss-full { margin-top: 8px; width: 100%; padding: 8px; border-radius: 999px; background: var(--orange); color: #fff; font-weight: 600; font-size: 14px; }
 .v-alarm-icon { font-size: 18px; flex: none; align-self: center; }
+
+/* Liquid Glass buttons in the top-right corner (like iOS 26 toolbar buttons) */
+.gear, .header-pill, .icon-btn {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px) saturate(1.8); -webkit-backdrop-filter: blur(16px) saturate(1.8);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08), inset 0 0 0 0.5px rgba(255, 255, 255, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+:root[data-theme='dark'] .gear, :root[data-theme='dark'] .header-pill, :root[data-theme='dark'] .icon-btn {
+  background: rgba(60, 60, 64, 0.6);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), inset 0 0 0 0.5px rgba(255, 255, 255, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.gear, .icon-btn { width: 44px; height: 44px; border-radius: 22px; font-size: 19px; }
+.header-pill { height: 44px; border-radius: 22px; }
+.header-pill button { width: 44px; height: 44px; font-size: 19px; }
+.header-pill .icon-btn { background: none; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
