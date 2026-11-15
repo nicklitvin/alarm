@@ -55,11 +55,7 @@ struct AlarmListView: View {
     @ViewBuilder
     private func content(now: Date) -> some View {
         if controller.alarms.isEmpty {
-            ContentUnavailableView {
-                Label("No Alarms", systemImage: "alarm")
-            } description: {
-                Text("Tap New Alarm below to set your first one.")
-            }
+            ContentUnavailableView("No Alarms", systemImage: "alarm")
         } else if verticalSizeClass == .compact {
             landscape(now: now)
         } else {
@@ -249,7 +245,7 @@ private struct AlarmRow: View {
 
 // MARK: - Dismiss card
 
-/// Shown for alarms that will ring within the hour, with a button to dismiss that ring.
+/// Shown for alarms that will ring within 12 hours, with a button to dismiss that ring.
 private struct SoonAlarmCard: View {
     @Environment(AlarmController.self) private var controller
     let item: SoonAlarm
@@ -292,8 +288,7 @@ private struct SoonAlarmCard: View {
     }
 
     private var detail: String {
-        let minutes = max(1, Int((item.date.timeIntervalSince(now) / 60).rounded(.up)))
-        return "\(TimeFormat.string(for: item.date)) · in \(minutes) min"
+        "\(TimeFormat.string(for: item.date)) · in \(TimeFormat.countdown(from: now, to: item.date))"
     }
 }
 

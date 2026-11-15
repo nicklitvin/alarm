@@ -111,11 +111,7 @@ struct TodoListView: View {
             .scrollDismissesKeyboard(.immediately)
             .overlay {
                 if controller.todos.isEmpty {
-                    ContentUnavailableView {
-                        Label("Nothing To Do", systemImage: "checklist")
-                    } description: {
-                        Text("Tap New To-Do below, or ask in Talk: “remind me to call mom at 6”.")
-                    }
+                    ContentUnavailableView("Nothing To Do", systemImage: "checklist")
                     .allowsHitTesting(false)
                 }
             }

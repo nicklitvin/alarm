@@ -267,9 +267,9 @@ private struct AlarmHeader: View {
             }
             .foregroundStyle(.primary)
 
-            // One skipped ring per alarm: once its next ring is dismissed, the one after it
-            // (shown here) can't be dismissed too.
-            if (upcoming.alarm.skippedOccurrence ?? .distantPast) <= now {
+            // Dismiss within 12 hours of the ring. One skipped ring per alarm: once its next ring
+            // is dismissed, the one after it (shown here) can't be dismissed too.
+            if upcoming.canDismiss(now: now) {
             Button(intent: DismissNextAlarmIntent(alarmID: upcoming.alarm.id)) {
                 Text("Dismiss")
                     .font(.caption.weight(.semibold))
@@ -301,6 +301,13 @@ private struct AlarmHeader: View {
     /// label if it has one ("Gym · in 2h 4m"). An unlabeled alarm doesn't say "Alarm".
     private var details: some View {
         Text(upcoming.alarm.customLabel.map { "\($0) · " } ?? "") + Text("in \(TimeFormat.countdown(from: now, to: upcoming.date))")
+    }
+}
+
+extension UpcomingAlarm {
+    /// Dismiss is offered within 12 hours of the ring, unless the alarm already skips a ring.
+    func canDismiss(now: Date) -> Bool {
+        date.timeIntervalSince(now) <= AlarmItem.dismissWindow && (alarm.skippedOccurrence ?? .distantPast) <= now
     }
 }
 
@@ -339,8 +346,8 @@ struct SmallAlarm: View {
                     .lineLimit(1)
             }
             Spacer(minLength: 6)
-            // One skipped ring per alarm (see AlarmHeader).
-            if (upcoming.alarm.skippedOccurrence ?? .distantPast) <= now {
+            // Within 12 hours, and one skipped ring per alarm (see AlarmHeader).
+            if upcoming.canDismiss(now: now) {
                 Button(intent: DismissNextAlarmIntent(alarmID: upcoming.alarm.id)) {
                     Text("Dismiss")
                         .font(.subheadline.weight(.semibold))

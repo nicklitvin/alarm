@@ -88,7 +88,7 @@ export function NotesTab() {
       </div>
       {pinned.length > 0 && <Section header="Pinned">{pinned.map(row)}</Section>}
       {others.length > 0 && <Section header={pinned.length ? 'Notes' : undefined}>{others.map(row)}</Section>}
-      {data.notes.length === 0 && <div className="talk-empty" style={{ paddingTop: 80 }}><div className="big">🗒</div><h3>No Notes</h3>Tap New Note below.</div>}
+      {data.notes.length === 0 && <div className="talk-empty" style={{ paddingTop: 80 }}><div className="big">🗒</div><h3>No Notes</h3></div>}
       {data.notes.length > 0 && visible.length === 0 && <div className="talk-empty" style={{ paddingTop: 60 }}>No results for “{query}”</div>}
       <BottomAction label="New Note" onClick={newNote} />
     </>

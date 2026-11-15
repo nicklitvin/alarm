@@ -73,7 +73,7 @@ export function TodoTab() {
   return (
     <>
       <TabHeader title="To-Do" tab="todos" detail={open.length ? (overdue ? `${overdue} overdue · ${open.length} left` : `${open.length} left`) : null} />
-      {data.todos.length === 0 && <div className="talk-empty"><div className="big">☑︎</div><h3>Nothing To Do</h3>Tap New To-Do below.</div>}
+      {data.todos.length === 0 && <div className="talk-empty"><div className="big">☑︎</div><h3>Nothing To Do</h3></div>}
       <div className="todo-flat">
         {open.map((t) => row(t))}
       </div>

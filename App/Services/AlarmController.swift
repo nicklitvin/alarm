@@ -41,7 +41,7 @@ final class AlarmController {
         alarms.compactMap { alarm -> SoonAlarm? in
             // Once dismissed, the ring is gone from here (nextFireDate skips it).
             guard alarm.isEnabled, let next = alarm.nextFireDate(after: now),
-                  next.timeIntervalSince(now) <= AlarmItem.headsUpInterval else { return nil }
+                  next.timeIntervalSince(now) <= AlarmItem.dismissWindow else { return nil }
             return SoonAlarm(alarm: alarm, date: next)
         }
         .sorted { $0.date < $1.date }
@@ -92,16 +92,16 @@ final class AlarmController {
     ///
     /// - Parameter referenceDate: when the request was made. For the notification action this is
     ///   the time the heads-up was delivered, so a late tap never skips the *following* ring.
-    /// `anyTime`: the widget's Dismiss works for the next ring however far away it is; the
-    /// notification's only for the ring it announced.
-    func dismissNextRing(of id: UUID, referenceDate: Date = .now, anyTime: Bool = false) async {
+    /// Dismisses the next ring of an alarm if it's within the next 12 hours (the app's card, the
+    /// widgets and the heads-up all offer it then).
+    func dismissNextRing(of id: UUID, referenceDate: Date = .now) async {
         let now = Date()
         guard let index = alarms.firstIndex(where: { $0.id == id }) else { return }
         let alarm = alarms[index]
         guard alarm.isEnabled,
               let ring = alarm.nextFireDate(after: min(referenceDate, now)),
               ring > now,
-              anyTime || ring.timeIntervalSince(referenceDate) <= AlarmItem.headsUpInterval + 60,
+              ring.timeIntervalSince(referenceDate) <= AlarmItem.dismissWindow + 60,
               // Only one ring of an alarm can be skipped at a time: dismissing the one after
               // a skipped ring would bring the skipped one back.
               (alarm.skippedOccurrence ?? .distantPast) <= now

@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import {
   alarmTitle, clock, countdown, dayDescription, dueDescription, durationName, isOverdue, leadTimeName, nextAlarm, nextFire,
-  timeOf, timeParts, upNext, upNextLayout, type Alarm, type TimerItem, type Todo, type UpNextItem,
+  timeOf, timeParts, upNext, upNextLayout, DISMISS_WINDOW, type Alarm, type TimerItem, type Todo, type UpNextItem,
 } from '../logic/model'
 import { useStore, type Link } from '../logic/store'
 import { useAsk } from '../tabs/TalkTab'
@@ -138,7 +138,7 @@ function HomeScreen() {
         </div>
       </div>
       {/* One skipped ring per alarm: once dismissed, the ring after it can't be dismissed too. */}
-      {(featured.alarm.skippedOccurrence ?? 0) <= now &&
+      {(featured.alarm.skippedOccurrence ?? 0) <= now && featured.date - now <= DISMISS_WINDOW &&
         <button className="mini dismiss" onClick={(e) => { e.stopPropagation(); dismiss(featured.alarm.id, featured.date) }}>Dismiss</button>}
     </div>
   )
@@ -161,7 +161,7 @@ function HomeScreen() {
               <div className="wh"><span className="alarm-glyph">⏰</span><span className="muted" style={{ fontSize: 12 }}>in {countdown(now, featured.date)}</span></div>
               <div className="big">{bigTime(featured.date).time}<small> {bigTime(featured.date).period}</small></div>
               {featured.alarm.label.trim() && <div className="muted ellipsis" style={{ fontSize: 14, fontWeight: 500 }}>{featured.alarm.label.trim()}</div>}
-              {(featured.alarm.skippedOccurrence ?? 0) <= now &&
+              {(featured.alarm.skippedOccurrence ?? 0) <= now && featured.date - now <= DISMISS_WINDOW &&
                 <button className="dismiss-full" onClick={(e) => { e.stopPropagation(); dismiss(featured.alarm.id, featured.date) }}>Dismiss</button>}
             </div>
           ) : (
@@ -196,10 +196,10 @@ function HomeScreen() {
                 <div className="wh"><span className="alarm-glyph">⏰</span><span className="muted" style={{ fontSize: 12 }}>in {countdown(now, next.date)}</span></div>
                 <div className="big">{bigTime(next.date).time}<small> {bigTime(next.date).period}</small></div>
                 {next.alarm.label.trim() && <div className="muted ellipsis" style={{ fontSize: 14, fontWeight: 500 }}>{next.alarm.label.trim()}</div>}
-                {(next.alarm.skippedOccurrence ?? 0) <= now &&
+                {(next.alarm.skippedOccurrence ?? 0) <= now && next.date - now <= DISMISS_WINDOW &&
                   <button className="dismiss-full" onClick={(e) => { e.stopPropagation(); dismiss(next.alarm.id, next.date) }}>Dismiss</button>}
               </div>
-            ) : <div className="small-alarm"><span className="alarm-glyph">⏰</span><div className="big" style={{ fontSize: 20 }}>No Alarms</div></div>}
+            ) : <div className="small-alarm" style={{ alignItems: 'center', justifyContent: 'center' }}><div className="big muted" style={{ margin: 0 }}>zzz</div></div>}
           </div>
           {upNextWidget('medium')}
           {upNextWidget('large')}

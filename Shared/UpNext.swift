@@ -3,11 +3,11 @@ import Foundation
 /// What matters right now, most urgent first: for the smart "Up Next" widget.
 struct UpNextItem: Identifiable, Hashable, Sendable {
     enum Kind: Hashable, Sendable {
-        /// Rings within the hour; can be dismissed.
+        /// Rings within 12 hours; can be dismissed.
         case alarmSoon(AlarmItem, Date)
         case timer(TimerItem)
         case todo(TodoItem)
-        /// The next alarm, when it's more than an hour away (however far).
+        /// The next alarm, when it's more than 12 hours away (however far).
         case nextAlarm(AlarmItem, Date)
     }
 
@@ -47,15 +47,15 @@ enum UpNext {
     static func items(alarms: [AlarmItem], todos: [TodoItem], timers: [TimerItem], now: Date,
                       options: Options = Options()) -> [UpNextItem] {
         var result: [UpNextItem] = []
-        let headsUp = AlarmItem.headsUpInterval
+        let dismissWindow = AlarmItem.dismissWindow
         let alarms = options.alarms ? alarms : []
         let todos = todos.filter { $0.due == nil ? options.todosWithoutDeadline : options.todosWithDeadline }
 
-        // 1. Alarms ringing within the hour. A dismissed ring is skipped, so it simply disappears.
+        // 1. Alarms ringing within 12 hours (they can be dismissed). A dismissed ring is skipped, so it simply disappears.
         var soonAlarmIDs = Set<UUID>()
         var urgentAlarms: [(Date, UpNextItem)] = []
         for alarm in alarms where alarm.isEnabled {
-            if let next = alarm.nextFireDate(after: now), next.timeIntervalSince(now) <= headsUp {
+            if let next = alarm.nextFireDate(after: now), next.timeIntervalSince(now) <= dismissWindow {
                 urgentAlarms.append((next, UpNextItem(kind: .alarmSoon(alarm, next))))
                 soonAlarmIDs.insert(alarm.id)
             }
@@ -126,7 +126,7 @@ enum UpNext {
         var dates: [Date] = []
         for alarm in alarms where alarm.isEnabled {
             for ring in alarm.upcomingFireDates(after: now, limit: 2) {
-                dates += [ring.addingTimeInterval(-AlarmItem.headsUpInterval), ring]
+                dates += [ring.addingTimeInterval(-AlarmItem.dismissWindow), ring]
             }
         }
         for timer in timers where timer.state == .running {

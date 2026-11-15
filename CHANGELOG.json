@@ -1,6 +1,17 @@
 {
   "releases": [
     {
+      "version": "1.27.0",
+      "build": 61,
+      "date": "2026-11-15",
+      "title": "Dismiss Up to 12 Hours Ahead",
+      "notes": [
+        "You can dismiss an alarm from 12 hours before it rings: the Dismiss card appears on the Alarms tab, and the widgets show Dismiss in the same window.",
+        "With no alarms, the small Next Alarm widget just shows zzz.",
+        "Empty tabs are simpler: just a short title like \"No Timers Yet\", without extra text."
+      ]
+    },
+    {
       "version": "1.26.0",
       "build": 60,
       "date": "2026-11-15",

@@ -210,9 +210,6 @@ private struct TypingIndicator: View {
 }
 
 private struct EmptyTalkView: View {
-    @AppStorage(TalkSettings.wakeWordEnabledKey) private var wakeWordEnabled = false
-    @AppStorage(TalkSettings.wakeWordKey) private var wakeWord = TalkSettings.defaultWakeWord
-
     var body: some View {
         VStack(spacing: 12) {
             Image(systemName: "waveform")
@@ -220,21 +217,9 @@ private struct EmptyTalkView: View {
                 .foregroundStyle(.orange.gradient)
             Text("Ask Me Anything")
                 .font(.title3.weight(.semibold))
-            Text(hint)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
         }
         .padding(32)
         .allowsHitTesting(false)
-    }
-
-    private var hint: String {
-        let example = "“wake me up at 7 on weekdays” or “remind me to call mom tomorrow at 6”"
-        if wakeWordEnabled, !wakeWord.trimmingCharacters(in: .whitespaces).isEmpty {
-            return "Tap the waveform and say “\(wakeWord), …”, or type below. Try \(example)."
-        }
-        return "Tap the waveform to talk, or type below. Try \(example)."
     }
 }
 

@@ -56,7 +56,6 @@ export function TalkTab() {
           <div className="talk-empty" style={{ paddingTop: 90 }}>
             <div className="big">〰︎</div>
             <h3>Ask Me Anything</h3>
-            Tap the waveform{wake ? ` and say “${wake}, …”` : ' to talk'}, or type below. Try “wake me up at 7 on weekdays” or “remind me to call mom tomorrow at 6”.
           </div>
         )}
         {data.chat.map((m) => <Message key={m.id} message={m} onOpen={open} />)}

@@ -501,11 +501,14 @@ export function upNextLayout(items: UpNextItem[], _now?: number): { alarm?: { al
   return { alarm: { alarm: featured.alarm, date: featured.date }, rows: items.filter((_, n) => n !== index) }
 }
 
+/** How long before a ring it can be dismissed (AlarmItem.dismissWindow). */
+export const DISMISS_WINDOW = 12 * 3600_000
+
 /** A to-do checked off this recently stays (shown checked) before leaving the widget. */
 export const COMPLETED_LINGER = 2000
 
 export function upNext(allAlarms: Alarm[], allTodos: Todo[], timers: TimerItem[], now: number, settings: Settings): UpNextItem[] {
-  const headsUp = settings.alarmHeadsUpMinutes * 60_000
+  const headsUp = DISMISS_WINDOW // alarms within 12 hours can be dismissed
   const alarms = settings.widgetShowsAlarms ? allAlarms : []
   const todos = allTodos.filter((t) => (t.due === undefined ? settings.widgetShowsUntimedTodos : settings.widgetShowsTimedTodos))
   const result: UpNextItem[] = []

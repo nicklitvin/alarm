@@ -49,11 +49,7 @@ struct TimersView: View {
             .background(Color(.systemGroupedBackground))
             .overlay {
                 if controller.timers.isEmpty && stopwatch.stopwatch.isReset {
-                    ContentUnavailableView {
-                        Label("No Timers", systemImage: "timer")
-                    } description: {
-                        Text("Tap New Timer below, or Stopwatch to start counting up.")
-                    }
+                    ContentUnavailableView("No Timers Yet", systemImage: "timer")
                 }
             }
             .navigationTitle("Timers")

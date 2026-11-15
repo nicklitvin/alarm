@@ -37,7 +37,8 @@ struct NextAlarmProvider: TimelineProvider {
         let horizon = now.addingTimeInterval(3600)
         let minute = Calendar.current.dateInterval(of: .minute, for: now)?.start ?? now
         let ticks = (1...60).map { minute.addingTimeInterval(TimeInterval($0 * 60)) }
-        let moments = Set(upcoming.flatMap { [$0.date, $0.date.addingTimeInterval(-NextAlarmWidgetView.lockScreenWindow)] }
+        let moments = Set(upcoming.flatMap { [$0.date, $0.date.addingTimeInterval(-NextAlarmWidgetView.lockScreenWindow),
+                                              $0.date.addingTimeInterval(-AlarmItem.dismissWindow)] }
             .filter { $0 > now && $0 < horizon } + ticks)
         let entries = ([now] + moments.sorted()).map { date in
             NextAlarmEntry(date: date, next: upcoming.first { $0.date > date })
@@ -87,17 +88,11 @@ struct NextAlarmWidgetView: View {
         if let next = entry.next {
             SmallAlarm(upcoming: next, now: entry.date)
         } else {
-            VStack(alignment: .leading, spacing: 2) {
-                Image(systemName: "alarm")
-                    .font(.headline)
-                Spacer(minLength: 0)
-                Text("No Alarms")
-                    .font(.title3.weight(.semibold))
-                Text("Tap to add one")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            // No alarms: just zzz.
+            Text("zzz")
+                .font(.system(size: 40, weight: .semibold, design: .rounded))
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 

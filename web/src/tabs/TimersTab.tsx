@@ -80,7 +80,7 @@ export function TimersTab() {
       )}
 
       {timers.length === 0 && stopwatchIsReset(sw) && (
-        <div className="talk-empty"><div className="big">⏱</div><h3>No Timers</h3>Tap New Timer below, or Stopwatch to start counting up.</div>
+        <div className="talk-empty"><div className="big">⏱</div><h3>No Timers Yet</h3></div>
       )}
 
       {/* New Timer, and Stopwatch beside it while the stopwatch isn't in use. */}

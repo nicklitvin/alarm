@@ -39,11 +39,7 @@ struct NotesListView: View {
             .contentMargins(.top, 8, for: .scrollContent)
             .overlay {
                 if controller.notes.isEmpty {
-                    ContentUnavailableView {
-                        Label("No Notes", systemImage: "note.text")
-                    } description: {
-                        Text("Tap New Note below. You can also ask in Talk: “what's on my packing note?”")
-                    }
+                    ContentUnavailableView("No Notes", systemImage: "note.text")
                 } else if visible.isEmpty {
                     ContentUnavailableView.search(text: query)
                 }

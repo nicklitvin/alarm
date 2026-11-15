@@ -90,6 +90,9 @@ struct AlarmItem: Identifiable, Codable, Hashable, Sendable {
     /// How long before an alarm the heads-up notification and the Dismiss button appear (a setting).
     static var headsUpInterval: TimeInterval { TimeInterval(AppSettings.alarmHeadsUpMinutes * 60) }
 
+    /// How long before a ring you can dismiss it (in the app, the widgets and the heads-up).
+    static let dismissWindow: TimeInterval = 12 * 3600
+
     var isRepeating: Bool { !weekdays.isEmpty }
 
     /// The label you gave it, or nil if it has none (unlike `title`, never "Alarm").

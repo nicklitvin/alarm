@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { SwipeRow } from '../components/SwipeRow'
 import { BottomAction, Section, Sheet, Switch, TabHeader, TimeWheel } from '../components/ui'
 import {
-  ALARM_SOUNDS, alarmTitle, countdown, dayDescription, nextAlarm, nextFire, repeatSummary, roundTo5, soundName, timeOf, timeParts, uid,
+  ALARM_SOUNDS, alarmTitle, countdown, DISMISS_WINDOW, dayDescription, nextAlarm, nextFire, repeatSummary, roundTo5, soundName, timeOf, timeParts, uid,
   weekdayInitial, type Alarm, type Weekday,
 } from '../logic/model'
 import { useLandscape } from '../logic/orientation'
@@ -14,7 +14,7 @@ export function AlarmsTab() {
   const { data, update, now, pending, clearPending } = useStore()
   const [editing, setEditing] = useState<Alarm | 'new' | null>(null)
   const landscape = useLandscape()
-  const headsUp = data.settings.alarmHeadsUpMinutes * 60_000
+  const headsUp = DISMISS_WINDOW // the Dismiss card shows from 12 hours before a ring
   const next = nextAlarm(data.alarms, now)
   const sorted = [...data.alarms].sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute))
 
@@ -39,7 +39,7 @@ export function AlarmsTab() {
     <>
       <TabHeader title="Alarms" tab="alarms" detail={next ? `Next in ${countdown(now, next.date)}` : null} />
       {data.alarms.length === 0 ? (
-        <div className="talk-empty"><div className="big">⏰</div><h3>No Alarms</h3>Tap New Alarm below to set your first one.</div>
+        <div className="talk-empty"><div className="big">⏰</div><h3>No Alarms</h3></div>
       ) : (
         <>
           {soon.length > 0 && (
@@ -49,7 +49,7 @@ export function AlarmsTab() {
                   <div className="soon-icon">⏰</div>
                   <div className="grow">
                     <div style={{ fontWeight: 600 }}>{alarmTitle(alarm)}</div>
-                    <div className="sub">{timeOf(date)} · in {Math.max(1, Math.ceil((date - now) / 60000))} min</div>
+                    <div className="sub">{timeOf(date)} · in {countdown(now, date)}</div>
                   </div>
                   <button className="btn prominent small" onClick={() => setAlarm(alarm.id, (a) => a.weekdays.length ? { ...a, skippedOccurrence: date } : { ...a, isEnabled: false })}>Dismiss</button>
                 </div>

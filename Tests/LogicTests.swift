@@ -306,11 +306,12 @@ check(kinds(upNext) == ["soon:Wake", "timer:Tea", "timer:Bread", "todo:Pay bill"
 var skippedWake = wakeAlarm; skippedWake.skippedOccurrence = d(2026, 11, 12, 7, 0)
 check(kinds(UpNext.items(alarms: [skippedWake], todos: [], timers: [], now: unNow)) == ["next:Wake"],
       "dismissed ring leaves the soon slot; the following ring (Fri 7:00) shows as the next alarm")
-check(kinds(UpNext.items(alarms: [wakeAlarm], todos: [], timers: [], now: d(2026, 11, 12, 5, 0))) == ["next:Wake"], "alarm 2h away → next alarm, not dismissable")
+check(kinds(UpNext.items(alarms: [wakeAlarm], todos: [], timers: [], now: d(2026, 11, 12, 5, 0))) == ["soon:Wake"], "alarm 2h away → can be dismissed (within 12 h)")
+check(kinds(UpNext.items(alarms: [wakeAlarm], todos: [], timers: [], now: d(2026, 11, 11, 18, 0))) == ["next:Wake"], "alarm 13h away → next alarm, not dismissable yet")
 check(kinds(UpNext.items(alarms: [], todos: [], timers: [], now: unNow)).isEmpty, "nothing → empty")
 let changes = UpNext.changeDates(alarms: [wakeAlarm], todos: [soonTodo], timers: [runningTimer], now: unNow)
 check(changes.first == unNow.addingTimeInterval(120) && changes.contains(d(2026, 11, 12, 7, 0)) && changes.contains(d(2026, 11, 12, 8, 0))
-      && changes.contains(d(2026, 11, 13, 6, 0)), "widget refreshes at timer end, alarm, deadline, next heads-up window")
+      && changes.contains(d(2026, 11, 12, 19, 0)), "widget refreshes at timer end, alarm, deadline, and 12 h before the next ring")
 check(changes == changes.sorted() && changes.allSatisfy { $0 > unNow }, "change dates sorted and in the future")
 
 // Time-of-day deadline options.
