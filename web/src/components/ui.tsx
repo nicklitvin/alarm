@@ -216,10 +216,11 @@ function TimerQuickTimesSection() {
     set({ timerQuickTimes: times.map((t, n) => (n === index ? Math.max(60, hours * 3600 + minutes * 60) : t)) })
   const range = (n: number) => Array.from({ length: n }, (_, i) => i)
   return (
-    <Section header="Quick Times" footer={s.timerUsesRecentTimes ? 'New Timer shows the last three times you used.'
-      : 'One-tap times in New Timer. Tap one to change it with the wheels, or turn on Use Recent Times to show your last three times instead.'}>
-      <div className="row"><span className="grow">Use Recent Times</span>
-        <Switch label="Use recent times" on={s.timerUsesRecentTimes} onChange={(v) => set({ timerUsesRecentTimes: v })} /></div>
+    <>
+    {/* A pair: turning one on turns the other off, so New Timer always shows one of them. */}
+    <Section header="New Timer" footer={s.timerUsesRecentTimes ? undefined : 'Three one-tap times in New Timer. Tap one to change it with the wheels.'}>
+      <div className="row"><span className="grow">Use Quick Times</span>
+        <Switch label="Use quick times" on={!s.timerUsesRecentTimes} onChange={(v) => set({ timerUsesRecentTimes: !v })} /></div>
       {!s.timerUsesRecentTimes && (
         <>
           <div className="row quick-times">
@@ -241,6 +242,11 @@ function TimerQuickTimesSection() {
         </>
       )}
     </Section>
+    <Section footer="Shows the last three times you used instead of your quick times.">
+      <div className="row"><span className="grow">Use Recent Times</span>
+        <Switch label="Use recent times" on={s.timerUsesRecentTimes} onChange={(v) => set({ timerUsesRecentTimes: v })} /></div>
+    </Section>
+    </>
   )
 }
 
@@ -335,13 +341,13 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
       {tab === 'alarms' && (
         <Section header="Notifications" footer={s.alarmHeadsUpEnabled
           ? `You'll get a notification ${leadTimeName(s.alarmHeadsUpMinutes)} before each alarm, with a button to dismiss that ring.`
-          : `No notification before alarms. You can still dismiss the next ring ${leadTimeName(s.alarmHeadsUpMinutes)} before it.`}>
+          : 'No notification before alarms.'}>
           <div className="row"><span className="grow">Heads-Up Notification</span><Switch label="Heads-up" on={s.alarmHeadsUpEnabled} onChange={(v) => set('alarmHeadsUpEnabled', v)} /></div>
           <div className="row"><span className="grow">Notify Me</span>{choice(s.alarmHeadsUpMinutes, [15, 30, 60, 120], (v) => set('alarmHeadsUpMinutes', v))}</div>
         </Section>
       )}
       {tab === 'alarms' && (
-        <Section header="Up Next Widget" footer="Whether alarms appear in the Up Next widget. The Next Alarm widget always shows them.">
+        <Section header="Up Next Widget" footer="Whether alarms appear in the Up Next widget.">
           <div className="row"><span className="grow">Show Alarms</span><Switch label="Show alarms in widget" on={s.widgetShowsAlarms} onChange={(v) => set('widgetShowsAlarms', v)} /></div>
         </Section>
       )}

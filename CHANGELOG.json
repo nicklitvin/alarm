@@ -1,6 +1,16 @@
 {
   "releases": [
     {
+      "version": "1.27.1",
+      "build": 62,
+      "date": "2026-11-15",
+      "title": "Clearer Settings",
+      "notes": [
+        "Timer settings has separate Use Quick Times and Use Recent Times switches. Turning one on turns the other off.",
+        "Shorter notes in Alarm settings."
+      ]
+    },
+    {
       "version": "1.27.0",
       "build": 61,
       "date": "2026-11-15",

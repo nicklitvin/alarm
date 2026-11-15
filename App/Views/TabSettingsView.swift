@@ -156,15 +156,15 @@ private struct AlarmSettingsSection: View {
             Text("Notifications")
         } footer: {
             Text(headsUpEnabled
-                 ? "You'll get a notification \(AppSettings.leadTimeName(headsUpMinutes)) before each alarm, with a button to dismiss that ring. The Dismiss button in the app and widget appears at the same time."
-                 : "No notification before alarms. You can still dismiss the next ring from the app and widget \(AppSettings.leadTimeName(headsUpMinutes)) before it.")
+                 ? "You'll get a notification \(AppSettings.leadTimeName(headsUpMinutes)) before each alarm, with a button to dismiss that ring."
+                 : "No notification before alarms.")
         }
         .onChange(of: headsUpEnabled) { AlarmController.shared.refresh() }
         .onChange(of: headsUpMinutes) { AlarmController.shared.refresh() }
 
         WidgetToggles(rows: [
             ("Show Alarms", AppSettings.widgetShowsAlarmsKey),
-        ], footer: "Whether alarms appear in the Up Next widget. The Next Alarm widget always shows them.")
+        ], footer: "Whether alarms appear in the Up Next widget.")
     }
 }
 
@@ -215,8 +215,10 @@ private struct TimerSettingsSection: View {
     private var times: [Int] { AppSettings.parseTimerQuickTimes(stored) }
 
     var body: some View {
+        // Two settings that work as a pair: turning one on turns the other off (and the other
+        // way round), so New Timer always shows one of them.
         Section {
-            Toggle("Use Recent Times", isOn: $useRecent.animation())
+            Toggle("Use Quick Times", isOn: Binding(get: { !useRecent }, set: { on in withAnimation { useRecent = !on } }))
             if !useRecent {
                 HStack(spacing: 8) {
                     ForEach(Array(times.enumerated()), id: \.offset) { index, seconds in
@@ -246,11 +248,17 @@ private struct TimerSettingsSection: View {
                 }
             }
         } header: {
-            Text("Quick Times")
+            Text("New Timer")
         } footer: {
-            Text(useRecent
-                 ? "New Timer shows the last three times you used."
-                 : "One-tap times in New Timer. Tap one to change it with the wheels, or turn on Use Recent Times to show your last three times instead.")
+            if !useRecent {
+                Text("Three one-tap times in New Timer. Tap one to change it with the wheels.")
+            }
+        }
+
+        Section {
+            Toggle("Use Recent Times", isOn: Binding(get: { useRecent }, set: { on in withAnimation { useRecent = on } }))
+        } footer: {
+            Text("Shows the last three times you used instead of your quick times.")
         }
     }
 
