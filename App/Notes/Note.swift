@@ -10,6 +10,10 @@ struct Note: Identifiable, Codable, Hashable, Sendable {
     var isPinned: Bool = false
     /// Position in the Manual order (lower = higher up).
     var sortIndex: Double = 0
+    /// Set when the note is deleted: it stays in Recently Deleted for 30 days.
+    var deletedAt: Date?
+
+    var isDeleted: Bool { deletedAt != nil }
 
     init(id: UUID = UUID(), title: String = "", body: String = "", createdAt: Date = Date(), updatedAt: Date = Date(),
          isPinned: Bool = false, sortIndex: Double = 0) {
@@ -33,6 +37,7 @@ struct Note: Identifiable, Codable, Hashable, Sendable {
         isPinned = try c.decodeIfPresent(Bool.self, forKey: .isPinned) ?? false
         // Older notes: newest first in Manual order until rearranged.
         sortIndex = try c.decodeIfPresent(Double.self, forKey: .sortIndex) ?? -createdAt.timeIntervalSince1970
+        deletedAt = try c.decodeIfPresent(Date.self, forKey: .deletedAt)
     }
 
     var isEmpty: Bool {
@@ -102,6 +107,26 @@ enum NotesSort: String, CaseIterable, Identifiable, Sendable {
                 return order != .orderedSame ? order == .orderedAscending : a.updatedAt > b.updatedAt
             }
         }
+    }
+}
+
+/// Recently Deleted: deleted notes are kept for 30 days, then removed for good.
+enum NotesTrash {
+    static let keepDays = 30
+
+    /// Removes notes deleted more than 30 days ago.
+    static func purged(_ notes: [Note], now: Date = Date()) -> [Note] {
+        notes.filter { note in
+            guard let deletedAt = note.deletedAt else { return true }
+            return now.timeIntervalSince(deletedAt) < TimeInterval(keepDays * 24 * 3600)
+        }
+    }
+
+    /// Whole days left before a deleted note is removed ("27 days").
+    static func daysLeft(_ note: Note, now: Date = Date()) -> Int {
+        guard let deletedAt = note.deletedAt else { return keepDays }
+        let left = TimeInterval(keepDays * 24 * 3600) - now.timeIntervalSince(deletedAt)
+        return max(0, Int((left / (24 * 3600)).rounded(.up)))
     }
 }
 

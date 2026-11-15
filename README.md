@@ -104,6 +104,27 @@ the tab), `alarmapp://alarms`, `alarmapp://todos`, `alarmapp://notes`, `alarmapp
 
 **Dismissing a one-time alarm** simply turns it off.
 
+## Your data: backups and Recently Deleted
+
+Everything is saved in the App Group's shared storage (`AlarmStorage.defaults`), which the widgets
+read too. To make sure an update can never lose it:
+
+- **Backups** (`App/Services/DataBackup.swift`, `App/Services/Backups.swift`): every change is copied
+  into a backup file for the day (the last 14 days are kept), both in the app's own container and in
+  the App Group container. If everything suddenly empties, the previous copy is kept aside.
+- **Automatic restore**: at launch, if the storage has never been used (no data, not marked) but a
+  backup has data, the backup is put back. A reinstall or a copy signed without the App Group would
+  otherwise open empty.
+- **Restore by hand**: Settings → About & Updates → Backups lists every backup ("3 alarms · 8 to-dos
+  · 5 notes") and restores one (what you have is backed up first).
+- **Shared storage check**: if this copy can't reach the App Group (signed without it), the Alarms
+  tab and About say so. That's also why the widgets would stop matching the app.
+- **Notes: Recently Deleted**: deleted notes (and Delete All Notes) wait 30 days before they're
+  removed for good, and can be recovered (`NotesTrash` in `App/Notes/Note.swift`).
+
+When building for TestFlight or the App Store, keep the same bundle ID, team and App Group
+(`group.<bundle ID>`), or the new build can't see the data saved by the old one.
+
 ## Mac and iPad
 
 The same target runs on iPad and, through Mac Catalyst, as a Mac app (same bundle ID and App Group,

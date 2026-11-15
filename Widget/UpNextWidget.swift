@@ -137,15 +137,15 @@ struct UpNextWidgetView: View {
     /// How far the right column's rows reach into the top and bottom margins.
     private static let rowBleed: CGFloat = 11
 
-    /// The left column: New Note and New Timer buttons, and the number of open to-dos, which also
+    /// The left column: Notes (opens the tab) and New Timer buttons, and the number of open to-dos, which also
     /// tells you how many didn't fit on the right.
     private var summary: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                Link(destination: DeepLink.newNote.url) {
-                    SummaryIcon(systemImage: "square.and.pencil")
+                Link(destination: DeepLink.notes.url) {
+                    SummaryIcon(systemImage: "note.text")
                 }
-                .accessibilityLabel("New Note")
+                .accessibilityLabel("Open Notes")
                 Link(destination: DeepLink.newTimer.url) {
                     SummaryIcon(systemImage: "timer")
                 }

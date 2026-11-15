@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { SwipeRow } from '../components/SwipeRow'
-import { Alert, BottomAction, Section, TabHeader } from '../components/ui'
-import { firstLineCaret, checklistProgress, checklistReturn, lineBounds, lineKind, noteCopyText, notePreview, noteTitle, sortNotes, toggleItem, toggleList, autoBullet, uid, type ListStyle, type Note } from '../logic/model'
+import { Alert, BottomAction, Section, Sheet, TabHeader } from '../components/ui'
+import { firstLineCaret, checklistProgress, checklistReturn, lineBounds, lineKind, noteCopyText, notePreview, noteTitle, sortNotes, toggleItem, toggleList, autoBullet, uid, trashNote, trashDaysLeft, type ListStyle, type Note } from '../logic/model'
 import { useWide } from '../logic/layout'
 import { useStore } from '../logic/store'
 
@@ -45,7 +45,11 @@ export function NotesTab() {
 
   const setNotes = (change: (notes: Note[]) => Note[]) => update((d) => ({ ...d, notes: change(d.notes) }))
   const q = query.trim().toLowerCase()
-  const visible = sortNotes(data.notes, sort).filter((n) => !q || n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q))
+  // Deleted notes wait in Recently Deleted for 30 days.
+  const live = data.notes.filter((n) => !n.deletedAt)
+  const deleted = data.notes.filter((n) => n.deletedAt).sort((a, b) => (b.deletedAt ?? 0) - (a.deletedAt ?? 0))
+  const [showTrash, setShowTrash] = useState(false)
+  const visible = sortNotes(live, sort).filter((n) => !q || n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q))
 
   const openNote = openID ? data.notes.find((n) => n.id === openID) : undefined
   // Leaving a note you didn't write anything in throws it away.
@@ -78,7 +82,7 @@ export function NotesTab() {
   const row = (n: Note) => (
     <SwipeRow key={n.id} dataId={n.id} onClick={() => select(n.id)} className={wide && n.id === openID ? 'selected' : ''}
       leading={{ label: n.isPinned ? 'Unpin' : 'Pin', color: 'var(--orange)', onAction: () => setNotes((ns) => ns.map((x) => (x.id === n.id ? { ...x, isPinned: !x.isPinned } : x))) }}
-      trailing={{ label: 'Delete', color: 'var(--red)', onAction: () => setNotes((ns) => ns.filter((x) => x.id !== n.id)) }}>
+      trailing={{ label: 'Delete', color: 'var(--red)', onAction: () => setNotes((ns) => trashNote(ns, n.id)) }}>
       {info(n)}
     </SwipeRow>
   )
@@ -87,14 +91,39 @@ export function NotesTab() {
   const others = visible.filter((n) => !n.isPinned)
   const list = (
     <>
-      <TabHeader title="Notes" tab="notes" detail={data.notes.length ? `${data.notes.length} note${data.notes.length === 1 ? '' : 's'}` : null} />
+      <TabHeader title="Notes" tab="notes" detail={live.length ? `${live.length} note${live.length === 1 ? '' : 's'}` : null} />
       <div style={{ padding: '0 20px 10px', position: 'sticky', top: 52, zIndex: 19, background: 'var(--bg-grouped)' }}>
         <div className="field"><span className="muted">⌕</span><input placeholder="Search Notes" value={query} onChange={(e) => setQuery(e.target.value)} /></div>
       </div>
       {pinned.length > 0 && <Section header="Pinned">{pinned.map(row)}</Section>}
       {others.length > 0 && <Section header={pinned.length ? 'Notes' : undefined}>{others.map(row)}</Section>}
-      {data.notes.length === 0 && <div className="talk-empty" style={{ paddingTop: 80 }}><div className="big">🗒</div><h3>No Notes</h3></div>}
-      {data.notes.length > 0 && visible.length === 0 && <div className="talk-empty" style={{ paddingTop: 60 }}>No results for “{query}”</div>}
+      {deleted.length > 0 && (
+        <Section>
+          <button className="row tappable" style={{ width: '100%', textAlign: 'left' }} onClick={() => setShowTrash(true)}>
+            <span>🗑</span><span className="grow">Recently Deleted</span><span className="muted">{deleted.length} ›</span>
+          </button>
+        </Section>
+      )}
+      {showTrash && (
+        <Sheet title="Recently Deleted" onClose={() => setShowTrash(false)}>
+          <Section footer="Notes are removed for good 30 days after you delete them. Swipe right to recover, left to delete.">
+            {deleted.map((n) => (
+              <SwipeRow key={n.id}
+                leading={{ label: 'Recover', color: 'var(--orange)', onAction: () => setNotes((ns) => ns.map((x) => (x.id === n.id ? { ...x, deletedAt: undefined } : x))) }}
+                trailing={{ label: 'Delete', color: 'var(--red)', onAction: () => setNotes((ns) => ns.filter((x) => x.id !== n.id)) }}>
+                <div className="grow">
+                  <div className="ellipsis" style={{ fontWeight: 600 }}>{noteTitle(n)}</div>
+                  <div className="sub ellipsis">{trashDaysLeft(n, now)} days left <span style={{ color: 'var(--tertiary)' }}>{notePreview(n)}</span></div>
+                </div>
+                <button className="text-btn" onClick={(e) => { e.stopPropagation(); setNotes((ns) => ns.map((x) => (x.id === n.id ? { ...x, deletedAt: undefined } : x))) }}>Recover</button>
+              </SwipeRow>
+            ))}
+            {deleted.length === 0 && <div className="row muted">No recently deleted notes</div>}
+          </Section>
+        </Sheet>
+      )}
+      {live.length === 0 && <div className="talk-empty" style={{ paddingTop: 80 }}><div className="big">🗒</div><h3>No Notes</h3></div>}
+      {live.length > 0 && visible.length === 0 && <div className="talk-empty" style={{ paddingTop: 60 }}>No results for “{query}”</div>}
       <BottomAction label="New Note" onClick={newNote} />
     </>
   )
@@ -173,7 +202,7 @@ function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
       {confirm === 'clear' && <Alert title="Clear this note?" message="Everything you wrote is removed. The title stays." action="Clear"
         onCancel={() => setConfirm(null)} onConfirm={() => { edit({ body: '' }); setConfirm(null) }} />}
       {confirm === 'delete' && <Alert title="Delete this note?" message="This can't be undone." action="Delete"
-        onCancel={() => setConfirm(null)} onConfirm={() => { update((d) => ({ ...d, notes: d.notes.filter((n) => n.id !== note.id) })); onBack() }} />}
+        onCancel={() => setConfirm(null)} onConfirm={() => { update((d) => ({ ...d, notes: trashNote(d.notes, note.id) })); onBack() }} />}
       {/* Tapping the empty space below the text keeps writing at the end. */}
       <div className="note-editor" style={{ background: 'var(--bg)', minHeight: '100%' }}
         onFocus={() => setTyping(true)} onBlur={() => setTyping(false)}

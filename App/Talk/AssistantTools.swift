@@ -587,7 +587,7 @@ struct WriteNoteTool: Tool {
             case .delete:
                 controller.delete(note.id)
                 TalkModel.shared.addEvent("Deleted note · \(note.displayTitle)", systemImage: "trash")
-                return "Deleted the note \"\(note.displayTitle)\"."
+                return "Moved the note \"\(note.displayTitle)\" to Recently Deleted (kept for 30 days)."
             }
             controller.update(note)
             TalkModel.shared.addEvent("Note updated · \(note.displayTitle)", systemImage: "note.text", link: .note(note.id))

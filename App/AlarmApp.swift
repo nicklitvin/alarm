@@ -5,6 +5,12 @@ import UserNotifications
 struct AlarmApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
+    init() {
+        // Before anything loads: if the storage is brand new but a backup has data (a reinstall,
+        // or a copy signed without the App Group), put the backup back.
+        Backups.restoreIfNeeded()
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()

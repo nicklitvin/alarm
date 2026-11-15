@@ -117,6 +117,7 @@ final class TodoController {
         TodoStorage.save(todos)
         if reloadWidget { WidgetCenter.shared.reloadAllTimelines() }
         MenuBarBridge.update()
+        Backups.scheduleBackup()
 
         let previous = syncTask
         let task = Task { @MainActor in

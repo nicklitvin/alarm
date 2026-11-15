@@ -61,11 +61,22 @@ struct AlarmListView: View {
     private func content(now: Date) -> some View {
         if controller.alarms.isEmpty {
             ContentUnavailableView("No Alarms", systemImage: "alarm")
+                // The same light gray as the other tabs (it was white).
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(.systemGroupedBackground))
         } else if verticalSizeClass == .compact || horizontalSizeClass == .regular {
             // iPhone sideways, iPad and the Mac: a grid of cards that uses the width.
             landscape(now: now)
         } else {
             List {
+                if !Backups.isSharedStorageAvailable {
+                    Section {
+                        PermissionBanner(
+                            title: "Widgets Can't See Your Data",
+                            message: "This copy of Alarmie was installed without its App Group. Your data isn't deleted: a properly signed build shows it again. See Settings → About & Updates."
+                        )
+                    }
+                }
                 if !controller.isAuthorized {
                     Section { PermissionBanner() }
                 }
@@ -101,6 +112,9 @@ struct AlarmListView: View {
                 }
             }
             .listStyle(.insetGrouped)
+            // The same light gray as the other tabs, empty space included.
+            .scrollContentBackground(.hidden)
+            .background(Color(.systemGroupedBackground))
             .animation(.default, value: controller.alarms)
         }
     }

@@ -320,6 +320,10 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
           <div style={{ fontSize: 22, fontWeight: 600, marginTop: 8 }}>Alarmie</div>
           <div className="muted">Version {appVersion} · Web preview</div>
         </div>
+        <Section header="Your Data" footer="Alarmie keeps a backup of your alarms, to-dos, notes and settings for each of the last 14 days.">
+          <div className="row"><span style={{ color: 'var(--green, #34c759)' }}>✓</span><span className="grow">Saved and shared with widgets</span></div>
+          <div className="row"><span className="grow">Backups</span><span className="muted">One per day, restore any ›</span></div>
+        </Section>
         <Section header="Patch Notes">
           {changelog.releases.map((r, i) => (
             <details key={r.version} className="row" open={i === 0} style={{ display: 'block' }}>
@@ -419,12 +423,14 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
           alarms: { label: 'Delete All Alarms', count: data.alarms.length, ask: `Delete all ${data.alarms.length} alarms?` },
           timers: { label: 'Delete All Timers', count: data.timers.length + data.recents.length + (data.stopwatch && (data.stopwatch.startedAt !== undefined || data.stopwatch.accumulated > 0 || data.stopwatch.laps.length) ? 1 : 0), ask: 'Cancel running timers and clear recent times?' },
           todos: { label: 'Delete All To-Dos', count: data.todos.length, ask: `Delete all ${data.todos.length} to-dos, including completed ones?` },
-          notes: { label: 'Delete All Notes', count: data.notes.length, ask: `Delete all ${data.notes.length} notes?` },
+          notes: { label: 'Delete All Notes', count: data.notes.filter((n) => !n.deletedAt).length, ask: `Delete all ${data.notes.filter((n) => !n.deletedAt).length} notes?` },
         }[tab]
         const clear = () => update((d) => tab === 'alarms' ? { ...d, alarms: [] } : tab === 'timers' ? { ...d, timers: [], recents: [], stopwatch: { accumulated: 0, laps: [] } }
-          : tab === 'todos' ? { ...d, todos: [] } : { ...d, notes: [] })
+          : tab === 'todos' ? { ...d, todos: [] }
+          // Notes go to Recently Deleted (blank ones are just removed).
+          : { ...d, notes: d.notes.filter((n) => n.deletedAt || n.title.trim() || n.body.trim()).map((n) => (n.deletedAt ? n : { ...n, deletedAt: Date.now() })) })
         return (
-          <Section footer={tab === 'timers' ? 'Cancels any running timers, resets the stopwatch and clears your recent times.' : 'Removes everything on this tab.'}>
+          <Section footer={tab === 'timers' ? 'Cancels any running timers, resets the stopwatch and clears your recent times.' : tab === 'notes' ? 'Moves every note to Recently Deleted, where you can recover them for 30 days.' : 'Removes everything on this tab.'}>
             <button className="row tappable red" style={{ width: '100%' }}
               onClick={() => { if (info.count) setConfirmDeleteAll(true) }}>🗑︎ {info.label}</button>
             {confirmDeleteAll && <Alert title={info.ask} message="This can't be undone." action="Delete All"

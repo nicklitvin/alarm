@@ -1,6 +1,7 @@
 import Observation
 import SwiftUI
 import UIKit
+import WidgetKit
 
 enum AppTab: Hashable {
     case alarms, timers, todos, notes, talk
@@ -111,6 +112,10 @@ struct RootView: View {
                 TodoController.shared.reload()
                 Task { await NotificationScheduler.removeDeliveredForRungAlarms() }
                 updates.checkIfNeeded()
+            }
+            if phase == .background {
+                Backups.backUpNow()
+                WidgetCenter.shared.reloadAllTimelines() // widgets always match what you just did
             }
         }
     }

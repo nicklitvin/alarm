@@ -93,7 +93,16 @@ export interface Note {
   updatedAt: number
   isPinned: boolean
   sortIndex: number
+  /** Set when deleted: the note waits in Recently Deleted for 30 days (NotesTrash). */
+  deletedAt?: number
 }
+
+/** Deleting a note moves it to Recently Deleted (a blank note is just removed). */
+export function trashNote(notes: Note[], id: string, now = Date.now()): Note[] {
+  return notes.flatMap((n) => (n.id !== id ? [n] : !n.title.trim() && !n.body.trim() ? [] : [{ ...n, deletedAt: now }]))
+}
+/** Whole days left before a deleted note is removed. */
+export const trashDaysLeft = (n: Note, now: number) => Math.max(0, Math.ceil((30 * 864e5 - (now - (n.deletedAt ?? now))) / 864e5))
 
 export type NotesSort = 'edited' | 'created' | 'title'
 

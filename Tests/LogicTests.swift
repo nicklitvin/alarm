@@ -1,6 +1,13 @@
 import Foundation
 
 var failures = 0
+enum TodoStorageProbe {
+    static func count(_ defaults: UserDefaults) -> Int {
+        guard let data = defaults.data(forKey: "todos.v1") else { return 0 }
+        return ((try? JSONDecoder().decode([TodoItem].self, from: data)) ?? []).count
+    }
+}
+
 func check(_ cond: Bool, _ msg: String, line: Int = #line) {
     if cond { print("✓ \(msg)") } else { failures += 1; print("✗ \(msg) (line \(line))") }
 }
@@ -458,6 +465,44 @@ check(tenth?.text.hasSuffix("\n10. ") == true && tenth?.caret == 49, "the tenth 
 check(NoteChecklist.appending("bread\neggs", to: "1. milk") == "1. milk\n2. bread\n3. eggs", "adding to a numbered note continues the numbers")
 check(NoteChecklist.firstLineCaret(in: "1. milk") == 3, "Return in the title: after the first number")
 check(NoteChecklist.toggleItem(in: "1. a", at: 0) == nil, "numbers aren't checkboxes")
+
+// Recently Deleted (notes)
+let trashNow = Date(timeIntervalSince1970: 1_800_000_000)
+var oldDeleted = Note(title: "Old"); oldDeleted.deletedAt = trashNow.addingTimeInterval(-31 * 86400)
+var newDeleted = Note(title: "New"); newDeleted.deletedAt = trashNow.addingTimeInterval(-2 * 86400 - 60)
+let keptNote = Note(title: "Kept")
+check(NotesTrash.purged([oldDeleted, newDeleted, keptNote], now: trashNow).map(\.title) == ["New", "Kept"], "deleted notes are removed after 30 days")
+check(NotesTrash.daysLeft(newDeleted, now: trashNow) == 28, "a note deleted 2 days ago has 28 days left")
+check(newDeleted.isDeleted && !keptNote.isDeleted, "isDeleted")
+if let data = try? JSONEncoder().encode([newDeleted]), let back = try? JSONDecoder().decode([Note].self, from: data) {
+    check(back.first?.deletedAt == newDeleted.deletedAt, "deletedAt is saved")
+} else { check(false, "deletedAt is saved") }
+
+// Backups: nothing is lost to a bad update or a copy without the App Group.
+let backupDir = FileManager.default.temporaryDirectory.appendingPathComponent("alarmie-backup-\(UUID().uuidString)")
+let goodSuite = "alarmie.test.good.\(UUID().uuidString)", freshSuite = "alarmie.test.fresh.\(UUID().uuidString)"
+let good = UserDefaults(suiteName: goodSuite)!, fresh = UserDefaults(suiteName: freshSuite)!
+good.set(try! JSONEncoder().encode([AlarmItem(hour: 7, minute: 0)]), forKey: "alarms.v1")
+good.set(try! JSONEncoder().encode([TodoItem(title: "a"), TodoItem(title: "b")]), forKey: "todos.v1")
+good.set(try! JSONEncoder().encode([Note(title: "n"), oldDeleted]), forKey: "notes.v1")
+good.set(true, forKey: "settings.widget.alarms")
+good.set("not ours", forKey: "someone.else")
+let snapshot = DataBackup.values(in: good)
+check(snapshot["alarms.v1"] != nil && snapshot["settings.widget.alarms"] != nil && snapshot["someone.else"] == nil, "a backup holds Alarmie's data and settings only")
+check(DataBackup.summary(of: snapshot).text == "1 alarm · 2 to-dos · 1 note", "backup summary counts (deleted notes left out)")
+DataBackup.save(snapshot, in: backupDir, now: trashNow)
+let foundBackups = DataBackup.backups(in: [backupDir])
+check(foundBackups.count == 1 && foundBackups.first?.summary.todos == 2, "today's backup is written and read back")
+check(DataBackup.restoreIfUntouched(fresh, directories: [backupDir]), "an empty, never-used storage gets the backup back at launch")
+check(TodoStorageProbe.count(fresh) == 2 && fresh.bool(forKey: "settings.widget.alarms"), "restored to-dos and settings")
+check(!DataBackup.restoreIfUntouched(fresh, directories: [backupDir]), "only once: after that the storage is marked as used")
+check(!DataBackup.restoreIfUntouched(good, directories: [backupDir]), "storage that already has data is never overwritten")
+DataBackup.save([:], in: backupDir, now: trashNow)
+let kept = ((try? FileManager.default.contentsOfDirectory(atPath: backupDir.path)) ?? []).filter { $0.hasPrefix("before-empty-") }
+check(kept.count == 1, "emptying everything keeps the previous backup aside")
+check(DataBackup.dayFileName(d(2026, 11, 5, 9, 0)) == "backup-2026-11-05.plist", "one backup file per day")
+good.removePersistentDomain(forName: goodSuite); fresh.removePersistentDomain(forName: freshSuite)
+try? FileManager.default.removeItem(at: backupDir)
 
 // Up Next widget layout: the next alarm on top when it rings within 24 hours.
 let layoutNow = d(2026, 11, 17, 20, 0)

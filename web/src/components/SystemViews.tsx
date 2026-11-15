@@ -188,7 +188,7 @@ function HomeScreen() {
           {upNextWidget('large')}
         </div>
       </div>
-      <Caption>Next Alarm (small, with Dismiss) and Up Next (medium, large). Your next alarm shows (with Dismiss) from 12 hours before it rings, or whatever Alarm settings → Show Alarm says; to-dos and timers follow. Up Next is laid out like the Reminders widget: New Note and New Timer buttons and the number of open to-dos on the left, the alarm with Dismiss and then to-dos on the right. Tapping anything opens its tab and a to-do's circle checks it off.</Caption>
+      <Caption>Next Alarm (small, with Dismiss) and Up Next (medium, large). Your next alarm shows (with Dismiss) from 12 hours before it rings, or whatever Alarm settings → Show Alarm says; to-dos and timers follow. Up Next is laid out like the Reminders widget: Notes and New Timer buttons and the number of open to-dos on the left, the alarm with Dismiss and then to-dos on the right. Tapping anything opens its tab and a to-do's circle checks it off.</Caption>
     </>
   )
 }
@@ -241,9 +241,9 @@ function UpNextSplit({ size }: { size: 'medium' | 'large' }) {
   return (
     <div className={`widget upnext ${size} split`} onClick={() => open({ tab: 'todos' })}>
       <div className="split-left">
-        {/* New Note and New Timer. */}
+        {/* Notes (opens the tab) and New Timer. */}
         <div className="split-buttons">
-          <button className="split-icon" aria-label="New Note" onClick={(e) => { e.stopPropagation(); open({ tab: 'notes', id: 'new' }) }}>✎</button>
+          <button className="split-icon" aria-label="Open Notes" onClick={(e) => { e.stopPropagation(); open({ tab: 'notes' }) }}>🗒</button>
           <button className="split-icon" aria-label="New Timer" onClick={(e) => { e.stopPropagation(); open({ tab: 'timers', id: 'new' }) }}>⏱</button>
         </div>
         <div className="split-count" onClick={(e) => { e.stopPropagation(); open({ tab: 'todos' }) }}>

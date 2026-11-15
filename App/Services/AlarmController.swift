@@ -28,6 +28,12 @@ final class AlarmController {
         refresh()
     }
 
+    /// After restoring a backup: picks up the saved alarms and re-syncs them.
+    func reloadFromStorage() {
+        alarms = AlarmStorage.load()
+        commit()
+    }
+
     var sortedAlarms: [AlarmItem] {
         alarms.sorted { ($0.hour, $0.minute, $0.label) < ($1.hour, $1.minute, $1.label) }
     }
@@ -160,6 +166,7 @@ final class AlarmController {
         AlarmStorage.save(alarms)
         WidgetCenter.shared.reloadAllTimelines()
         MenuBarBridge.update()
+        Backups.scheduleBackup()
         BackgroundRefresh.schedule(at: AlarmPlan.nextRestoreDate(for: alarms, now: .now))
 
         let previous = syncTask

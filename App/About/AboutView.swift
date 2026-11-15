@@ -41,6 +41,8 @@ struct AboutView: View {
                     Text("Updates")
                 }
 
+                DataSection()
+
                 Section {
                     ForEach(updates.changelog.releases) { release in
                         ReleaseRow(release: release, installed: updates.installedVersion,

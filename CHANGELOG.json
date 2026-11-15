@@ -1,6 +1,19 @@
 {
   "releases": [
     {
+      "version": "1.37.0",
+      "build": 87,
+      "date": "2026-11-15",
+      "title": "Backups and Recently Deleted",
+      "notes": [
+        "Alarmie now keeps a backup of your alarms, to-dos, notes and settings for each of the last 14 days. If the app ever opens empty, it puts your latest backup back automatically. You can also restore any backup in Settings → About & Updates → Backups.",
+        "Deleted notes go to Recently Deleted for 30 days, so you can recover them.",
+        "If this copy of Alarmie can't reach its shared storage (the reason widgets stop updating), the Alarms tab and About now tell you.",
+        "The Notes button in the Up Next widget opens the Notes tab.",
+        "Alarms and Notes use the same light gray background as the other tabs."
+      ]
+    },
+    {
       "version": "1.36.0",
       "build": 86,
       "date": "2026-11-15",

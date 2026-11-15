@@ -82,7 +82,7 @@ private struct DeleteAllSection: View {
             Button("Delete All", role: .destructive, action: deleteAll)
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This can't be undone.")
+            Text(tab == .notes ? "They stay in Recently Deleted for 30 days." : "This can't be undone.")
         }
     }
 
@@ -92,7 +92,7 @@ private struct DeleteAllSection: View {
         case .timers: TimerController.shared.timers.count + TimerController.shared.recents.count
             + (StopwatchController.shared.stopwatch.isReset ? 0 : 1)
         case .todos: TodoController.shared.todos.count
-        case .notes: NotesController.shared.notes.count
+        case .notes: NotesController.shared.activeNotes.count
         case .talk: 0
         }
     }
@@ -120,6 +120,7 @@ private struct DeleteAllSection: View {
     private var footer: String {
         switch tab {
         case .timers: "Cancels any running timers, resets the stopwatch and clears your recent times."
+        case .notes: "Moves every note to Recently Deleted, where you can recover them for 30 days."
         default: "Removes everything on this tab."
         }
     }

@@ -6,6 +6,7 @@ struct NotesListView: View {
     @State private var query = ""
     /// The note open beside the list (iPad and the Mac).
     @State private var selection: UUID?
+    @State private var showRecentlyDeleted = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     private var visible: [Note] {
@@ -79,23 +80,52 @@ struct NotesListView: View {
                     }
                 }
             }
+
+            // Deleted notes wait here for 30 days.
+            if !controller.deletedNotes.isEmpty {
+                Section {
+                    Button { showRecentlyDeleted = true } label: {
+                        HStack {
+                            Label("Recently Deleted", systemImage: "trash")
+                            Spacer()
+                            Text("\(controller.deletedNotes.count)")
+                                .foregroundStyle(.secondary)
+                            Image(systemName: "chevron.right")
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(.tertiary)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .foregroundStyle(.primary)
+                }
+            }
         }
         .listStyle(.insetGrouped)
         .listSectionSpacing(.compact)
         .contentMargins(.top, 8, for: .scrollContent)
+        // The same light gray as the other tabs, empty space included.
+        .scrollContentBackground(.hidden)
+        .background(Color(.systemGroupedBackground))
         .overlay {
-            if controller.notes.isEmpty {
-                ContentUnavailableView("No Notes", systemImage: "note.text")
-            } else if visible.isEmpty {
-                ContentUnavailableView.search(text: query)
+            Group {
+                if controller.activeNotes.isEmpty {
+                    ContentUnavailableView("No Notes", systemImage: "note.text")
+                } else if visible.isEmpty {
+                    ContentUnavailableView.search(text: query)
+                }
             }
+            .allowsHitTesting(false)
+        }
+        .sheet(isPresented: $showRecentlyDeleted) {
+            RecentlyDeletedView()
         }
         .navigationTitle("Notes")
         .toolbar(.hidden, for: .navigationBar)
         .safeAreaInset(edge: .top, spacing: 0) {
             VStack(spacing: 0) {
                 TabHeader(title: "Notes", tab: .notes) { _ in
-                    controller.notes.isEmpty ? nil : "\(controller.notes.count) note\(controller.notes.count == 1 ? "" : "s")"
+                    let count = controller.activeNotes.count
+                    return count == 0 ? nil : "\(count) note\(count == 1 ? "" : "s")"
                 }
                 SearchField(text: $query)
                     .padding(.horizontal, 20)
