@@ -8,7 +8,7 @@ import FoundationModels
 
 struct ListItemsTool: Tool {
     let name = "listItems"
-    let description = "Shows the user's current alarms, to-dos, timers, notes or settings. Use before editing if unsure what exists."
+    let description = "Shows the user's current alarms, to-dos, timers and stopwatch, notes or settings. Use before editing if unsure what exists."
 
     @Generable
     enum Kind {
@@ -37,8 +37,9 @@ struct ListItemsTool: Tool {
                     + (doneCount > 0 ? "\n(\(doneCount) completed)" : "")
             case .timers:
                 let timers = TimerController.shared.timers
-                guard !timers.isEmpty else { return "No timers running." }
-                return timers.map { AssistantText.describe($0, now: now) }.joined(separator: "\n")
+                let stopwatch = AssistantText.describe(StopwatchController.shared.stopwatch)
+                guard !timers.isEmpty else { return "No timers running.\n" + stopwatch }
+                return timers.map { AssistantText.describe($0, now: now) }.joined(separator: "\n") + "\n" + stopwatch
             case .notes:
                 let notes = NotesController.shared.sortedNotes
                 guard !notes.isEmpty else { return "No notes." }
@@ -84,27 +85,103 @@ struct SetTimerTool: Tool {
     }
 }
 
-struct CancelTimersTool: Tool {
-    let name = "cancelTimers"
-    let description = "Cancels a timer by name, or all timers if the name is empty."
+struct ControlTimersTool: Tool {
+    let name = "controlTimers"
+    let description = "Pauses, resumes or cancels a countdown timer by name, or all timers if the name is empty."
+
+    @Generable
+    enum Action {
+        case pause, resume, cancel
+    }
 
     @Generable
     struct Arguments {
+        var action: Action
         @Guide(description: "Timer name, or empty for all")
         var label: String
     }
 
     func call(arguments: Arguments) async throws -> String {
         let label = arguments.label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        let cancelled: [String] = await MainActor.run { () -> [String] in
+        let action = arguments.action
+        let changed: [String] = await MainActor.run { () -> [String] in
             let controller = TimerController.shared
-            let matches = controller.timers.filter { label.isEmpty || $0.title.lowercased().contains(label) }
-            matches.forEach { controller.cancel($0.id) }
+            let matches = controller.timers.filter { timer in
+                guard label.isEmpty || timer.title.lowercased().contains(label) else { return false }
+                switch action {
+                case .pause: return timer.state == .running
+                case .resume: return timer.state == .paused
+                case .cancel: return true
+                }
+            }
+            for timer in matches {
+                switch action {
+                case .pause: controller.pause(timer.id)
+                case .resume: controller.resume(timer.id)
+                case .cancel: controller.cancel(timer.id)
+                }
+            }
             return matches.map(\.title)
         }
-        guard !cancelled.isEmpty else { return "No matching timer." }
-        await TalkModel.shared.addEvent("Cancelled \(cancelled.joined(separator: ", "))", systemImage: "xmark.circle", link: .timers)
-        return "Cancelled: \(cancelled.joined(separator: ", "))."
+        let (verb, icon, none): (String, String, String) = switch action {
+        case .pause: ("Paused", "pause.circle", "No running timer matches.")
+        case .resume: ("Resumed", "play.circle", "No paused timer matches.")
+        case .cancel: ("Cancelled", "xmark.circle", "No matching timer.")
+        }
+        guard !changed.isEmpty else { return none }
+        await TalkModel.shared.addEvent("\(verb) \(changed.joined(separator: ", "))", systemImage: icon, link: .timers)
+        return "\(verb): \(changed.joined(separator: ", "))."
+    }
+}
+
+// MARK: - Stopwatch
+
+struct StopwatchTool: Tool {
+    let name = "stopwatch"
+    let description = "Controls the stopwatch on the Timers tab, which counts up: start, pause, lap, reset, or check the time. Not for countdowns."
+
+    @Generable
+    enum Action {
+        case start, pause, lap, reset, check
+    }
+
+    @Generable
+    struct Arguments {
+        var action: Action
+    }
+
+    func call(arguments: Arguments) async throws -> String {
+        await MainActor.run { () -> String in
+            let controller = StopwatchController.shared
+            let before = controller.stopwatch
+            let time = { Stopwatch.format(controller.stopwatch.elapsed()) }
+            switch arguments.action {
+            case .start:
+                guard !before.isRunning else { return "The stopwatch is already running: \(time())." }
+                controller.start()
+                TalkModel.shared.addEvent(before.isReset ? "Stopwatch started" : "Stopwatch resumed · \(time())", systemImage: "stopwatch", link: .timers)
+                return before.isReset ? "Started the stopwatch." : "Resumed the stopwatch at \(time())."
+            case .pause:
+                guard before.isRunning else { return "The stopwatch isn't running\(before.isReset ? "" : "; it's paused at \(time())")." }
+                controller.pause()
+                TalkModel.shared.addEvent("Stopwatch paused · \(time())", systemImage: "pause.circle", link: .timers)
+                return "Paused the stopwatch at \(time())."
+            case .lap:
+                guard before.isRunning else { return "The stopwatch isn't running, so there's no lap to mark." }
+                controller.lap()
+                let number = controller.stopwatch.laps.count
+                let split = controller.stopwatch.lapSplits().first?.split ?? 0
+                TalkModel.shared.addEvent("Lap \(number) · \(Stopwatch.format(split))", systemImage: "flag", link: .timers)
+                return "Lap \(number): \(Stopwatch.format(split))."
+            case .reset:
+                guard !before.isReset else { return "The stopwatch is already at zero." }
+                controller.reset()
+                TalkModel.shared.addEvent("Stopwatch reset", systemImage: "arrow.counterclockwise", link: .timers)
+                return "Reset the stopwatch (it was at \(Stopwatch.format(before.elapsed())))."
+            case .check:
+                return AssistantText.describe(before)
+            }
+        }
     }
 }
 
@@ -154,11 +231,11 @@ struct CreateAlarmTool: Tool {
 
 struct EditAlarmTool: Tool {
     let name = "editAlarm"
-    let description = "Changes an existing alarm (time, days, label, sound), turns it on or off, or deletes it."
+    let description = "Changes an existing alarm (time, days, label, sound), turns it on or off, deletes it, or dismisses (skips) just its next ring."
 
     @Generable
     enum Action {
-        case change, turnOn, turnOff, delete
+        case change, turnOn, turnOff, delete, dismissNextRing
     }
 
     @Generable
@@ -184,6 +261,37 @@ struct EditAlarmTool: Tool {
     }
 
     func call(arguments: Arguments) async throws -> String {
+        if case .dismissNextRing = arguments.action { return await dismissNextRing(arguments.alarm) }
+        return await edit(arguments)
+    }
+
+    /// Skips only the next ring (like the Dismiss button), within the Show Alarm window.
+    @MainActor
+    private func dismissNextRing(_ query: String) async -> String {
+        let controller = AlarmController.shared
+        let alarm: AlarmItem
+        switch AssistantMatching.alarm(matching: query, in: controller.sortedAlarms) {
+        case .found(let match): alarm = match
+        case .none: return "No alarm matches \"\(query)\". Alarms: " + AssistantText.alarmList(controller.sortedAlarms)
+        case .ambiguous(let matches): return "Several alarms match. Which one? " + AssistantText.alarmList(matches)
+        }
+        guard alarm.isEnabled, let ring = alarm.nextFireDate(after: .now) else {
+            return "The \(alarm.timeString) alarm is off, so there's no ring to dismiss."
+        }
+        await controller.dismissNextRing(of: alarm.id)
+        let after = controller.alarms.first { $0.id == alarm.id }
+        let dismissed = alarm.isRepeating ? after?.skippedOccurrence == ring : after?.isEnabled == false
+        guard dismissed else {
+            let hours = AppSettings.alarmWidgetHours
+            return "Couldn't dismiss it: a ring can only be dismissed within \(hours) hour\(hours == 1 ? "" : "s") of ringing (Show Alarm in Alarm settings), and only one ring of an alarm at a time. Its next ring is \(TimeFormat.dayDescription(for: ring, relativeTo: .now)) at \(TimeFormat.string(for: ring))."
+        }
+        TalkModel.shared.addEvent("Dismissed \(alarm.timeString) ring", systemImage: "bell.slash", link: .alarm(alarm.id))
+        return alarm.isRepeating
+            ? "Dismissed the \(alarm.timeString) ring \(TimeFormat.dayDescription(for: ring, relativeTo: .now).lowercased()). It rings as usual after that."
+            : "Dismissed the \(alarm.timeString) alarm, so it won't ring."
+    }
+
+    private func edit(_ arguments: Arguments) async -> String {
         await MainActor.run { () -> String in
             let controller = AlarmController.shared
             let alarm: AlarmItem
@@ -198,6 +306,8 @@ struct EditAlarmTool: Tool {
             let link = ChatLink.alarm(alarm.id)
 
             switch arguments.action {
+            case .dismissNextRing:
+                return "" // handled in call(arguments:)
             case .delete:
                 controller.delete(alarm.id)
                 TalkModel.shared.addEvent("Deleted \(alarm.timeString) alarm", systemImage: "trash")
@@ -544,6 +654,12 @@ enum AssistantText {
             text += TimeFormat.dueDescription(due, relativeTo: now)
         }
         return text
+    }
+
+    static func describe(_ stopwatch: Stopwatch) -> String {
+        if stopwatch.isReset { return "Stopwatch: not started." }
+        let laps = stopwatch.laps.isEmpty ? "" : ", \(stopwatch.laps.count) lap\(stopwatch.laps.count == 1 ? "" : "s")"
+        return "Stopwatch: \(stopwatch.isRunning ? "running" : "paused") at \(Stopwatch.format(stopwatch.elapsed()))\(laps)."
     }
 
     static func describe(_ timer: TimerItem, now: Date) -> String {

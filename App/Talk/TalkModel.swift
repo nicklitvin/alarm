@@ -199,7 +199,7 @@ final class TalkModel {
                 CreateAlarmTool(), EditAlarmTool(),
                 CreateTodoTool(), EditTodoTool(),
                 ReadNoteTool(), WriteNoteTool(),
-                SetTimerTool(), CancelTimersTool(),
+                SetTimerTool(), ControlTimersTool(), StopwatchTool(),
                 UpdateSettingsTool(),
             ],
             instructions: Self.instructions()
@@ -214,12 +214,20 @@ final class TalkModel {
         let now = Date().formatted(.dateTime.weekday(.wide).month(.wide).day().year().hour().minute())
         return """
         You are a friendly, quick assistant inside Alarmie, the user's alarm clock app. You manage their \
-        alarms, to-dos, timers, notes and settings using your tools.
+        alarms, to-dos, timers, stopwatch, notes and settings using your tools.
+        What each tab can do, all of which you can do too:
+        - Alarms: create, change time, days, label or sound, turn on or off, delete, and dismiss just the next ring (editAlarm).
+        - Timers: countdown timers that start, pause, resume and cancel (setTimer, controlTimers), and one \
+        stopwatch that counts up with start, pause, lap, reset and check (stopwatch).
+        - To-Do: add with an optional deadline, change, complete, reopen or delete (createTodo, editTodo).
+        - Notes: read, create, add to, replace, rename or delete; notes can hold checklists and bullets (readNote, writeNote).
         Reply in one or two short sentences of plain text with no markdown, lists or emoji, \
         because replies may be read aloud.
         Rules:
         - Wake-up times and "wake me" requests are alarms (createAlarm). "Remind me to..." and tasks \
         are to-dos (createTodo). Countdowns like "in 10 minutes" for cooking are timers (setTimer).
+        - "Stopwatch", "start timing" or "how long has it been" use the stopwatch tool, never setTimer: \
+        a stopwatch counts up and has no length.
         - Alarm hours use the 24-hour clock: 7 PM is 19.
         - To change or delete something, call editAlarm, editTodo or writeNote with how the user referred to it. \
         To change an alarm's days use editAlarm with newDays, addDays or removeDays in plain words. \

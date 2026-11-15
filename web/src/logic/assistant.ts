@@ -1,7 +1,7 @@
 // A canned stand-in for the app's on-device assistant, just enough to exercise the chat UI
 // (attachment cards, links into tabs). It is NOT the real model.
 import {
-  addRecent, alarmTitle, durationName, dueDescription, noteTitle, repeatSummary, timeString, uid, WEEKEND, WORKDAYS, type Alarm, type Weekday,
+  addRecent, alarmTitle, formatStopwatch, stopwatchElapsed, stopwatchIsReset, durationName, dueDescription, noteTitle, repeatSummary, timeString, uid, WEEKEND, WORKDAYS, type Alarm, type Weekday,
 } from './model'
 import type { AppData, ChatMessage } from './store'
 
@@ -32,6 +32,32 @@ const event = (text: string, icon: string, link?: ChatMessage['link']): ChatMess
 export function respond(input: string, data: AppData, now: number): { data: AppData; reply: string; events: ChatMessage[] } {
   const text = input.trim()
   const lower = text.toLowerCase()
+
+  // Stopwatch (counts up, never a timer): "start the stopwatch", "lap", "pause the stopwatch"
+  if (/stop ?watch|\blap\b|start timing/.test(lower)) {
+    const sw = data.stopwatch
+    const time = () => formatStopwatch(stopwatchElapsed(sw, now))
+    const tl = { tab: 'timers' as const }
+    if (/reset|clear/.test(lower)) {
+      if (stopwatchIsReset(sw)) return { data, reply: 'The stopwatch is already at zero.', events: [] }
+      return { data: { ...data, stopwatch: { accumulated: 0, laps: [] } }, reply: `Reset the stopwatch (it was at ${time()}).`, events: [event('Stopwatch reset', '↺', tl)] }
+    }
+    if (/\blap\b/.test(lower)) {
+      if (sw.startedAt === undefined) return { data, reply: "The stopwatch isn't running, so there's no lap to mark.", events: [] }
+      const total = stopwatchElapsed(sw, now), split = total - (sw.laps[sw.laps.length - 1] ?? 0), n = sw.laps.length + 1
+      return { data: { ...data, stopwatch: { ...sw, laps: [...sw.laps, total] } }, reply: `Lap ${n}: ${formatStopwatch(split)}.`, events: [event(`Lap ${n} · ${formatStopwatch(split)}`, '⚑', tl)] }
+    }
+    if (/pause|stop the|stop my|halt/.test(lower)) {
+      if (sw.startedAt === undefined) return { data, reply: "The stopwatch isn't running.", events: [] }
+      return { data: { ...data, stopwatch: { accumulated: stopwatchElapsed(sw, now), laps: sw.laps } }, reply: `Paused the stopwatch at ${time()}.`, events: [event(`Stopwatch paused · ${time()}`, '⏸', tl)] }
+    }
+    if (/how long|check|what.*time/.test(lower)) {
+      return { data, reply: stopwatchIsReset(sw) ? "The stopwatch hasn't started." : `The stopwatch is ${sw.startedAt !== undefined ? 'running' : 'paused'} at ${time()}.`, events: [] }
+    }
+    if (sw.startedAt !== undefined) return { data, reply: `The stopwatch is already running: ${time()}.`, events: [] }
+    const fresh = stopwatchIsReset(sw)
+    return { data: { ...data, stopwatch: { ...sw, startedAt: now } }, reply: fresh ? 'Started the stopwatch.' : `Resumed the stopwatch at ${time()}.`, events: [event(fresh ? 'Stopwatch started' : 'Stopwatch resumed', '⏱', tl)] }
+  }
 
   // Timers: "set a pasta timer for 9 minutes"
   const dur = lower.match(/(\d+)\s*(hours?|hrs?|minutes?|mins?|seconds?|secs?)\b/)
@@ -134,7 +160,7 @@ export function respond(input: string, data: AppData, now: number): { data: AppD
 
   return {
     data,
-    reply: 'This web preview only fakes a few requests. Try “set a pasta timer for 9 minutes”, “wake me up at 6:45 on weekdays”, “change my gym alarm to weekends”, “remind me to call mom tomorrow at 6” or “what’s on my packing note?”',
+    reply: 'This web preview only fakes a few requests. Try “set a pasta timer for 9 minutes”, “start the stopwatch”, “wake me up at 6:45 on weekdays”, “change my gym alarm to weekends”, “remind me to call mom tomorrow at 6” or “what’s on my packing note?”',
     events: [],
   }
 }

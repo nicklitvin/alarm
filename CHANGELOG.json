@@ -1,6 +1,17 @@
 {
   "releases": [
     {
+      "version": "1.30.0",
+      "build": 76,
+      "date": "2026-11-15",
+      "title": "Talk Knows Every Tab",
+      "notes": [
+        "Ask Talk to start, pause, lap, reset or check the stopwatch. It no longer starts a timer instead.",
+        "Talk can now pause and resume timers, not just cancel them.",
+        "Ask Talk to dismiss just the next ring of an alarm, like the Dismiss button."
+      ]
+    },
+    {
       "version": "1.29.0",
       "build": 75,
       "date": "2026-11-15",
