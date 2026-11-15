@@ -460,5 +460,9 @@ check(AppSettings.parseTimerQuickTimes("120,abc") == [120, 600, 900], "always th
 check(RecentTimer.newTimerChoices(recents: usedTimers, quickTimes: [60, 120, 180], useRecent: false).map(\.duration) == [60, 120, 180], "New Timer shows the quick times")
 check(RecentTimer.newTimerChoices(recents: usedTimers, quickTimes: [60, 120, 180], useRecent: true).map(\.duration) == [540, 300, 1800], "or the recent times when that's on")
 
+// Widget countdown: two units at most.
+check(TimeFormat.countdown(from: d(2026, 11, 17, 6, 0), to: d(2026, 11, 18, 11, 37)) == "1d 5h", "days away → days and hours, no minutes")
+check(TimeFormat.countdown(from: d(2026, 11, 17, 6, 0), to: d(2026, 11, 17, 8, 4)) == "2h 4m", "hours away → hours and minutes")
+
 print(failures == 0 ? "\nALL PASSED" : "\n\(failures) FAILED")
 exit(failures == 0 ? 0 : 1)

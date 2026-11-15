@@ -23,17 +23,21 @@ struct UpNextProvider: TimelineProvider {
         completion(UpNextEntry(date: .now, items: items.isEmpty && context.isPreview ? UpNextEntry.samples : items))
     }
 
-    /// One entry now, plus one at every moment the list changes (an alarm enters its last hour,
-    /// a timer ends, a to-do becomes due, …).
+    /// An entry every minute for the next hour (so the alarm's "in 2h 4m" stays right), plus one
+    /// at every moment the list changes in that hour (a timer ends, a to-do becomes due, …).
+    /// Then the widget asks for a fresh timeline.
     func getTimeline(in context: Context, completion: @escaping (Timeline<UpNextEntry>) -> Void) {
         let now = Date()
         let alarms = AlarmStorage.load(), todos = TodoStorage.load(), timers = TimerStorage.load()
-        let changes = UpNext.changeDates(alarms: alarms, todos: todos, timers: timers, now: now)
-        let entries = ([now] + changes).map { date in
+        let horizon = now.addingTimeInterval(3600)
+        let minute = Calendar.current.dateInterval(of: .minute, for: now)?.start ?? now
+        let ticks = (1...60).map { minute.addingTimeInterval(TimeInterval($0 * 60)) }
+        let changes = UpNext.changeDates(alarms: alarms, todos: todos, timers: timers, now: now).filter { $0 < horizon }
+        let dates = Array(Set([now] + ticks + changes)).sorted()
+        let entries = dates.map { date in
             UpNextEntry(date: date, items: UpNext.items(alarms: alarms, todos: todos, timers: timers, now: date, options: .current))
         }
-        let refresh = changes.last.map { $0.addingTimeInterval(60) } ?? now.addingTimeInterval(6 * 3600)
-        completion(Timeline(entries: entries, policy: .after(refresh)))
+        completion(Timeline(entries: entries, policy: .after(horizon)))
     }
 
     private static func items(at date: Date) -> [UpNextItem] {
@@ -281,20 +285,19 @@ private struct AlarmHeader: View {
         .fixedSize()
     }
 
-    /// "⏰ Wake up · Tomorrow". (The day, not a countdown: a widget only redraws now and then,
-    /// so a minute count would go stale.)
+    /// "⏰ Wake up · in 2h 4m" (two units at most: "in 1d 5h" when it's days away).
     private var details: some View {
         HStack(spacing: 3) {
             Image(systemName: "alarm.fill").foregroundStyle(.orange)
-            Text("\(upcoming.alarm.title) · \(TimeFormat.dayDescription(for: upcoming.date, relativeTo: now))")
+            Text("\(upcoming.alarm.title) · in \(TimeFormat.countdown(from: now, to: upcoming.date))")
         }
         .foregroundStyle(.secondary)
         .lineLimit(1)
     }
 }
 
-/// Small widget with an alarm: fills the space like the Next Alarm widget (day at the top, big
-/// time, label), with a full-width Dismiss button along the bottom.
+/// Small widget with an alarm: fills the space like the Next Alarm widget ("in 2h 4m" at the top,
+/// big time, label), with a full-width Dismiss button along the bottom.
 private struct SmallAlarm: View {
     let upcoming: UpcomingAlarm
     let now: Date
@@ -306,7 +309,7 @@ private struct SmallAlarm: View {
                 Image(systemName: "alarm.fill")
                     .foregroundStyle(.orange)
                 Spacer(minLength: 4)
-                Text(TimeFormat.dayDescription(for: upcoming.date, relativeTo: now))
+                Text("in \(TimeFormat.countdown(from: now, to: upcoming.date))")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
             }

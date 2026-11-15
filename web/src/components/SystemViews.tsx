@@ -123,7 +123,7 @@ function HomeScreen() {
         {/* One line on medium and large ("7:00 AM  ⏰ Wake up · Tomorrow"); stacked on small. */}
         <div className={stacked ? '' : 'v-alarm-line'}>
           <div className="v-alarm-time">{bigTime(featured.date).time}<small> {bigTime(featured.date).period}</small></div>
-          <div className="v-alarm-sub ellipsis">⏰ {alarmTitle(featured.alarm)} · {dayDescription(featured.date, now)}</div>
+          <div className="v-alarm-sub ellipsis">⏰ {alarmTitle(featured.alarm)} · in {countdown(now, featured.date)}</div>
         </div>
       </div>
       {/* One skipped ring per alarm: once dismissed, the ring after it can't be dismissed too. */}
@@ -140,7 +140,7 @@ function HomeScreen() {
           {featured ? (
             // Fills the widget like Next Alarm: day, big time, label, then a full-width Dismiss.
             <div className="small-alarm">
-              <div className="wh"><span>⏰</span><span className="muted" style={{ fontSize: 12 }}>{dayDescription(featured.date, now)}</span></div>
+              <div className="wh"><span>⏰</span><span className="muted" style={{ fontSize: 12 }}>in {countdown(now, featured.date)}</span></div>
               <div className="big">{bigTime(featured.date).time}<small> {bigTime(featured.date).period}</small></div>
               <div className="muted ellipsis" style={{ fontSize: 14, fontWeight: 500 }}>{alarmTitle(featured.alarm)}</div>
               {(featured.alarm.skippedOccurrence ?? 0) <= now &&

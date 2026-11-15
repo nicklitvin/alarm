@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.21.4",
+      "build": 40,
+      "date": "2026-11-15",
+      "title": "Countdown in the Widget",
+      "notes": [
+        "The Up Next widget shows how long until your next alarm, like \"in 2h 4m\" or \"in 1d 5h\", instead of the day. It updates every minute."
+      ]
+    },
+    {
       "version": "1.21.3",
       "build": 39,
       "date": "2026-11-15",
