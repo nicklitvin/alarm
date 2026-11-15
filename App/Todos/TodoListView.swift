@@ -4,12 +4,10 @@ import SwiftUI
 /// Return ends editing everywhere.
 enum TodoField: Hashable {
     case title(UUID), details(UUID)
-    case newTitle, newDetails
 
     var todoID: UUID? {
         switch self {
         case .title(let id), .details(let id): id
-        case .newTitle, .newDetails: nil
         }
     }
 }
@@ -19,12 +17,8 @@ struct TodoListView: View {
     @State private var editing: TodoItem?
     /// The to-do whose time was tapped: a small sheet with just the deadline.
     @State private var editingDue: TodoItem?
-    /// True while a new, not yet saved to-do is being typed at the end of the list.
+    /// The Add To-Do sheet, like Add Alarm and New Timer.
     @State private var addingNew = false
-    /// The new to-do's deadline, and whether its deadline sheet is up. Kept here (not in the
-    /// row) so the sheet belongs to the screen and can't close when the list redraws.
-    @State private var newDue: Date?
-    @State private var pickingNewDeadline = false
     @FocusState private var focus: TodoField?
 
     var body: some View {
@@ -44,8 +38,7 @@ struct TodoListView: View {
             }
             .safeAreaInset(edge: .bottom) {
                 if focus == nil {
-                    // Like Reminders: adds an empty row at the end of the list, ready to type.
-                    BottomActionButton(title: "New To-Do", systemImage: "plus", action: startNew)
+                    BottomActionButton(title: "New To-Do", systemImage: "plus") { addingNew = true }
                         .transition(.opacity)
                 }
             }
@@ -58,9 +51,8 @@ struct TodoListView: View {
                     .presentationDetents([.height(290)])
                     .presentationDragIndicator(.visible)
             }
-            .sheet(isPresented: $pickingNewDeadline, onDismiss: { if addingNew { focus = .newTitle } }) {
-                DeadlineSheet(date: newDue ?? QuickTime.nextDefault()) { picked in newDue = picked }
-                    .presentationDetents([.medium, .large])
+            .sheet(isPresented: $addingNew) {
+                NewTodoSheet()
             }
             .task(id: AppNavigation.shared.pendingTodoID) {
                 // Opened from a widget, notification or chat event: show that to-do.
@@ -73,28 +65,12 @@ struct TodoListView: View {
         .tint(.orange)
     }
 
-    private func startNew() {
-        newDue = nil
-        addingNew = true
-        focus = .newTitle
-    }
-
     private func list(now: Date) -> some View {
-        ScrollViewReader { proxy in
+        ScrollViewReader { _ in
             List {
                 // Open to-dos: soonest deadline first, then the ones without a deadline. No sections.
                 ForEach(controller.openTodos) { todo in
                     row(todo, now: now)
-                }
-
-                if addingNew {
-                    NewTodoRow(focus: $focus, due: $newDue, pickingDeadline: $pickingNewDeadline) {
-                        addingNew = false
-                        newDue = nil
-                    }
-                        .id("new")
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
                 }
 
                 if !controller.completedTodos.isEmpty {
@@ -130,7 +106,7 @@ struct TodoListView: View {
             .environment(\.defaultMinListRowHeight, 0)
             .scrollDismissesKeyboard(.immediately)
             .overlay {
-                if controller.todos.isEmpty && !addingNew {
+                if controller.todos.isEmpty {
                     ContentUnavailableView {
                         Label("Nothing To Do", systemImage: "checklist")
                     } description: {
@@ -140,9 +116,6 @@ struct TodoListView: View {
                 }
             }
             .animation(.snappy, value: controller.todos)
-            .onChange(of: addingNew) { _, adding in
-                if adding { withAnimation { proxy.scrollTo("new", anchor: .bottom) } }
-            }
         }
     }
 
@@ -313,99 +286,63 @@ private struct TodoRow: View {
 
 // MARK: - New to-do
 
-/// The empty row "New To-Do" adds at the end of the list. It's saved once you finish typing
-/// (Return or tapping elsewhere); left empty, it simply goes away.
-private struct NewTodoRow: View {
+/// "New To-Do": a sheet like Add Alarm and New Timer, with the big Add button at the bottom.
+/// Swipe down to cancel.
+private struct NewTodoSheet: View {
     @Environment(TodoController.self) private var controller
-    var focus: FocusState<TodoField?>.Binding
-    @Binding var due: Date?
-    @Binding var pickingDeadline: Bool
-    let onFinish: () -> Void
-
+    @Environment(\.dismiss) private var dismiss
     @State private var title = ""
     @State private var details = ""
+    @State private var hasDeadline = false
+    @State private var deadline = QuickTime.nextDefault().roundedToMinutes(5)
+    @FocusState private var titleFocused: Bool
 
-    private var isEditing: Bool { focus.wrappedValue == .newTitle || focus.wrappedValue == .newDetails }
+    private var canAdd: Bool { !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
     var body: some View {
-        // Top-aligned with a fixed nudge, so the empty field sits beside the circle and the
-        // calendar button instead of dropping below them (an empty multi-line field has no
-        // text baseline to line up with).
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "circle")
-                .font(.title2)
-                .foregroundStyle(.tertiary)
-                .frame(width: 28, height: 28)
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Title", text: $title)
+                        .font(.body.weight(.medium))
+                        .focused($titleFocused)
+                        .submitLabel(.done)
+                    TextField("Details (optional)", text: $details, axis: .vertical)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1...4)
+                }
 
-            VStack(alignment: .leading, spacing: 2) {
-                TextField("New To-Do", text: $title, axis: .vertical)
-                    .focused(focus, equals: .newTitle)
-                    .submitLabel(.done)
-                    .onChange(of: title) { _, text in
-                        if text.contains("\n") {
-                            title = text.replacingOccurrences(of: "\n", with: "")
-                            focus.wrappedValue = nil
-                        }
+                Section {
+                    Toggle("Deadline", isOn: $hasDeadline.animation(.snappy))
+                    if hasDeadline {
+                        TimeOfDayChips(date: $deadline)
+                            .padding(.vertical, 4)
+                        DeadlineDateTimeRows(date: $deadline)
                     }
-                TextField("Add details", text: $details, axis: .vertical)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1...4)
-                    .focused(focus, equals: .newDetails)
-                    .onChange(of: details) { _, text in
-                        if text.contains("\n") {
-                            details = text.replacingOccurrences(of: "\n", with: "")
-                            focus.wrappedValue = nil
-                        }
+                } footer: {
+                    if hasDeadline {
+                        Text("You'll get a notification when it's due.")
                     }
-                if let due {
-                    HStack(spacing: 3) {
-                        Image(systemName: "clock")
-                        Text(TimeFormat.dueDescription(due, relativeTo: .now))
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
                 }
             }
-            .padding(.top, 3)
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            Button {
-                pickingDeadline = true
-            } label: {
-                Image(systemName: "calendar")
-                    .font(.title3)
-                    .foregroundStyle(.orange)
-                    .frame(height: 28)
+            .navigationTitle("New To-Do")
+            .navigationBarTitleDisplayMode(.inline)
+            .safeAreaInset(edge: .bottom) {
+                BottomActionButton(title: "Add To-Do", systemImage: "plus", action: add)
+                    .disabled(!canAdd)
             }
-            .buttonStyle(.borderless)
-            .accessibilityLabel("Deadline")
+            .onAppear { titleFocused = true }
         }
-        .padding(.vertical, 7)
-        .padding(.leading, 4)
-        .onChange(of: focus.wrappedValue) { _, new in
-            // Finished typing (and not just opening the deadline): save or discard. Checked a
-            // moment later, because tapping the calendar button ends typing just before the
-            // button's own action runs.
-            guard new != .newTitle, new != .newDetails else { return }
-            Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(300))
-                let stillTyping = focus.wrappedValue == .newTitle || focus.wrappedValue == .newDetails
-                if !stillTyping, !pickingDeadline { finish() }
-            }
-        }
+        .tint(.orange)
     }
 
-    private func finish() {
-        let text = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !text.isEmpty {
-            controller.add(title: text, details: details, due: due)
-        }
-        onFinish()
+    private func add() {
+        guard canAdd else { return }
+        controller.add(title: title, details: details, due: hasDeadline ? deadline : nil)
+        dismiss()
     }
 }
-
-// MARK: - Deadline
 
 /// The small sheet from tapping a to-do's time: quick times, date and time, nothing else.
 /// Saves as you change it; swipe down to close.
@@ -434,43 +371,6 @@ struct DueSheet: View {
             current.due = newDate
             controller.update(current)
         }
-    }
-}
-
-/// Deadline for a new to-do: your quick times, a custom time (5-minute steps) and the date.
-struct DeadlineSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    @State private var date: Date
-    let onPick: (Date?) -> Void
-
-    init(date: Date, onPick: @escaping (Date?) -> Void) {
-        _date = State(initialValue: date.roundedToMinutes(5))
-        self.onPick = onPick
-    }
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    TimeOfDayChips(date: $date)
-                        .padding(.vertical, 4)
-                    DeadlineDateTimeRows(date: $date)
-                }
-            }
-            .navigationTitle("Deadline")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Set") {
-                        onPick(date)
-                        dismiss()
-                    }
-                    .fontWeight(.semibold)
-                }
-            }
-        }
-        .tint(.orange)
     }
 }
 

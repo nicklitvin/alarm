@@ -34,10 +34,9 @@ export function TodoTab() {
   return (
     <>
       <TabHeader title="To-Do" tab="todos" detail={open.length ? (overdue ? `${overdue} overdue · ${open.length} left` : `${open.length} left`) : null} />
-      {data.todos.length === 0 && !adding && <div className="talk-empty"><div className="big">☑︎</div><h3>Nothing To Do</h3>Tap New To-Do below.</div>}
+      {data.todos.length === 0 && <div className="talk-empty"><div className="big">☑︎</div><h3>Nothing To Do</h3>Tap New To-Do below.</div>}
       <div className="todo-flat">
         {open.map((t) => row(t))}
-        {adding && <NewTodoRow onFinish={() => setAdding(false)} />}
       </div>
       {done.length > 0 && (
         <div className="todo-flat compact">
@@ -46,47 +45,42 @@ export function TodoTab() {
           {done.map((t) => row(t, true))}
         </div>
       )}
-      {!adding && <BottomAction label="New To-Do" onClick={() => setAdding(true)} />}
+      <BottomAction label="New To-Do" onClick={() => setAdding(true)} />
+      {adding && <NewTodoSheet onClose={() => setAdding(false)} />}
       {editing && <TodoEditor todo={editing} onClose={() => setEditing(null)} />}
       {editingDue && <DueSheet todo={editingDue} onClose={() => setEditingDue(null)} />}
     </>
   )
 }
 
-/** The empty row New To-Do adds. Saved when you finish typing; left empty, it goes away. */
-function NewTodoRow({ onFinish }: { onFinish: () => void }) {
-  const { update, now, data } = useStore()
+/** New To-Do: a sheet like Add Alarm and New Timer, with Add To-Do at the bottom. */
+function NewTodoSheet({ onClose }: { onClose: () => void }) {
+  const { data, update, now } = useStore()
   const [title, setTitle] = useState('')
   const [details, setDetails] = useState('')
-  const [due, setDue] = useState<number | undefined>()
-  const [picking, setPicking] = useState(false)
-  const finish = () => {
-    if (title.trim()) update((d) => ({ ...d, todos: [...d.todos, { id: uid(), title: title.trim(), details: details.trim(), due, isDone: false, createdAt: Date.now() }] }))
-    onFinish()
+  const [hasDeadline, setHasDeadline] = useState(false)
+  const [due, setDue] = useState(() => roundTo5(nextQuickTime(now, data.settings.todoQuickTimes)))
+  const add = () => {
+    if (!title.trim()) return
+    update((d) => ({ ...d, todos: [...d.todos, { id: uid(), title: title.trim(), details: details.trim(), due: hasDeadline ? due : undefined, isDone: false, createdAt: Date.now() }] }))
+    onClose()
   }
   return (
-    <div className="todo-item" onBlur={(e) => { if (!picking && !e.currentTarget.contains(e.relatedTarget as Node)) finish() }}>
-      <span className="check" style={{ opacity: 0.5 }} />
-      <div className="grow">
-        <input className="todo-input" autoFocus value={title} placeholder="New To-Do"
-          onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()} />
-        <input className="todo-input details" value={details} placeholder="Add details"
-          onChange={(e) => setDetails(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()} />
-        {due && <div className="sub due" style={{ fontSize: 12 }}><span>🕒</span>{dueDescription(due, now)}</div>}
-      </div>
-      <button className="cal-btn" aria-label="Deadline" onMouseDown={(e) => { e.preventDefault(); setPicking(true) }}>📅</button>
-      {picking && <CustomDeadline value={due ?? nextQuickTime(now, data.settings.todoQuickTimes)}
-        onPick={(v) => setDue(v)} onClose={() => setPicking(false)} />}
-    </div>
-  )
-}
-
-function CustomDeadline({ value, onPick, onClose }: { value: number; onPick: (v: number | undefined) => void; onClose: () => void }) {
-  const [date, setDate] = useState(roundTo5(value))
-  return (
-    <Sheet title="Deadline" medium onClose={onClose} left={<button onClick={onClose}>Cancel</button>}
-      right={<button onClick={() => { onPick(date); onClose() }}>Set</button>}>
-      <Section><div style={{ padding: 12 }}><TimeOfDayChips value={date} onChange={setDate} /></div><DeadlineInputs value={date} onChange={setDate} /></Section>
+    <Sheet title="New To-Do" onClose={onClose} bottom={{ label: '＋ Add To-Do', onClick: add, disabled: !title.trim() }}>
+      <Section>
+        <div className="row"><input className="input" autoFocus style={{ fontWeight: 500 }} placeholder="Title" value={title}
+          onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && add()} /></div>
+        <div className="row"><input className="input" style={{ fontSize: 15, color: 'var(--secondary)' }} placeholder="Details (optional)" value={details} onChange={(e) => setDetails(e.target.value)} /></div>
+      </Section>
+      <Section footer={hasDeadline ? "You'll get a notification when it's due." : undefined}>
+        <div className="row"><span className="grow">Deadline</span><Switch label="Deadline" on={hasDeadline} onChange={setHasDeadline} /></div>
+        {hasDeadline && (
+          <>
+            <div className="row" style={{ display: 'block' }}><TimeOfDayChips value={due} onChange={setDue} /></div>
+            <DeadlineInputs value={due} onChange={setDue} />
+          </>
+        )}
+      </Section>
     </Sheet>
   )
 }

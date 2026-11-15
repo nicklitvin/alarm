@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.23.0",
+      "build": 49,
+      "date": "2026-11-15",
+      "title": "New To-Do Sheet",
+      "notes": [
+        "New To-Do opens a sheet like Add Alarm and New Timer: type the title and details, turn on a deadline (with your quick times, date and time), then tap Add To-Do at the bottom. Swipe down to cancel."
+      ]
+    },
+    {
       "version": "1.22.2",
       "build": 48,
       "date": "2026-11-15",
