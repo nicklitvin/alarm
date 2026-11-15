@@ -213,7 +213,7 @@ struct NextAlarmWidget: Widget {
         }
         .configurationDisplayName("Next Alarm")
         .description("See when your next alarm will go off.")
-        .supportedFamilies([.systemSmall, .accessoryRectangular, .accessoryCircular, .accessoryInline])
+        .supportedFamilies([.accessoryRectangular, .accessoryCircular, .accessoryInline]) // lock screen only: on the home screen, Up Next shows the alarm with Dismiss
     }
 }
 

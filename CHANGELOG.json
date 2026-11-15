@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.24.1",
+      "build": 55,
+      "date": "2026-11-15",
+      "title": "One Home Screen Widget",
+      "notes": [
+        "Removed the small home screen Next Alarm widget (the one without a Dismiss button). Use the small Up Next widget instead, which shows your next alarm with Dismiss. Next Alarm is still on the lock screen."
+      ]
+    },
+    {
       "version": "1.24.0",
       "build": 54,
       "date": "2026-11-15",

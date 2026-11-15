@@ -120,7 +120,7 @@ function bigTime(date: number) {
 // MARK: - Home Screen
 
 function HomeScreen() {
-  const { now, next, items, open, dismiss, data } = useSystem()
+  const { now, items, open, dismiss, data } = useSystem()
   const first = items[0]
   const todoCount = items.filter((i) => i.kind === 'todo' && !i.todo.isDone).length
   const layout = upNextLayout(items, now)
@@ -193,22 +193,12 @@ function HomeScreen() {
     <>
       <div className="home">
         <div className="widgets">
-          <div className="widget" onClick={() => open(next ? { tab: 'alarms' } : { tab: 'alarms' })}>
-            <div className="wh"><span>⏰</span><span className="muted" style={{ fontSize: 12 }}>{next ? dayDescription(next.date, now) : ''}</span></div>
-            {next ? (
-              <>
-                <div className="big">{bigTime(next.date).time}<small> {bigTime(next.date).period}</small></div>
-                <div style={{ fontSize: 14, fontWeight: 500 }} className="ellipsis">{alarmTitle(next.alarm)}</div>
-                <div className="muted" style={{ fontSize: 12 }}>in {countdown(now, next.date)}</div>
-              </>
-            ) : <div className="big" style={{ fontSize: 20 }}>No Alarms</div>}
-          </div>
           {upNextWidget('small')}
           {upNextWidget('medium')}
           {upNextWidget('large')}
         </div>
       </div>
-      <Caption>Next Alarm (small) and Up Next (small, medium, large). Your next alarm always sits on top, however far away, with a Dismiss button for that ring; to-dos and timers follow. Tapping anything opens its tab, a to-do's circle checks it off, and the waveform button opens Talk.</Caption>
+      <Caption>Up Next (small, medium, large). The Next Alarm widget is lock screen only. Your next alarm always sits on top, however far away, with a Dismiss button for that ring; to-dos and timers follow. Tapping anything opens its tab, a to-do's circle checks it off, and the waveform button opens Talk.</Caption>
     </>
   )
 }
