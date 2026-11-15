@@ -296,7 +296,7 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
         </Section>
       )}
       {tab === 'todos' && (
-        <Section header="Notifications" footer="Touch and hold a to-do's notification to mark it done or be reminded in an hour or tomorrow.">
+        <Section header="Notifications" footer="You'll get a notification when a to-do is due.">
           <div className="row"><span className="grow">At the Deadline</span><Switch label="At the deadline" on={s.todoDueAlertEnabled} onChange={(v) => set('todoDueAlertEnabled', v)} /></div>
           <div className="row"><span className="grow">Early Reminder</span>{choice(s.todoEarlyReminderMinutes, [0, 5, 15, 30, 60, 1440], (v) => set('todoEarlyReminderMinutes', v), 'None')}</div>
         </Section>

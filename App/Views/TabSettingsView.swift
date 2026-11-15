@@ -290,7 +290,7 @@ private struct TodoSettingsSection: View {
     private var footer: String {
         switch (dueAlert, earlyMinutes) {
         case (false, 0): "No notifications for to-dos. Deadlines still show in the app and widget."
-        case (true, 0): "You'll get a notification when a to-do is due. Touch and hold it to mark it done or be reminded in an hour or tomorrow."
+        case (true, 0): "You'll get a notification when a to-do is due."
         case (false, let m): "You'll get a reminder \(AppSettings.leadTimeName(m)) before each deadline."
         case (true, let m): "You'll get a reminder \(AppSettings.leadTimeName(m)) before each deadline, and another when it's due."
         }

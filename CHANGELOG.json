@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.21.2",
+      "build": 38,
+      "date": "2026-11-15",
+      "title": "Less Text",
+      "notes": [
+        "Removed the \"touch and hold\" hint from To-Do notification settings."
+      ]
+    },
+    {
       "version": "1.21.1",
       "build": 37,
       "date": "2026-11-15",

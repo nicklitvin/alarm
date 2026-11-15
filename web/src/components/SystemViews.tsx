@@ -262,12 +262,10 @@ function Notifications() {
               <div>Rings at {timeOf(ring)}</div>
             </div>
           </button>
-          {expanded === 'alarm' ? (
+          {expanded === 'alarm' && (
             <div className="notif-actions">
               <button className="red" onClick={() => { if (alarm) dismiss(alarm.id, ring); setExpanded(null) }}>🔕 Dismiss Alarm</button>
             </div>
-          ) : (
-            <button className="notif-hint" onClick={() => setExpanded('alarm')}>Touch and hold to see actions ›</button>
           )}
         </div>
 
@@ -281,14 +279,12 @@ function Notifications() {
                 <div>Due now · {timeOf(todo.due)}{todo.details.trim() ? `\n${todo.details}` : ''}</div>
               </div>
             </button>
-            {expanded === 'todo' ? (
+            {expanded === 'todo' && (
               <div className="notif-actions">
                 <button onClick={() => { complete(todo.id); setExpanded(null) }}>✓ Mark as Done</button>
                 <button onClick={() => { snooze(todo.id, 3600_000); setExpanded(null) }}>↻ Remind Me in 1 Hour</button>
                 <button onClick={() => { snooze(todo.id, 24 * 3600_000); setExpanded(null) }}>☀︎ Remind Me Tomorrow</button>
               </div>
-            ) : (
-              <button className="notif-hint" onClick={() => setExpanded('todo')}>Touch and hold to see actions ›</button>
             )}
           </div>
         )}
@@ -308,7 +304,7 @@ function Notifications() {
       </div>
       <Caption>
         Tap a notification to open it: the alarm one opens the Alarms tab, which already shows its Dismiss card.
-        Right-click, or tap "Touch and hold…", to see the actions you'd get by pressing and holding on iPhone.
+        Right-click one to see the actions iOS shows when you press and hold it.
         Which notifications appear follows each tab's settings{!s.todoEarlyReminderMinutes ? ' (to-do early reminders are off)' : ''}.
         The alarm heads-up clears itself once that alarm rings.
         {!alarm && ' No alarms are set, so the alarm one is an example.'}
