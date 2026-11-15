@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.28.3",
+      "build": 69,
+      "date": "2026-11-15",
+      "title": "Sleepy Widget",
+      "notes": [
+        "When no alarm is coming up, the small Next Alarm widget shows the same stepped zzz symbol as the lock screen."
+      ]
+    },
+    {
       "version": "1.28.2",
       "build": 68,
       "date": "2026-11-15",

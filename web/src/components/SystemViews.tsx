@@ -221,7 +221,7 @@ function HomeScreen() {
                 {(shownNext.alarm.skippedOccurrence ?? 0) <= now &&
                   <button className="dismiss-full" onClick={(e) => { e.stopPropagation(); dismiss(shownNext.alarm.id, shownNext.date) }}>Dismiss</button>}
               </div>
-            ) : <div className="small-alarm" style={{ alignItems: 'center', justifyContent: 'center' }}><div className="big muted" style={{ margin: 0 }}>zzz</div></div>}
+            ) : <div className="small-alarm" style={{ alignItems: 'center', justifyContent: 'center' }}><Zzz size={56} muted /></div>}
           </div>
           {upNextWidget('medium')}
           {upNextWidget('large')}
@@ -233,6 +233,19 @@ function HomeScreen() {
 }
 
 const keyOf = (i: UpNextItem) => i.kind + ('alarm' in i ? i.alarm.id : i.kind === 'timer' ? i.timer.id : i.todo.id)
+
+/** The stepped "zzz" SF Symbol: three z's climbing up and getting bigger. */
+function Zzz({ size, muted }: { size: number; muted?: boolean }) {
+  const z = (scale: number, drop: number) => (
+    <span style={{ fontSize: size * scale, lineHeight: 1, fontWeight: 700, transform: `translateY(${drop * size}px)` }}>z</span>
+  )
+  return (
+    <span aria-label="zzz" className={muted ? 'muted' : undefined}
+      style={{ display: 'inline-flex', alignItems: 'flex-end', gap: size * 0.02, height: size * 0.75, fontFamily: 'ui-rounded, system-ui, sans-serif' }}>
+      {z(0.42, 0)}{z(0.58, -0.16)}{z(0.78, -0.34)}
+    </span>
+  )
+}
 
 // MARK: - Lock Screen
 
@@ -251,7 +264,7 @@ function LockScreen() {
         <div className="lock-row">
           <button className="acc-circle" onClick={() => open(next ? { tab: 'alarms' } : { tab: 'alarms' })} aria-label="Next alarm">
             {soon ? <div><div style={{ fontSize: 11 }}>⏰</div><div style={{ fontSize: 17 }}>{bigTime(soon.date).time}</div><div style={{ fontSize: 9, opacity: 0.8 }}>{bigTime(soon.date).period}</div></div>
-              : <div style={{ fontSize: 22 }}>zzz</div>}
+              : <Zzz size={22} />}
           </button>
           <button className="acc-rect" onClick={() => open(first ? linkFor(first) : { tab: 'todos' })}>
             {first ? <Row item={first} compact light /> : <><b>Up Next</b><span className="t">All clear</span></>}
@@ -265,7 +278,7 @@ function LockScreen() {
                 <span className="t" style={{ fontSize: 26, fontWeight: 600 }}>{bigTime(soon.date).time} <small style={{ fontSize: 14 }}>{bigTime(soon.date).period}</small></span>
                 <span className="s">{dayDescription(soon.date, now)} · in {countdown(now, soon.date)}</span>
               </>
-            ) : <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}><span style={{ fontSize: 24 }}>zzz</span><span className="s">{next ? 'No alarm in the next 24 hours' : 'No alarms'}</span></span>}
+            ) : <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}><Zzz size={26} /><span className="s">{next ? 'No alarm in the next 24 hours' : 'No alarms'}</span></span>}
           </button>
         </div>
         {timer && <div style={{ marginTop: 14 }}><TimerLockActivity timer={timer} /></div>}

@@ -87,10 +87,11 @@ struct NextAlarmWidgetView: View {
         if let next = soon {
             SmallAlarm(upcoming: next, now: entry.date)
         } else {
-            // No alarms: just zzz.
-            Text("zzz")
-                .font(.system(size: 40, weight: .semibold, design: .rounded))
+            // No alarm soon: the same stepped zzz symbol as the lock screen.
+            Image(systemName: "zzz")
+                .font(.system(size: 56, weight: .semibold))
                 .foregroundStyle(.secondary)
+                .widgetAccentable()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
