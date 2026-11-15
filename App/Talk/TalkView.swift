@@ -29,21 +29,11 @@ struct TalkView: View {
             .toolbar(.hidden, for: .navigationBar)
             // No title on Talk: just the settings button, in the same spot as the other tabs.
             .safeAreaInset(edge: .top, spacing: 0) {
-                TabHeader(title: nil, tab: .talk) {
-                    // Clear Conversation sits right next to the settings button.
-                    Button {
-                        confirmClear = true
-                    } label: {
-                        Image(systemName: "trash")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(model.messages.isEmpty ? Color.secondary : Color.orange)
-                            .frame(width: 36, height: 36)
-                            .background(Circle().fill(Color(.tertiarySystemFill)))
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(model.messages.isEmpty)
-                    .accessibilityLabel("Clear Conversation")
-                }
+                // Clear Conversation shares one pill with the settings button.
+                TabHeader(title: nil, tab: .talk, actions: [
+                    TabHeaderAction(systemImage: "eraser", label: "Clear Conversation",
+                                    isDisabled: model.messages.isEmpty) { confirmClear = true },
+                ])
             }
             // The message field sits on the outermost content view, which SwiftUI moves above the
             // keyboard reliably (nested insets inside the scroll view sometimes stayed behind it).

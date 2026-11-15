@@ -48,8 +48,11 @@ export function Sheet({ title, onClose, left, right, medium, bottom, children }:
 }
 
 /** Title on the left, status on the right, then the tab's settings gear. */
-export function TabHeader({ title, tab, detail, accessory, plain }: {
-  title?: string; tab: Tab; detail?: string | null; accessory?: ReactNode; plain?: boolean
+/** An extra button sharing the settings button's pill (TabHeaderAction). */
+export interface HeaderAction { icon: string; label: string; disabled?: boolean; onClick: () => void }
+
+export function TabHeader({ title, tab, detail, accessory, plain, actions = [] }: {
+  title?: string; tab: Tab; detail?: string | null; accessory?: ReactNode; plain?: boolean; actions?: HeaderAction[]
 }) {
   const [open, setOpen] = useState(false)
   return (
@@ -60,7 +63,13 @@ export function TabHeader({ title, tab, detail, accessory, plain }: {
           {detail && <span className="detail">{detail}</span>}
         </div>
         {accessory}
-        <button className="gear" aria-label="Settings" onClick={() => setOpen(true)}>⚙︎</button>
+        {actions.length === 0 ? <button className="gear" aria-label="Settings" onClick={() => setOpen(true)}>⚙︎</button> : (
+          // One pill with the extra buttons and the gear, like the buttons above a note.
+          <div className="header-pill">
+            {actions.map((a) => <button key={a.label} aria-label={a.label} title={a.label} disabled={a.disabled} onClick={a.onClick}>{a.icon}</button>)}
+            <button aria-label="Settings" onClick={() => setOpen(true)}>⚙︎</button>
+          </div>
+        )}
       </div>
       {open && <SettingsSheet tab={tab} onClose={() => setOpen(false)} />}
     </>

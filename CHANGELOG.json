@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.20.1",
+      "build": 33,
+      "date": "2026-11-15",
+      "title": "One Pill in Talk",
+      "notes": [
+        "On the Talk tab, Clear Conversation and Settings now share one pill, like the buttons above a note, and Clear uses the same clear icon as in notes."
+      ]
+    },
+    {
       "version": "1.20.0",
       "build": 32,
       "date": "2026-11-15",

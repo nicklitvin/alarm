@@ -47,11 +47,8 @@ export function TalkTab() {
   const wake = data.settings.wakeWordEnabled ? data.settings.wakeWord : null
   return (
     <>
-      {/* Clear Conversation sits right next to the settings button. */}
-      <TabHeader tab="talk" accessory={
-        <button className="gear" aria-label="Clear Conversation" title="Clear Conversation" disabled={data.chat.length === 0}
-          onClick={() => setConfirmClear(true)}>🗑︎</button>
-      } />
+      {/* Clear Conversation shares one pill with the settings button. */}
+      <TabHeader tab="talk" actions={[{ icon: '⌫', label: 'Clear Conversation', disabled: data.chat.length === 0, onClick: () => setConfirmClear(true) }]} />
       {confirmClear && <Alert title="Clear this conversation?" message="All messages are removed and the assistant starts fresh." action="Clear"
         onCancel={() => setConfirmClear(false)} onConfirm={() => { update((d) => ({ ...d, chat: [] })); setConfirmClear(false) }} />}
       <div className="chat">

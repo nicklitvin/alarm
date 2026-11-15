@@ -479,3 +479,6 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .qp-reply { font-size: 17px; line-height: 1.35; font-weight: 500; }
 .qp-dots { letter-spacing: 3px; opacity: 0.5; animation: fade 1s infinite alternate; }
 .qp-buttons.single { grid-template-columns: 1fr; }
+.header-pill { display: flex; align-items: center; height: 36px; border-radius: 18px; background: var(--fill); padding: 0 2px; flex: none; }
+.header-pill button { width: 40px; height: 36px; display: grid; place-items: center; color: var(--orange); font-size: 18px; }
+.header-pill button:disabled { color: var(--secondary); opacity: 0.6; }
