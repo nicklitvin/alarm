@@ -47,6 +47,16 @@ export function latestTimes(recents: RecentTimer[], count = 3): RecentTimer[] {
   return out
 }
 
+export const TIMER_QUICK_CHOICES = [1, 2, 3, 4, 5, 7, 8, 10, 12, 15, 20, 25, 30, 40, 45, 60, 90, 120].map((m) => m * 60)
+
+/** What New Timer offers: the quick times, or the last three times (RecentTimer.newTimerChoices). */
+export function newTimerChoices(recents: RecentTimer[], quickTimes: number[] | undefined, useRecent: boolean): RecentTimer[] {
+  if (useRecent) return latestTimes(recents)
+  const times = [...(quickTimes ?? []).filter((s) => s > 0).slice(0, 3)]
+  for (const d of [300, 600, 900]) if (times.length < 3) times.push(d)
+  return times.map((duration) => ({ duration, label: '' }))
+}
+
 /** Newest first, no duplicates, at most 12. */
 export function addRecent(recents: RecentTimer[], timer: RecentTimer) {
   return [timer, ...recents.filter((r) => recentID(r) !== recentID(timer))].slice(0, 12)
@@ -85,6 +95,8 @@ export interface Settings {
   speakReplies: boolean
   customInstructions: string
   todoQuickTimes: number[] // minutes after midnight
+  timerQuickTimes: number[] // seconds
+  timerUsesRecentTimes: boolean
   widgetShowsAlarms: boolean
   widgetShowsTimedTodos: boolean
   widgetShowsUntimedTodos: boolean
@@ -101,6 +113,8 @@ export const defaultSettings: Settings = {
   speakReplies: true,
   customInstructions: '',
   todoQuickTimes: [8 * 60, 14 * 60, 21 * 60],
+  timerQuickTimes: [300, 600, 900],
+  timerUsesRecentTimes: false,
   widgetShowsAlarms: true,
   widgetShowsTimedTodos: true,
   widgetShowsUntimedTodos: true,

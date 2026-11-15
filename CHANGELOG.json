@@ -1,6 +1,16 @@
 {
   "releases": [
     {
+      "version": "1.21.0",
+      "build": 36,
+      "date": "2026-11-15",
+      "title": "Timer Quick Times",
+      "notes": [
+        "New Timer has three quick times: 5, 10 and 15 minutes to start. Change them in Timer settings.",
+        "Prefer your recent times? Turn on Use Recent Times in Timer settings and New Timer shows the last three times you used instead."
+      ]
+    },
+    {
       "version": "1.20.3",
       "build": 35,
       "date": "2026-11-15",

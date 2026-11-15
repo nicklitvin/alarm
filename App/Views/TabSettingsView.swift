@@ -206,8 +206,60 @@ private struct WidgetToggleRow: View {
 // MARK: - Timers
 
 /// Timers have no settings of their own (just Delete All and About below).
+/// The three one-tap times in New Timer, or "Use Recent Times" to show your last three instead.
 private struct TimerSettingsSection: View {
-    var body: some View { EmptyView() }
+    @AppStorage(AppSettings.timerQuickTimesKey, store: AppSettings.store) private var stored = ""
+    @AppStorage(AppSettings.timerUsesRecentTimesKey, store: AppSettings.store) private var useRecent = false
+
+    private var times: [Int] { AppSettings.parseTimerQuickTimes(stored) }
+
+    var body: some View {
+        Section {
+            Toggle("Use Recent Times", isOn: $useRecent.animation())
+            if !useRecent {
+                HStack(spacing: 8) {
+                    ForEach(Array(times.enumerated()), id: \.offset) { index, seconds in
+                        Menu {
+                            Picker("Time", selection: Binding(
+                                get: { seconds },
+                                set: { newValue in
+                                    var list = times
+                                    list[index] = newValue
+                                    stored = list.map(String.init).joined(separator: ",")
+                                }
+                            )) {
+                                ForEach(choices(including: seconds), id: \.self) { choice in
+                                    Text(TimeFormat.compactDuration(TimeInterval(choice))).tag(choice)
+                                }
+                            }
+                        } label: {
+                            Text(TimeFormat.compactDuration(TimeInterval(seconds)))
+                                .font(.subheadline.weight(.semibold))
+                                .lineLimit(1)
+                                .fixedSize()
+                                .frame(maxWidth: .infinity, minHeight: 34)
+                                .foregroundStyle(Color.primary)
+                                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color(.tertiarySystemFill)))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+        } header: {
+            Text("Quick Times")
+        } footer: {
+            Text(useRecent
+                 ? "New Timer shows the last three times you used."
+                 : "One-tap times in New Timer. Tap one to change it, or turn on Use Recent Times to show your last three times instead.")
+        }
+    }
+
+    /// The standard choices, plus the current value if it's something else.
+    private func choices(including seconds: Int) -> [Int] {
+        AppSettings.timerQuickTimeChoices.contains(seconds) ? AppSettings.timerQuickTimeChoices
+            : (AppSettings.timerQuickTimeChoices + [seconds]).sorted()
+    }
 }
 
 // MARK: - To-dos

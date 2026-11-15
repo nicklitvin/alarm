@@ -54,7 +54,7 @@ struct TimersView: View {
             }
             .animation(.default, value: controller.timers)
             .sheet(isPresented: $showNew) {
-                NewTimerSheet(recentTimes: controller.recentTimes) { duration, label in start(duration, label: label) }
+                NewTimerSheet(recentTimes: controller.newTimerChoices, title: AppSettings.timerUsesRecentTimes ? "Recent" : "Quick Times") { duration, label in start(duration, label: label) }
             }
             .alert("Couldn't Start Timer", isPresented: Binding(
                 get: { errorMessage != nil },
@@ -87,8 +87,10 @@ private struct NewTimerSheet: View {
     @State private var minutes = 5
     @State private var seconds = 0
     @State private var label = ""
-    /// The last three times used (filled in with 5, 10 and 15 minutes at first).
+    /// The quick times from Timer settings, or the last three times used.
     let recentTimes: [RecentTimer]
+    /// "Quick Times" or "Recent".
+    let title: String
     let onStart: (TimeInterval, String) -> Void
 
     private var pickedDuration: TimeInterval {
@@ -135,7 +137,7 @@ private struct NewTimerSheet: View {
                             .submitLabel(.done)
                     }
                 } header: {
-                    Text("Recent")
+                    Text(title)
                 }
             }
             .navigationTitle("New Timer")

@@ -454,5 +454,11 @@ check(farAlarm.alarm != nil && farAlarm.rows.isEmpty, "the next alarm is on top 
 let weekly = AlarmItem(hour: 9, minute: 0, weekdays: [.saturday])
 check(UpNext.items(alarms: [weekly], todos: [], timers: [], now: layoutNow).contains { if case .nextAlarm = $0.kind { true } else { false } }, "a far-off next alarm is still listed")
 
+// Timer quick times.
+check(AppSettings.parseTimerQuickTimes(nil) == [300, 600, 900], "default timer quick times are 5, 10 and 15 min")
+check(AppSettings.parseTimerQuickTimes("120,abc") == [120, 600, 900], "always three timer quick times")
+check(RecentTimer.newTimerChoices(recents: usedTimers, quickTimes: [60, 120, 180], useRecent: false).map(\.duration) == [60, 120, 180], "New Timer shows the quick times")
+check(RecentTimer.newTimerChoices(recents: usedTimers, quickTimes: [60, 120, 180], useRecent: true).map(\.duration) == [540, 300, 1800], "or the recent times when that's on")
+
 print(failures == 0 ? "\nALL PASSED" : "\n\(failures) FAILED")
 exit(failures == 0 ? 0 : 1)

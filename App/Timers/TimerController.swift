@@ -119,6 +119,12 @@ final class TimerController {
     /// 5, 10 and 15 minutes until you've used three.
     var recentTimes: [RecentTimer] { RecentTimer.latestTimes(from: recents) }
 
+    /// What New Timer offers: the quick times, or the recent times (Timer settings).
+    var newTimerChoices: [RecentTimer] {
+        RecentTimer.newTimerChoices(recents: recents, quickTimes: AppSettings.timerQuickTimes,
+                                    useRecent: AppSettings.timerUsesRecentTimes)
+    }
+
     func removeRecent(_ recent: RecentTimer) {
         recents.removeAll { $0.id == recent.id }
         RecentTimerStorage.save(recents)

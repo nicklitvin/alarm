@@ -20,6 +20,29 @@ enum AppSettings {
         return alarmHeadsUpChoices.contains(value) ? value : 60
     }
 
+    // MARK: Timers
+
+    /// The three one-tap times in New Timer, in seconds, stored as "300,600,900".
+    static let timerQuickTimesKey = "settings.timer.quickTimes"
+    /// 5, 10 and 15 minutes.
+    static let defaultTimerQuickTimes: [Int] = [5 * 60, 10 * 60, 15 * 60]
+    /// Durations the quick times can be set to (Timer settings).
+    static let timerQuickTimeChoices: [Int] = [1, 2, 3, 4, 5, 7, 8, 10, 12, 15, 20, 25, 30, 40, 45, 60, 90, 120].map { $0 * 60 }
+    static var timerQuickTimes: [Int] { parseTimerQuickTimes(store.string(forKey: timerQuickTimesKey)) }
+    /// Show your last three times in New Timer instead of the quick times (off by default).
+    static let timerUsesRecentTimesKey = "settings.timer.usesRecentTimes"
+    static var timerUsesRecentTimes: Bool { bool(timerUsesRecentTimesKey, default: false) }
+
+    /// Exactly three positive durations, in the order set (duplicates allowed); the defaults fill gaps.
+    static func parseTimerQuickTimes(_ text: String?) -> [Int] {
+        var values = (text ?? "").split(separator: ",")
+            .compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+            .filter { $0 > 0 && $0 <= 24 * 3600 }
+        values = Array(values.prefix(3))
+        while values.count < 3 { values.append(defaultTimerQuickTimes[values.count]) }
+        return values
+    }
+
     // MARK: To-dos
 
     static let todoDueAlertEnabledKey = "settings.todo.dueAlertEnabled"

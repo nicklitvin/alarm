@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { SwipeRow } from '../components/SwipeRow'
 import { BottomAction, Section, Sheet, TabHeader, Wheel } from '../components/ui'
-import { addRecent, clock, compactDuration, durationName, latestTimes, uid, type RecentTimer, type TimerItem } from '../logic/model'
+import { addRecent, clock, compactDuration, durationName, newTimerChoices, uid, type RecentTimer, type TimerItem } from '../logic/model'
 import { useStore } from '../logic/store'
 
 const range = (n: number) => Array.from({ length: n }, (_, i) => i)
@@ -58,12 +58,12 @@ export function TimersTab() {
       )}
 
       <BottomAction label="New Timer" onClick={() => setCreating(true)} />
-      {creating && <NewTimerSheet recent={latestTimes(data.recents)} onClose={() => setCreating(false)} onStart={start} />}
+      {creating && <NewTimerSheet recent={newTimerChoices(data.recents, data.settings.timerQuickTimes, data.settings.timerUsesRecentTimes)} title={data.settings.timerUsesRecentTimes ? 'Recent' : 'Quick Times'} onClose={() => setCreating(false)} onStart={start} />}
     </>
   )
 }
 
-function NewTimerSheet({ recent, onClose, onStart }: { recent: RecentTimer[]; onClose: () => void; onStart: (seconds: number, label: string) => void }) {
+function NewTimerSheet({ recent, title, onClose, onStart }: { recent: RecentTimer[]; title: string; onClose: () => void; onStart: (seconds: number, label: string) => void }) {
   const [h, setH] = useState(0)
   const [m, setM] = useState(5)
   const [s, setS] = useState(0)
@@ -85,11 +85,11 @@ function NewTimerSheet({ recent, onClose, onStart }: { recent: RecentTimer[]; on
         ))}
       </div>
       <div style={{ height: 16 }} />
-      <Section header="Recent">
+      <Section header={title}>
         {/* The last three times, same chips as the to-do quick times: tap one to set the wheels. */}
         <div className="row quick-times">
           {recent.map((r) => (
-            <button key={r.duration} className={`qt-chip ${total === r.duration ? 'selected' : ''}`} title={r.label || durationName(r.duration)}
+            <button key={`${r.duration}-${recent.indexOf(r)}`} className={`qt-chip ${total === r.duration ? 'selected' : ''}`} title={r.label || durationName(r.duration)}
               onClick={() => { setH(Math.floor(r.duration / 3600)); setM(Math.floor((r.duration % 3600) / 60)); setS(r.duration % 60); if (r.label) setLabel(r.label) }}>
               {compactDuration(r.duration)}
             </button>

@@ -62,6 +62,12 @@ struct RecentTimer: Codable, Hashable, Identifiable, Sendable {
         Array(([timer] + recents.filter { $0.id != timer.id }).prefix(limit))
     }
 
+    /// The three one-tap times in New Timer: your quick times from Timer settings, or your
+    /// last three times when "Use Recent Times" is on.
+    static func newTimerChoices(recents: [RecentTimer], quickTimes: [Int], useRecent: Bool) -> [RecentTimer] {
+        useRecent ? latestTimes(from: recents) : quickTimes.map { RecentTimer(duration: TimeInterval($0), label: "") }
+    }
+
     /// The latest `count` different durations (with the label last used for each), filled in
     /// with 5, 10 and 15 minutes when fewer have been used.
     static func latestTimes(from recents: [RecentTimer], count: Int = 3) -> [RecentTimer] {

@@ -486,3 +486,4 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .v-alarm-line .v-alarm-time { font-size: 24px; flex: none; }
 .v-alarm-line .v-alarm-time small { font-size: 12px; }
 .v-alarm-line .v-alarm-sub { font-size: 13px; margin-top: 0; min-width: 0; }
+.qt-select { -webkit-appearance: none; appearance: none; text-align: center; text-align-last: center; font-weight: 600; cursor: pointer; }
