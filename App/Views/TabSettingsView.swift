@@ -202,9 +202,12 @@ private struct WidgetToggleRow: View {
 
 /// Timers have no settings of their own (just Delete All and About below).
 /// The three one-tap times in New Timer, or "Use Recent Times" to show your last three instead.
+/// Tap a time to set it with hour and minute wheels, right below (no extra pop-up).
 private struct TimerSettingsSection: View {
     @AppStorage(AppSettings.timerQuickTimesKey, store: AppSettings.store) private var stored = ""
     @AppStorage(AppSettings.timerUsesRecentTimesKey, store: AppSettings.store) private var useRecent = false
+    /// The quick time being changed with the wheels.
+    @State private var editing: Int?
 
     private var times: [Int] { AppSettings.parseTimerQuickTimes(stored) }
 
@@ -214,46 +217,53 @@ private struct TimerSettingsSection: View {
             if !useRecent {
                 HStack(spacing: 8) {
                     ForEach(Array(times.enumerated()), id: \.offset) { index, seconds in
-                        Menu {
-                            Picker("Time", selection: Binding(
-                                get: { seconds },
-                                set: { newValue in
-                                    var list = times
-                                    list[index] = newValue
-                                    stored = list.map(String.init).joined(separator: ",")
-                                }
-                            )) {
-                                ForEach(choices(including: seconds), id: \.self) { choice in
-                                    Text(TimeFormat.compactDuration(TimeInterval(choice))).tag(choice)
-                                }
-                            }
+                        let selected = editing == index
+                        Button {
+                            withAnimation(.snappy) { editing = selected ? nil : index }
                         } label: {
                             Text(TimeFormat.compactDuration(TimeInterval(seconds)))
                                 .font(.subheadline.weight(.semibold))
                                 .lineLimit(1)
                                 .fixedSize()
                                 .frame(maxWidth: .infinity, minHeight: 34)
-                                .foregroundStyle(Color.primary)
-                                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color(.tertiarySystemFill)))
+                                .foregroundStyle(selected ? Color.white : Color.primary)
+                                .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(selected ? Color.orange : Color(.tertiarySystemFill)))
                         }
                         .buttonStyle(.plain)
                     }
                 }
                 .padding(.vertical, 4)
+
+                if let index = editing, index < times.count {
+                    DurationWheel(hours: component(index, unit: 3600, max: 24),
+                                  minutes: component(index, unit: 60, max: 60),
+                                  seconds: .constant(0), showsSeconds: false)
+                        .transition(.opacity)
+                }
             }
         } header: {
             Text("Quick Times")
         } footer: {
             Text(useRecent
                  ? "New Timer shows the last three times you used."
-                 : "One-tap times in New Timer. Tap one to change it, or turn on Use Recent Times to show your last three times instead.")
+                 : "One-tap times in New Timer. Tap one to change it with the wheels, or turn on Use Recent Times to show your last three times instead.")
         }
     }
 
-    /// The standard choices, plus the current value if it's something else.
-    private func choices(including seconds: Int) -> [Int] {
-        AppSettings.timerQuickTimeChoices.contains(seconds) ? AppSettings.timerQuickTimeChoices
-            : (AppSettings.timerQuickTimeChoices + [seconds]).sorted()
+    /// The hours or minutes of quick time `index`, for a wheel. Never lets a time become zero.
+    private func component(_ index: Int, unit: Int, max: Int) -> Binding<Int> {
+        Binding(
+            get: { (times[index] / unit) % max },
+            set: { newValue in
+                var list = times
+                let current = list[index]
+                let hours = unit == 3600 ? newValue : current / 3600
+                let minutes = unit == 60 ? newValue : (current % 3600) / 60
+                list[index] = Swift.max(60, hours * 3600 + minutes * 60)
+                stored = list.map(String.init).joined(separator: ",")
+            }
+        )
     }
 }
 

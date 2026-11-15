@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.21.6",
+      "build": 42,
+      "date": "2026-11-15",
+      "title": "Timer Quick Time Wheels",
+      "notes": [
+        "In Timer settings, tap a quick time to set it with hour and minute wheels, right below the buttons."
+      ]
+    },
+    {
       "version": "1.21.5",
       "build": 41,
       "date": "2026-11-15",

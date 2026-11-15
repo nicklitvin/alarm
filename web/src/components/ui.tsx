@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import changelog from '../../../CHANGELOG.json'
 import {
-  applyQuickTime, cleanQuickTimes, compactDuration, dueDescription, newTimerChoices, TIMER_QUICK_CHOICES, dueSuggestions, leadTimeName, quickTimeLabel, timeOf, type NotesSort, type Settings,
+  applyQuickTime, cleanQuickTimes, compactDuration, dueDescription, newTimerChoices, dueSuggestions, leadTimeName, quickTimeLabel, timeOf, type NotesSort, type Settings,
 } from '../logic/model'
 import { useStore, type Tab } from '../logic/store'
 
@@ -202,6 +202,46 @@ export function Alert({ title, message, action, onConfirm, onCancel }: {
 }
 
 
+/** Timer settings → Quick Times: tap a time to set it with hour and minute wheels right below,
+ *  or turn on Use Recent Times. */
+function TimerQuickTimesSection() {
+  const { data, update } = useStore()
+  const s = data.settings
+  const [editing, setEditing] = useState<number | null>(null)
+  const times = newTimerChoices([], s.timerQuickTimes, false).map((r) => r.duration)
+  const set = (patch: Partial<Settings>) => update((d) => ({ ...d, settings: { ...d.settings, ...patch } }))
+  const change = (index: number, hours: number, minutes: number) =>
+    set({ timerQuickTimes: times.map((t, n) => (n === index ? Math.max(60, hours * 3600 + minutes * 60) : t)) })
+  const range = (n: number) => Array.from({ length: n }, (_, i) => i)
+  return (
+    <Section header="Quick Times" footer={s.timerUsesRecentTimes ? 'New Timer shows the last three times you used.'
+      : 'One-tap times in New Timer. Tap one to change it with the wheels, or turn on Use Recent Times to show your last three times instead.'}>
+      <div className="row"><span className="grow">Use Recent Times</span>
+        <Switch label="Use recent times" on={s.timerUsesRecentTimes} onChange={(v) => set({ timerUsesRecentTimes: v })} /></div>
+      {!s.timerUsesRecentTimes && (
+        <>
+          <div className="row quick-times">
+            {times.map((t, index) => (
+              <button key={index} className={`qt-chip ${editing === index ? 'selected' : ''}`} onClick={() => setEditing(editing === index ? null : index)}>{compactDuration(t)}</button>
+            ))}
+          </div>
+          {editing !== null && (
+            <div className="wheels" style={{ padding: '4px 12px 8px' }}>
+              {([['hours', 24, Math.floor(times[editing] / 3600)], ['min', 60, Math.floor((times[editing] % 3600) / 60)]] as const).map(([unit, n, value]) => (
+                <div className="wheel-unit" key={unit}>
+                  <Wheel items={range(n)} value={value} render={(v) => <span className="num">{v}</span>}
+                    onChange={(v) => unit === 'hours' ? change(editing, v, Math.floor((times[editing] % 3600) / 60)) : change(editing, Math.floor(times[editing] / 3600), v)} />
+                  <span className="unit">{unit}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </Section>
+  )
+}
+
 /** To-Do settings → Quick Times: three compact time pickers side by side; tap one to change it. */
 function QuickTimesSection() {
   const { data, update } = useStore()
@@ -301,24 +341,7 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
           <div className="row"><span className="grow">Early Reminder</span>{choice(s.todoEarlyReminderMinutes, [0, 5, 15, 30, 60, 1440], (v) => set('todoEarlyReminderMinutes', v), 'None')}</div>
         </Section>
       )}
-      {tab === 'timers' && (
-        <Section header="Quick Times" footer={s.timerUsesRecentTimes ? 'New Timer shows the last three times you used.'
-          : 'One-tap times in New Timer. Tap one to change it, or turn on Use Recent Times to show your last three times instead.'}>
-          <div className="row"><span className="grow">Use Recent Times</span>
-            <Switch label="Use recent times" on={s.timerUsesRecentTimes} onChange={(v) => set('timerUsesRecentTimes', v)} /></div>
-          {!s.timerUsesRecentTimes && (
-            <div className="row quick-times">
-              {newTimerChoices([], s.timerQuickTimes, false).map((r, index) => (
-                <select key={index} className="time-pill qt-select" value={r.duration} aria-label={`Quick time ${index + 1}`}
-                  onChange={(e) => set('timerQuickTimes', newTimerChoices([], s.timerQuickTimes, false).map((x, n) => (n === index ? Number(e.target.value) : x.duration)))}>
-                  {(TIMER_QUICK_CHOICES.includes(r.duration) ? TIMER_QUICK_CHOICES : [...TIMER_QUICK_CHOICES, r.duration].sort((a, b) => a - b))
-                    .map((c) => <option key={c} value={c}>{compactDuration(c)}</option>)}
-                </select>
-              ))}
-            </div>
-          )}
-        </Section>
-      )}
+      {tab === 'timers' && <TimerQuickTimesSection />}
       {tab === 'todos' && <QuickTimesSection />}
       {tab === 'todos' && (
         <Section header="Up Next Widget" footer="Choose which to-dos appear in the Up Next widget.">

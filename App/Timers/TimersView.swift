@@ -253,10 +253,12 @@ private struct CircleButton: View {
 
 // MARK: - Hours / minutes / seconds wheels
 
-private struct DurationWheel: View {
+/// Hour, minute (and second) wheels. Also used for the quick times in Timer settings.
+struct DurationWheel: View {
     @Binding var hours: Int
     @Binding var minutes: Int
     @Binding var seconds: Int
+    var showsSeconds = true
 
     /// Numbers end at the same spot in every column, and each label starts a fixed gap after it.
     private static let numberWidth: CGFloat = 40
@@ -267,7 +269,9 @@ private struct DurationWheel: View {
         HStack(spacing: 0) {
             wheel($hours, range: 0..<24, unit: "hours")
             wheel($minutes, range: 0..<60, unit: "min")
-            wheel($seconds, range: 0..<60, unit: "sec")
+            if showsSeconds {
+                wheel($seconds, range: 0..<60, unit: "sec")
+            }
         }
         .frame(height: 180)
     }

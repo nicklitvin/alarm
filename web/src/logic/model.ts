@@ -47,8 +47,6 @@ export function latestTimes(recents: RecentTimer[], count = 3): RecentTimer[] {
   return out
 }
 
-export const TIMER_QUICK_CHOICES = [1, 2, 3, 4, 5, 7, 8, 10, 12, 15, 20, 25, 30, 40, 45, 60, 90, 120].map((m) => m * 60)
-
 /** What New Timer offers: the quick times, or the last three times (RecentTimer.newTimerChoices). */
 export function newTimerChoices(recents: RecentTimer[], quickTimes: number[] | undefined, useRecent: boolean): RecentTimer[] {
   if (useRecent) return latestTimes(recents)
