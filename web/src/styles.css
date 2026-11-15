@@ -355,8 +355,6 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .todo-flat .swipe + .swipe > .swipe-content::before { display: none; }
 .todo-flat .row.todo-item, .todo-flat .todo-item.row { padding: 9px 16px; }
 .todo-item { display: flex; align-items: flex-start; gap: 12px; padding: 9px 16px; }
-.todo-flat.compact .row { padding: 5px 16px; min-height: 0; font-size: 15px; }
-.todo-flat.compact .check { width: 18px; height: 18px; font-size: 11px; }
 .todo-flat-header { display: flex; justify-content: space-between; align-items: center; margin: 14px 16px 2px; font-size: 13px; font-weight: 600; color: var(--secondary); }
 .todo-flat-header .text-btn { font-size: 13px; }
 .widget.upnext { position: relative; }

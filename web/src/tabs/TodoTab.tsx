@@ -64,9 +64,9 @@ export function TodoTab() {
     return order.indexOf(drag.id) < order.indexOf(t.id) ? 'drop-after' : 'drop-before'
   }
 
-  const row = (t: Todo, compact = false) => (
-    <TodoRow key={t.id} todo={t} now={now} compact={compact} onToggle={() => toggle(t.id)} onDue={() => setEditingDue(t)} onDetails={() => setEditing(t)}
-      dragClass={compact ? '' : dragClass(t)} onHold={compact ? undefined : () => setDrag({ id: t.id, overId: null })}
+  const row = (t: Todo, completed = false) => (
+    <TodoRow key={t.id} todo={t} now={now} onToggle={() => toggle(t.id)} onDue={() => setEditingDue(t)} onDetails={() => setEditing(t)}
+      dragClass={completed ? '' : dragClass(t)} onHold={completed ? undefined : () => setDrag({ id: t.id, overId: null })}
       onDelete={() => update((d) => ({ ...d, todos: d.todos.filter((x) => x.id !== t.id) }))} />
   )
 
@@ -78,7 +78,7 @@ export function TodoTab() {
         {open.map((t) => row(t))}
       </div>
       {done.length > 0 && (
-        <div className="todo-flat compact">
+        <div className="todo-flat">
           <div className="todo-flat-header"><span>Completed</span>
             <button className="text-btn" onClick={() => update((d) => ({ ...d, todos: d.todos.filter((t) => !t.isDone) }))}>Clear</button></div>
           {done.map((t) => row(t, true))}
@@ -126,8 +126,8 @@ function NewTodoSheet({ onClose }: { onClose: () => void }) {
 }
 
 /** Edit right in the list, like Reminders: tap to type, details underneath, 📅 opens the deadline sheet. */
-function TodoRow({ todo, now, compact, onToggle, onDelete, onDue, onDetails, onHold, dragClass = '' }: {
-  todo: Todo; now: number; compact: boolean; onToggle: () => void; onDelete: () => void; onDue: () => void; onDetails: () => void
+function TodoRow({ todo, now, onToggle, onDelete, onDue, onDetails, onHold, dragClass = '' }: {
+  todo: Todo; now: number; onToggle: () => void; onDelete: () => void; onDue: () => void; onDetails: () => void
   onHold?: () => void; dragClass?: string
 }) {
   const { update } = useStore()
@@ -147,7 +147,7 @@ function TodoRow({ todo, now, compact, onToggle, onDelete, onDue, onDetails, onH
   }
 
   return (
-    <SwipeRow className={`todo-item ${compact ? 'compact' : ''} ${dragClass}`} dataId={todo.id} onHold={editing ? undefined : onHold} onClick={() => !editing && setEditing(true)}
+    <SwipeRow className={`todo-item ${dragClass}`} dataId={todo.id} onHold={editing ? undefined : onHold} onClick={() => !editing && setEditing(true)}
       leading={{ label: todo.isDone ? 'Undo' : 'Done', color: 'var(--orange)', onAction: onToggle }}
       trailing={{ label: 'Delete', color: 'var(--red)', onAction: onDelete }}>
       <button className={`check ${todo.isDone ? 'done' : late ? 'overdue' : ''}`} aria-label={todo.isDone ? 'Mark as not done' : 'Mark as done'}

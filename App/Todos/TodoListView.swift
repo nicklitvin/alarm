@@ -80,7 +80,7 @@ struct TodoListView: View {
                 if !controller.completedTodos.isEmpty {
                     Section {
                         ForEach(controller.completedTodos) { todo in
-                            row(todo, now: now, compact: true)
+                            row(todo, now: now)  // same size as open to-dos
                         }
                     } header: {
                         HStack {
@@ -119,8 +119,8 @@ struct TodoListView: View {
         }
     }
 
-    private func row(_ todo: TodoItem, now: Date, compact: Bool = false) -> some View {
-        TodoRow(todo: todo, now: now, compact: compact, focus: $focus, onShowDue: {
+    private func row(_ todo: TodoItem, now: Date) -> some View {
+        TodoRow(todo: todo, now: now, focus: $focus, onShowDue: {
             focus = nil
             editingDue = todo
         }) {
@@ -129,7 +129,7 @@ struct TodoListView: View {
         }
         .listRowBackground(Color.clear)
         .listRowSeparator(.hidden)
-        .listRowInsets(EdgeInsets(top: compact ? 4 : 7, leading: 20, bottom: compact ? 4 : 7, trailing: 16))
+        .listRowInsets(EdgeInsets(top: 7, leading: 20, bottom: 7, trailing: 16))
         .swipeActions(edge: .trailing) {
             Button("Delete", systemImage: "trash", role: .destructive) { controller.delete(todo.id) }
         }
@@ -151,7 +151,6 @@ private struct TodoRow: View {
     @Environment(TodoController.self) private var controller
     let todo: TodoItem
     let now: Date
-    let compact: Bool
     var focus: FocusState<TodoField?>.Binding
     let onShowDue: () -> Void
     let onShowDetails: () -> Void
@@ -159,12 +158,11 @@ private struct TodoRow: View {
     @State private var title: String
     @State private var details: String
 
-    init(todo: TodoItem, now: Date, compact: Bool, focus: FocusState<TodoField?>.Binding,
+    init(todo: TodoItem, now: Date, focus: FocusState<TodoField?>.Binding,
          onShowDue: @escaping () -> Void, onShowDetails: @escaping () -> Void) {
         self.onShowDue = onShowDue
         self.todo = todo
         self.now = now
-        self.compact = compact
         self.focus = focus
         self.onShowDetails = onShowDetails
         _title = State(initialValue: todo.title)
@@ -182,10 +180,10 @@ private struct TodoRow: View {
                 Task { await controller.toggle(todo.id) }
             } label: {
                 Image(systemName: todo.isDone ? "checkmark.circle.fill" : "circle")
-                    .font(compact ? .body : .title2)
+                    .font(.title2)
                     .foregroundStyle(todo.isDone ? Color.orange : (overdue ? Color.red : Color.secondary))
                     .contentTransition(.symbolEffect(.replace))
-                    .frame(width: compact ? 22 : 28, height: compact ? 22 : 28)
+                    .frame(width: 28, height: 28)
             }
             .buttonStyle(.borderless)
             .sensoryFeedback(.success, trigger: todo.isDone) { _, done in done }
@@ -193,7 +191,7 @@ private struct TodoRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 TextField("To-Do", text: $title, axis: .vertical)
-                    .font(compact ? .subheadline : .body)
+                    .font(.body)
                     .strikethrough(todo.isDone)
                     .foregroundStyle(todo.isDone ? .secondary : .primary)
                     .focused(focus, equals: .title(todo.id))
@@ -208,7 +206,7 @@ private struct TodoRow: View {
 
                 if isEditing || !todo.trimmedDetails.isEmpty {
                     TextField("Add details", text: $details, axis: .vertical)
-                        .font(compact ? .caption : .subheadline)
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .lineLimit(1...4)
                         .focused(focus, equals: .details(todo.id))
@@ -235,7 +233,7 @@ private struct TodoRow: View {
                     .buttonStyle(.borderless)
                 }
             }
-            .padding(.top, compact ? 1 : 3) // first line (20 / 22 pt) centered on the circle (22 / 28 pt)
+            .padding(.top, 3) // first line (22 pt) centered on the circle (28 pt)
 
             Spacer(minLength: 0)
 

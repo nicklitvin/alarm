@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.28.5",
+      "build": 71,
+      "date": "2026-11-15",
+      "title": "Full-Size Completed To-Dos",
+      "notes": [
+        "Completed to-dos are now the same size as the rest of your list."
+      ]
+    },
+    {
       "version": "1.28.4",
       "build": 70,
       "date": "2026-11-15",
