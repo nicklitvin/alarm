@@ -63,7 +63,10 @@ function load(): AppData {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const data = JSON.parse(raw) as AppData
-      return { ...seedData(), ...data, settings: { ...defaultSettings, ...data.settings } }
+      const settings = { ...defaultSettings, ...data.settings }
+      // The old Manual note sort no longer exists.
+      if (!['edited', 'created', 'title'].includes(settings.notesSort)) settings.notesSort = 'edited'
+      return { ...seedData(), ...data, settings }
     }
   } catch { /* fall through to demo data */ }
   return seedData()

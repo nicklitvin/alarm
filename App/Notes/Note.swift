@@ -76,13 +76,12 @@ struct Note: Identifiable, Codable, Hashable, Sendable {
 
 /// How the Notes list is ordered (Notes settings).
 enum NotesSort: String, CaseIterable, Identifiable, Sendable {
-    case manual, edited, created, title
+    case edited, created, title
 
     var id: String { rawValue }
 
     var name: String {
         switch self {
-        case .manual: "Manual"
         case .edited: "Date Edited"
         case .created: "Date Created"
         case .title: "Title"
@@ -94,8 +93,6 @@ enum NotesSort: String, CaseIterable, Identifiable, Sendable {
         notes.sorted { a, b in
             if a.isPinned != b.isPinned { return a.isPinned }
             switch self {
-            case .manual:
-                return a.sortIndex != b.sortIndex ? a.sortIndex < b.sortIndex : a.updatedAt > b.updatedAt
             case .edited:
                 return a.updatedAt > b.updatedAt
             case .created:
@@ -105,33 +102,6 @@ enum NotesSort: String, CaseIterable, Identifiable, Sendable {
                 return order != .orderedSame ? order == .orderedAscending : a.updatedAt > b.updatedAt
             }
         }
-    }
-}
-
-extension Array where Element == Note {
-    /// Drag `id` onto `target` (press and hold, then drop): returns the notes in Manual order with
-    /// the dragged note in the target's place. Dragging down lands after the target, up lands
-    /// before it. Moving between Pinned and the rest takes on the target's pin.
-    func reordered(moving id: UUID, onto target: UUID, currentSort: NotesSort) -> [Note] {
-        guard id != target, let targetNote = first(where: { $0.id == target }), contains(where: { $0.id == id }) else { return self }
-        let current = currentSort.sorted(self).map(\.id)
-        let movingDown = (current.firstIndex(of: id) ?? 0) < (current.firstIndex(of: target) ?? 0)
-
-        var notes = self
-        if let index = notes.firstIndex(where: { $0.id == id }) { notes[index].isPinned = targetNote.isPinned }
-        // Pinned notes stay first, then everything in the order on screen.
-        var order = NotesSort.manual.sorted(notes.enumerated().map { offset, note in
-            var n = note
-            n.sortIndex = Double(current.firstIndex(of: note.id) ?? offset)
-            return n
-        }).map(\.id).filter { $0 != id }
-        let targetIndex = order.firstIndex(of: target) ?? order.endIndex
-        order.insert(id, at: movingDown ? targetIndex + 1 : targetIndex)
-
-        for (offset, noteID) in order.enumerated() {
-            if let index = notes.firstIndex(where: { $0.id == noteID }) { notes[index].sortIndex = Double(offset) }
-        }
-        return notes
     }
 }
 

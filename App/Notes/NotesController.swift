@@ -14,6 +14,7 @@ final class NotesController {
 
     private init() {
         notes = NoteStorage.load()
+        // An old "Manual" choice no longer exists: it falls back to Date Edited.
         sort = NotesSort(rawValue: AppSettings.store.string(forKey: AppSettings.notesSortKey) ?? "") ?? .edited
     }
 
@@ -24,9 +25,7 @@ final class NotesController {
 
     @discardableResult
     func add(title: String = "", body: String = "") -> Note {
-        // New notes go to the top of the Manual order.
-        let top = (notes.map(\.sortIndex).min() ?? 0) - 1
-        let note = Note(title: title, body: body, sortIndex: top)
+        let note = Note(title: title, body: body)
         notes.append(note)
         save()
         return note
@@ -57,28 +56,10 @@ final class NotesController {
         save()
     }
 
-    /// Press-and-hold drag: drop `id` onto `target`. Switches the list to Manual order.
-    func move(_ id: UUID, onto target: UUID) {
-        let previousSort = sort
-        notes = notes.reordered(moving: id, onto: target, currentSort: previousSort)
-        if previousSort != .manual {
-            sort = .manual
-            AppSettings.store.set(NotesSort.manual.rawValue, forKey: AppSettings.notesSortKey)
-        }
-        save()
-    }
-
     func setSort(_ newSort: NotesSort) {
         guard newSort != sort else { return }
-        // Make the Manual order start from whatever is on screen now.
-        if newSort == .manual {
-            for (offset, note) in sort.sorted(notes).enumerated() {
-                if let index = notes.firstIndex(where: { $0.id == note.id }) { notes[index].sortIndex = Double(offset) }
-            }
-        }
         sort = newSort
         AppSettings.store.set(newSort.rawValue, forKey: AppSettings.notesSortKey)
-        save()
     }
 
     /// Copies the whole note (title and text) to the clipboard.

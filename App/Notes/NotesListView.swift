@@ -5,8 +5,6 @@ struct NotesListView: View {
     @State private var path: [UUID] = []
     @State private var query = ""
 
-    private var isSearching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
-
     private var visible: [Note] {
         let q = query.trimmingCharacters(in: .whitespaces).lowercased()
         let notes = controller.sortedNotes.filter { !$0.isEmpty || path.contains($0.id) }
@@ -95,20 +93,6 @@ struct NotesListView: View {
         }
         .swipeActions(edge: .trailing) {
             Button("Delete", systemImage: "trash", role: .destructive) { controller.delete(note.id) }
-        }
-        // Press and hold a note to pick it up, then drop it on another note to move it there.
-        .draggable(note.id.uuidString) {
-            NoteRow(note: note)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .frame(width: 320)
-                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .environment(controller)
-        }
-        .dropDestination(for: String.self) { items, _ in
-            guard !isSearching, let id = items.first.flatMap(UUID.init(uuidString:)), id != note.id else { return false }
-            withAnimation(.snappy) { controller.move(id, onto: note.id) }
-            return true
         }
     }
 }

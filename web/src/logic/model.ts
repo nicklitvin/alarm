@@ -80,7 +80,7 @@ export interface Note {
   sortIndex: number
 }
 
-export type NotesSort = 'manual' | 'edited' | 'created' | 'title'
+export type NotesSort = 'edited' | 'created' | 'title'
 
 export interface Settings {
   alarmHeadsUpEnabled: boolean
@@ -427,26 +427,12 @@ export function sortNotes(notes: Note[], sort: NotesSort) {
   return [...notes].sort((a, b) => {
     if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
     switch (sort) {
-      case 'manual': return a.sortIndex !== b.sortIndex ? a.sortIndex - b.sortIndex : b.updatedAt - a.updatedAt
+      default:
       case 'edited': return b.updatedAt - a.updatedAt
       case 'created': return b.createdAt - a.createdAt
       case 'title': return noteTitle(a).localeCompare(noteTitle(b), undefined, { sensitivity: 'base' })
     }
   })
-}
-
-/** Press-and-hold drag: drop `id` onto `target`. Dragging down lands after the target, up lands
- * before it; moving between Pinned and the rest takes the target's pin. Result is in Manual order. */
-export function reorderNotes(notes: Note[], id: string, target: string, currentSort: NotesSort): Note[] {
-  const targetNote = notes.find((n) => n.id === target)
-  if (id === target || !targetNote || !notes.some((n) => n.id === id)) return notes
-  const current = sortNotes(notes, currentSort).map((n) => n.id)
-  const movingDown = current.indexOf(id) < current.indexOf(target)
-  const withPin = notes.map((n) => (n.id === id ? { ...n, isPinned: targetNote.isPinned } : n))
-  const order = sortNotes(withPin.map((n) => ({ ...n, sortIndex: current.indexOf(n.id) })), 'manual').map((n) => n.id).filter((x) => x !== id)
-  const at = order.indexOf(target)
-  order.splice(movingDown ? at + 1 : at, 0, id)
-  return withPin.map((n) => ({ ...n, sortIndex: order.indexOf(n.id) }))
 }
 
 // MARK: - Up Next (widget)

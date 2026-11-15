@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { SwipeRow } from '../components/SwipeRow'
 import { Alert, BottomAction, Section, TabHeader } from '../components/ui'
-import { checklistProgress, checklistReturn, lineBounds, lineKind, noteCopyText, notePreview, noteTitle, reorderNotes, sortNotes, toggleItem, toggleList, autoBullet, uid, type Note } from '../logic/model'
+import { checklistProgress, checklistReturn, lineBounds, lineKind, noteCopyText, notePreview, noteTitle, sortNotes, toggleItem, toggleList, autoBullet, uid, type Note } from '../logic/model'
 import { useStore } from '../logic/store'
 
 const progressLabel = (n: Note) => {
@@ -33,10 +33,6 @@ export function NotesTab() {
   const { data, update, now, pending, clearPending } = useStore()
   const [openID, setOpenID] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  /** A note picked up by press-and-hold, and the note it's currently over. */
-  const [drag, setDrag] = useState<{ id: string; overId: string | null } | null>(null)
-  const dragRef = useRef(drag)
-  dragRef.current = drag
   const { copied, copy } = useCopy()
   const sort = data.settings.notesSort
 
@@ -49,31 +45,6 @@ export function NotesTab() {
   const setNotes = (change: (notes: Note[]) => Note[]) => update((d) => ({ ...d, notes: change(d.notes) }))
   const q = query.trim().toLowerCase()
   const visible = sortNotes(data.notes, sort).filter((n) => !q || n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q))
-
-  // While a note is held: track which note the pointer is over, and drop it there on release.
-  useEffect(() => {
-    if (!drag) return
-    const over = (e: PointerEvent) => {
-      const id = (document.elementFromPoint(e.clientX, e.clientY)?.closest('.swipe[data-id]') as HTMLElement | null)?.dataset.id ?? null
-      setDrag((d) => (d && d.overId !== id ? { ...d, overId: id } : d))
-    }
-    const drop = () => {
-      const d = dragRef.current
-      if (d?.overId && d.overId !== d.id) {
-        const { id, overId } = d
-        update((s) => ({ ...s, notes: reorderNotes(s.notes, id, overId, s.settings.notesSort), settings: { ...s.settings, notesSort: 'manual' } }))
-      }
-      setDrag(null)
-    }
-    document.addEventListener('pointermove', over)
-    document.addEventListener('pointerup', drop)
-    document.body.style.userSelect = 'none'
-    return () => {
-      document.removeEventListener('pointermove', over)
-      document.removeEventListener('pointerup', drop)
-      document.body.style.userSelect = ''
-    }
-  }, [drag?.id, update]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (openID) {
     const note = data.notes.find((n) => n.id === openID)
@@ -97,17 +68,9 @@ export function NotesTab() {
     </div>
   )
 
-  // Swipe left to delete, right to pin. Press and hold to pick a note up and drag it elsewhere.
-  const order = visible.map((n) => n.id)
-  const dragClass = (n: Note) => {
-    if (!drag) return ''
-    if (drag.id === n.id) return 'lifted'
-    if (drag.overId !== n.id || q) return ''
-    return order.indexOf(drag.id) < order.indexOf(n.id) ? 'drop-after' : 'drop-before'
-  }
+  // Swipe left to delete, right to pin.
   const row = (n: Note) => (
-    <SwipeRow key={n.id} dataId={n.id} className={dragClass(n)} onClick={() => setOpenID(n.id)}
-      onHold={q ? undefined : () => setDrag({ id: n.id, overId: null })}
+    <SwipeRow key={n.id} dataId={n.id} onClick={() => setOpenID(n.id)}
       leading={{ label: n.isPinned ? 'Unpin' : 'Pin', color: 'var(--orange)', onAction: () => setNotes((ns) => ns.map((x) => (x.id === n.id ? { ...x, isPinned: !x.isPinned } : x))) }}
       trailing={{ label: 'Delete', color: 'var(--red)', onAction: () => setNotes((ns) => ns.filter((x) => x.id !== n.id)) }}>
       {info(n)}

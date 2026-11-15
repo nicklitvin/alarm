@@ -360,10 +360,10 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
         </Section>
       )}
       {tab === 'notes' && (
-        <Section header="Sort By" footer={s.notesSort === 'manual' ? 'Press and hold a note, then drag it onto another to move it. Pinned notes always stay on top.' : 'Pinned notes always stay on top. Press and hold a note and drag it to arrange notes yourself (switches to Manual).'}>
-          {(['manual', 'edited', 'created', 'title'] as NotesSort[]).map((sort) => (
+        <Section header="Sort By" footer="Pinned notes always stay on top.">
+          {(['edited', 'created', 'title'] as NotesSort[]).map((sort) => (
             <button key={sort} className="row tappable" style={{ width: '100%', textAlign: 'left' }} onClick={() => set('notesSort', sort)}>
-              <span className="grow">{{ manual: 'Manual', edited: 'Date Edited', created: 'Date Created', title: 'Title' }[sort]}</span>
+              <span className="grow">{{ edited: 'Date Edited', created: 'Date Created', title: 'Title' }[sort]}</span>
               {s.notesSort === sort && <span className="orange">✓</span>}
             </button>
           ))}

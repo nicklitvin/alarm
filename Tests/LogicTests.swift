@@ -357,9 +357,9 @@ func titles(_ notes: [Note]) -> [String] { notes.map(\.title) }
 check(titles(NotesSort.edited.sorted([nA, nB, nC])) == ["Cherry", "Banana", "apple"], "edited, pinned first")
 check(titles(NotesSort.created.sorted([nA, nB, nC])) == ["Cherry", "apple", "Banana"], "created")
 check(titles(NotesSort.title.sorted([nA, nB, nC])) == ["Cherry", "apple", "Banana"], "title, case-insensitive")
-check(titles(NotesSort.manual.sorted([nA, nB, nC])) == ["Cherry", "apple", "Banana"], "manual uses sortIndex")
+check(NotesSort(rawValue: "manual") == nil, "the old Manual sort is gone (falls back to Date Edited)")
 let legacyNote = try? JSONDecoder().decode(Note.self, from: Data(#"{"title":"old","createdAt":700000000}"#.utf8))
-check(legacyNote?.isPinned == false && legacyNote?.sortIndex == -(Date(timeIntervalSinceReferenceDate: 700000000).timeIntervalSince1970), "old notes load unpinned, newest-first manual order")
+check(legacyNote?.isPinned == false && legacyNote?.title == "old", "old notes still load, unpinned")
 
 // Recent timers.
 var recents: [RecentTimer] = []
@@ -369,18 +369,6 @@ recents = RecentTimer.adding(RecentTimer(duration: 300, label: ""), to: recents)
 check(recents.map(\.title) == ["5 minutes", "Pasta"], "recents newest first, no duplicates → \(recents.map(\.title))")
 for i in 1...20 { recents = RecentTimer.adding(RecentTimer(duration: TimeInterval(i * 60), label: "T\(i)"), to: recents) }
 check(recents.count == 12 && recents.first?.label == "T20", "recents capped at 12")
-
-// Press-and-hold note reordering.
-let r1 = Note(title: "One", sortIndex: 0), r2 = Note(title: "Two", sortIndex: 1), r3 = Note(title: "Three", sortIndex: 2)
-let rPin = Note(title: "Pinned", isPinned: true, sortIndex: 9)
-func order(_ notes: [Note]) -> [String] { NotesSort.manual.sorted(notes).map(\.title) }
-check(order([r1, r2, r3].reordered(moving: r1.id, onto: r3.id, currentSort: .manual)) == ["Two", "Three", "One"], "drag down lands after target")
-check(order([r1, r2, r3].reordered(moving: r3.id, onto: r1.id, currentSort: .manual)) == ["Three", "One", "Two"], "drag up lands before target")
-let crossed = [rPin, r1, r2].reordered(moving: r2.id, onto: rPin.id, currentSort: .manual)
-check(order(crossed) == ["Two", "Pinned", "One"] && crossed.first { $0.id == r2.id }?.isPinned == true, "dropping on a pinned note pins it")
-let byTitle = [r1, r2, r3].reordered(moving: r2.id, onto: r1.id, currentSort: .title)  // title order: One, Three, Two
-check(order(byTitle) == ["Two", "One", "Three"], "starts from the order on screen when switching to Manual → \(order(byTitle))")
-check(order([r1, r2].reordered(moving: r1.id, onto: r1.id, currentSort: .manual)) == ["One", "Two"], "dropping on itself does nothing")
 
 // App Store update lookup.
 let lookupJSON = #"{"resultCount":1,"results":[{"version":"2.1.0","releaseNotes":"• Faster alarms\n• New widget\n\n- Bug fixes","trackViewUrl":"https://apps.apple.com/us/app/alarm/id123","currentVersionReleaseDate":"2026-12-01T08:00:00Z"}]}"#

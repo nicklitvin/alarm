@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.23.1",
+      "build": 50,
+      "date": "2026-11-15",
+      "title": "Simpler Note Sorting",
+      "notes": [
+        "Removed the Manual note order and press-and-hold dragging. Notes sort by Date Edited, Date Created or Title, with pinned notes on top. If you used Manual, notes now sort by Date Edited."
+      ]
+    },
+    {
       "version": "1.23.0",
       "build": 49,
       "date": "2026-11-15",
