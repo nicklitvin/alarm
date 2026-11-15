@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.23.2",
+      "build": 51,
+      "date": "2026-11-15",
+      "title": "Four Rows in Up Next",
+      "notes": [
+        "Each item in the medium and large Up Next widgets now takes one line, with its time on the right, so the medium widget fits your alarm plus three items (four rows), and the large one about ten."
+      ]
+    },
+    {
       "version": "1.23.1",
       "build": 50,
       "date": "2026-11-15",

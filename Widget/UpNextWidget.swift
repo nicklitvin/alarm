@@ -88,13 +88,13 @@ struct UpNextWidgetView: View {
         }.count
     }
 
-    /// As many rows as fit in `height`, measuring each: a one-line row ("Buy milk") takes less
-    /// room than one with a second line ("Due 5:00 PM"), so short to-dos pack in tighter.
+    /// As many one-line rows as fit in `height`: the medium widget shows the alarm and three
+    /// rows (four lines of content), the large one about ten.
     private func rowsThatFit(_ rows: [UpNextItem], height: CGFloat) -> [UpNextItem] {
         var used: CGFloat = 0
         var fitting: [UpNextItem] = []
         for row in rows {
-            let rowHeight = row.hasSecondLine ? Self.twoLineRowHeight : Self.oneLineRowHeight
+            let rowHeight = Self.rowHeight
             guard used + rowHeight <= height || fitting.isEmpty else { break }
             used += rowHeight
             fitting.append(row)
@@ -103,9 +103,8 @@ struct UpNextWidgetView: View {
     }
     private static let headerHeight: CGFloat = 20
     private static let alarmHeight: CGFloat = 34
-    /// Row heights, including the tappable space above and below (tapPadding).
-    private static let oneLineRowHeight: CGFloat = 28
-    private static let twoLineRowHeight: CGFloat = 41
+    /// A one-line row, including the tappable space above and below (tapPadding).
+    private static let rowHeight: CGFloat = 26
 
     // Medium / large: the next alarm on top with Dismiss on its line,
     // then as many rows as fit, and the ✦ (open Talk) button in the bottom-right corner.
@@ -137,7 +136,7 @@ struct UpNextWidgetView: View {
                     // No gaps between rows: every point of a row opens its tab.
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(shown) { item in
-                            UpNextRow(item: item, now: entry.date, tapPadding: 4)
+                            UpNextRow(item: item, now: entry.date, singleLine: true, tapPadding: 3)
                                 // The last row leaves room for ✦.
                                 .padding(.trailing, item.id == shown.last?.id ? 40 : 0)
                                 .transition(.opacity.combined(with: .move(edge: .trailing)))
@@ -383,6 +382,8 @@ private struct UpNextRow: View {
     let now: Date
     var prominent = false
     var compactLockScreen = false
+    /// One line per row (title left, time right), so more rows fit (medium and large widgets).
+    var singleLine = false
     /// Extra tappable space above and below the text, so rows have no dead gaps between them.
     var tapPadding: CGFloat = 0
 
@@ -392,6 +393,17 @@ private struct UpNextRow: View {
             // Tapping the row opens the item in the app; the circle and buttons do their own thing.
             Link(destination: item.deepLink.url) {
                 HStack(spacing: 0) {
+                    if singleLine {
+                        title
+                            .font(.subheadline.weight(.medium))
+                            .lineLimit(1)
+                        Spacer(minLength: 6)
+                        inlineDetail
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(subtitleIsUrgent ? Color.red : Color.secondary)
+                            .lineLimit(1)
+                            .fixedSize()
+                    } else {
                     VStack(alignment: .leading, spacing: 0) {
                         title
                             .font(compactLockScreen ? .system(size: 15, weight: .semibold) : (prominent ? .headline : .subheadline.weight(.medium)))
@@ -402,6 +414,7 @@ private struct UpNextRow: View {
                             .lineLimit(1)
                     }
                     Spacer(minLength: 0)
+                    }
                 }
                 .padding(.leading, 8)
                 .padding(.vertical, tapPadding)
@@ -482,6 +495,22 @@ private struct UpNextRow: View {
         }
     }
 
+    /// The short detail on the right of a one-line row: a to-do's due time, a timer's countdown,
+    /// when an alarm rings.
+    @ViewBuilder private var inlineDetail: some View {
+        switch item.kind {
+        case .todo(let todo):
+            if let due = todo.due {
+                Text(TimeFormat.dueDescription(due, relativeTo: now))
+            }
+        case .alarmSoon(_, let date), .nextAlarm(_, let date):
+            // The title already has the time: show how long until it rings.
+            Text("in \(TimeFormat.countdown(from: now, to: date))")
+        case .timer:
+            subtitle
+        }
+    }
+
     private var subtitleIsUrgent: Bool {
         if case .todo(let todo) = item.kind { return todo.isOverdue(at: now) }
         return false
@@ -501,16 +530,6 @@ private struct UpNextRow: View {
             .buttonStyle(.plain)
         default:
             EmptyView()
-        }
-    }
-}
-
-private extension UpNextItem {
-    /// Whether its widget row has a second line (due time, details, countdown).
-    var hasSecondLine: Bool {
-        switch kind {
-        case .todo(let todo): todo.due != nil || !todo.trimmedDetails.isEmpty
-        default: true
         }
     }
 }
