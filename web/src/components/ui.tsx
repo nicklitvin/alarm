@@ -218,7 +218,7 @@ function TimerQuickTimesSection() {
   return (
     <>
     {/* A pair: turning one on turns the other off, so New Timer always shows one of them. */}
-    <Section header="New Timer" footer={s.timerUsesRecentTimes ? undefined : 'Three one-tap times in New Timer. Tap one to change it with the wheels.'}>
+    <Section header="New Timer" footer="Three one-tap times in New Timer. Tap one to change it with the wheels.">
       <div className="row"><span className="grow">Use Quick Times</span>
         <Switch label="Use quick times" on={!s.timerUsesRecentTimes} onChange={(v) => set({ timerUsesRecentTimes: !v })} /></div>
       {!s.timerUsesRecentTimes && (

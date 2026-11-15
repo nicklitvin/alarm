@@ -284,9 +284,8 @@ private struct TimerSettingsSection: View {
         } header: {
             Text("New Timer")
         } footer: {
-            if !useRecent {
-                Text("Three one-tap times in New Timer. Tap one to change it with the wheels.")
-            }
+            // Shown even when it's off, so you know what it does.
+            Text("Three one-tap times in New Timer. Tap one to change it with the wheels.")
         }
 
         Section {
