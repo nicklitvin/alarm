@@ -80,14 +80,6 @@ struct UpNextWidgetView: View {
 
     private var layout: UpNext.Layout { UpNext.layout(entry.items, now: entry.date) }
 
-    /// Open to-dos in the widget, shown next to the title.
-    private var todoCount: Int {
-        entry.items.filter { item in
-            if case .todo(let todo) = item.kind { return !todo.isDone }
-            return false
-        }.count
-    }
-
     /// As many one-line rows as fit in `height`: the medium widget shows the alarm and three
     /// rows (four lines of content), the large one about ten.
     private func rowsThatFit(_ rows: [UpNextItem], height: CGFloat) -> [UpNextItem] {
@@ -101,7 +93,6 @@ struct UpNextWidgetView: View {
         }
         return fitting
     }
-    private static let headerHeight: CGFloat = 20
     private static let alarmHeight: CGFloat = 34
     /// A one-line row, including the tappable space above and below (tapPadding).
     private static let rowHeight: CGFloat = 26
@@ -119,20 +110,21 @@ struct UpNextWidgetView: View {
     private var list: some View {
         GeometryReader { geometry in
             let layout = self.layout
-            // With an alarm on top, the rows follow it directly (no divider or "To-Do" line).
-            let top = layout.alarm != nil ? Self.alarmHeight + 6 : Self.headerHeight + 2
-            // With the Live Talk button, the bottom line holds "+3 to-dos" and the button.
+            // The alarm (if any) on top, then the rows. No titles: no divider, no "Up Next".
+            let top = layout.alarm != nil ? Self.alarmHeight + 6 : 0
+            // The bottom line holds "+3 to-dos" (when some don't fit) and the Live Talk button.
             let showsTalk = AppSettings.widgetShowsTalkButton
-            let footer: CGFloat = showsTalk ? Self.footerHeight : 0
-            let shown = rowsThatFit(layout.rows, height: geometry.size.height - top - footer)
+            let available = geometry.size.height - top
+            let allFit = rowsThatFit(layout.rows, height: available).count == layout.rows.count
+            let needsFooter = showsTalk || !allFit
+            let footer: CGFloat = needsFooter ? (showsTalk ? Self.footerHeight : Self.rowHeight) : 0
+            let shown = rowsThatFit(layout.rows, height: available - footer)
             let hidden = Array(layout.rows.dropFirst(shown.count))
             VStack(alignment: .leading, spacing: 2) {
                 if let alarm = layout.alarm {
                     AlarmHeader(upcoming: alarm, now: entry.date)
                         .frame(height: Self.alarmHeight)
                         .padding(.bottom, 4)
-                } else {
-                    header(title: "Up Next")
                 }
                 if shown.isEmpty {
                     if layout.alarm == nil {
@@ -154,7 +146,8 @@ struct UpNextWidgetView: View {
                     }
                     Spacer(minLength: 0)
                 }
-                if showsTalk {
+                if needsFooter {
+                    // The last line: "+3 to-dos" on the left, the Live Talk button on the right.
                     HStack(alignment: .center) {
                         if !hidden.isEmpty {
                             Text(Self.moreText(hidden))
@@ -162,9 +155,9 @@ struct UpNextWidgetView: View {
                                 .foregroundStyle(.secondary)
                         }
                         Spacer(minLength: 0)
-                        AskButton()
+                        if showsTalk { AskButton() }
                     }
-                    .frame(height: Self.footerHeight)
+                    .frame(height: footer)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -178,7 +171,6 @@ struct UpNextWidgetView: View {
             if let alarm = layout.alarm {
                 SmallAlarm(upcoming: alarm, now: entry.date)
             } else {
-                header(title: "Up Next")
                 if let first = entry.items.first {
                     UpNextRow(item: first, now: entry.date, prominent: true)
                 } else {
@@ -188,21 +180,6 @@ struct UpNextWidgetView: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    /// "Up Next" (or "To-Do" under the alarm) and how many to-dos there are.
-    private func header(title: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.orange)
-            if todoCount > 0 {
-                Text("\(todoCount) to-do\(todoCount == 1 ? "" : "s")")
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .frame(height: Self.headerHeight - 2, alignment: .leading)
     }
 
     private var allClear: some View {

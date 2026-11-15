@@ -1,6 +1,16 @@
 {
   "releases": [
     {
+      "version": "1.25.1",
+      "build": 58,
+      "date": "2026-11-15",
+      "title": "No Widget Title",
+      "notes": [
+        "The Up Next widget no longer has an \"Up Next\" title, even without an alarm: your items start at the top.",
+        "When not everything fits, the last line of the widget says how many more there are, like \"+3 to-dos\", with or without the Live Talk button."
+      ]
+    },
+    {
       "version": "1.25.0",
       "build": 57,
       "date": "2026-11-15",
