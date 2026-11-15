@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.35.2",
+      "build": 85,
+      "date": "2026-11-15",
+      "title": "Roomier Widget Rows",
+      "notes": [
+        "The Up Next widget's rows now spread from top to bottom like the Reminders widget, and the to-do count sits lower in the corner."
+      ]
+    },
+    {
       "version": "1.35.1",
       "build": 84,
       "date": "2026-11-15",

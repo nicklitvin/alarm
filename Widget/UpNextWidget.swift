@@ -93,7 +93,9 @@ struct UpNextWidgetView: View {
         GeometryReader { geometry in
             let layout = self.layout
             let lines = family == .systemMedium ? 4 : max(4, Int(geometry.size.height / 31))
-            let line = geometry.size.height / CGFloat(lines)
+            // Like Reminders, the rows reach into the widget's top and bottom margins (about 5 pt
+            // from the edge instead of 16), so they're spread out rather than bunched in the middle.
+            let line = (geometry.size.height + 2 * Self.rowBleed) / CGFloat(lines)
             // The featured alarm is the first row; other alarms stay off this narrower column.
             let others = layout.rows.filter { item in
                 switch item.kind {
@@ -126,9 +128,13 @@ struct UpNextWidgetView: View {
                     Spacer(minLength: 0)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .padding(.vertical, -Self.rowBleed)
             }
         }
     }
+
+    /// How far the right column's rows reach into the top and bottom margins.
+    private static let rowBleed: CGFloat = 11
 
     /// The left column: the Live Talk button (or a to-do icon when it's off in Talk settings) and
     /// the number of open to-dos, which also tells you how many didn't fit on the right.
@@ -158,6 +164,8 @@ struct UpNextWidgetView: View {
                 }
                 .foregroundStyle(.primary)
             }
+            // Down toward the corner like Reminders' count (the label's descenders sit in the margin).
+            .padding(.bottom, -5)
             .accessibilityLabel("\(entry.todoCount) to-dos")
         }
     }

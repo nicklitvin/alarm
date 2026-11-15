@@ -613,3 +613,6 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .status-menu button:hover { background: var(--orange); color: #fff; }
 .status-menu kbd { font-family: inherit; color: var(--secondary); font-size: 12px; }
 .status-menu button:hover kbd { color: #fff; }
+/* Like Reminders: the rows reach into the top and bottom margins, the count sits lower. */
+.widget.split .split-right { margin: -10px 0; }
+.widget.split .split-count { margin-bottom: -4px; }
