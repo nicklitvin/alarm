@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { SwipeRow } from '../components/SwipeRow'
-import { BottomAction, Section, Sheet, TabHeader, Wheel } from '../components/ui'
-import { addRecent, clock, compactDuration, durationName, newTimerChoices, uid, type RecentTimer, type TimerItem } from '../logic/model'
+import { Section, Sheet, TabHeader, Wheel } from '../components/ui'
+import { addRecent, clock, compactDuration, durationName, formatStopwatch, newTimerChoices, stopwatchElapsed, stopwatchIsReset, uid, type RecentTimer, type Stopwatch, type TimerItem } from '../logic/model'
 import { useStore } from '../logic/store'
 
 const range = (n: number) => Array.from({ length: n }, (_, i) => i)
@@ -15,6 +15,9 @@ export function TimersTab() {
   const paused = timers.length - running
   const detail = timers.length === 0 ? null : paused === 0 ? `${running} running` : running === 0 ? `${paused} paused` : `${running} running · ${paused} paused`
 
+  const sw = data.stopwatch ?? { accumulated: 0, laps: [] }
+  const setSw = (change: (s: Stopwatch) => Stopwatch) => update((d) => ({ ...d, stopwatch: change(d.stopwatch ?? { accumulated: 0, laps: [] }) }))
+
   const start = (seconds: number, label: string) => {
     if (seconds <= 0) return
     const t: TimerItem = { id: uid(), label, duration: seconds, state: 'running', fireDate: Date.now() + seconds * 1000, remaining: seconds }
@@ -26,6 +29,29 @@ export function TimersTab() {
   return (
     <>
       <TabHeader title="Timers" tab="timers" detail={detail} />
+      {!stopwatchIsReset(sw) && (
+        <Section header="Stopwatch">
+          <SwipeRow trailing={{ label: 'Reset', color: 'var(--red)', onAction: () => setSw(() => ({ accumulated: 0, laps: [] })) }}>
+            <div className="grow"><StopwatchTime sw={sw} /></div>
+            {sw.startedAt !== undefined ? (
+              <>
+                <button className="circle-btn" aria-label="Lap" onClick={() => setSw((s) => ({ ...s, laps: [...s.laps, stopwatchElapsed(s, Date.now())] }))}>⚑</button>
+                <button className="circle-btn" aria-label="Pause" onClick={() => setSw((s) => ({ accumulated: stopwatchElapsed(s, Date.now()), laps: s.laps }))}>❚❚</button>
+              </>
+            ) : (
+              <>
+                <button className="circle-btn" aria-label="Reset" onClick={() => setSw(() => ({ accumulated: 0, laps: [] }))}>↺</button>
+                <button className="circle-btn" aria-label="Resume" onClick={() => setSw((s) => ({ ...s, startedAt: Date.now() }))}>▶</button>
+              </>
+            )}
+          </SwipeRow>
+          {sw.laps.map((total, i) => ({ n: i + 1, split: total - (i > 0 ? sw.laps[i - 1] : 0) })).reverse().map((lap) => (
+            <div className="row" key={lap.n} style={{ fontSize: 15 }}>
+              <span className="grow muted">Lap {lap.n}</span><span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatStopwatch(lap.split)}</span>
+            </div>
+          ))}
+        </Section>
+      )}
       {timers.length > 0 && (
         <Section header="Running">
           {timers.map((t) => {
@@ -53,11 +79,15 @@ export function TimersTab() {
         </Section>
       )}
 
-      {timers.length === 0 && (
-        <div className="talk-empty"><div className="big">⏱</div><h3>No Timers</h3>Tap New Timer below. Your last three times are one tap away there.</div>
+      {timers.length === 0 && stopwatchIsReset(sw) && (
+        <div className="talk-empty"><div className="big">⏱</div><h3>No Timers</h3>Tap New Timer below, or Stopwatch to start counting up.</div>
       )}
 
-      <BottomAction label="New Timer" onClick={() => setCreating(true)} />
+      {/* New Timer, and Stopwatch beside it while the stopwatch isn't in use. */}
+      <div className="bottom-action two">
+        <button className="btn prominent" onClick={() => setCreating(true)}>＋ New Timer</button>
+        {stopwatchIsReset(sw) && <button className="btn gray" onClick={() => setSw(() => ({ accumulated: 0, laps: [], startedAt: Date.now() }))}>⏱ Stopwatch</button>}
+      </div>
       {creating && <NewTimerSheet recent={newTimerChoices(data.recents, data.settings.timerQuickTimes, data.settings.timerUsesRecentTimes)} title={data.settings.timerUsesRecentTimes ? 'Recent' : 'Quick Times'} onClose={() => setCreating(false)} onStart={start} />}
     </>
   )
@@ -99,4 +129,15 @@ function NewTimerSheet({ recent, title, onClose, onStart }: { recent: RecentTime
       </Section>
     </Sheet>
   )
+}
+
+/** The stopwatch's time, redrawn every frame while it runs. */
+function StopwatchTime({ sw }: { sw: Stopwatch }) {
+  const [, tick] = useState(0)
+  useEffect(() => {
+    if (sw.startedAt === undefined) return
+    let frame = requestAnimationFrame(function loop() { tick((n) => n + 1); frame = requestAnimationFrame(loop) })
+    return () => cancelAnimationFrame(frame)
+  }, [sw.startedAt])
+  return <div className="timer-time">{formatStopwatch(stopwatchElapsed(sw, Date.now()))}</div>
 }

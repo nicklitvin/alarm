@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { defaultSettings, uid, WORKDAYS, type Alarm, type Note, type RecentTimer, type Settings, type TimerItem, type Todo } from './model'
+import { defaultSettings, emptyStopwatch, uid, type Stopwatch, WORKDAYS, type Alarm, type Note, type RecentTimer, type Settings, type TimerItem, type Todo } from './model'
 
 export type Tab = 'alarms' | 'timers' | 'todos' | 'notes' | 'talk'
 
@@ -17,6 +17,7 @@ export interface AppData {
   alarms: Alarm[]
   timers: TimerItem[]
   recents: RecentTimer[]
+  stopwatch: Stopwatch
   todos: Todo[]
   notes: Note[]
   chat: ChatMessage[]
@@ -41,6 +42,7 @@ export function seedData(now = Date.now()): AppData {
     ],
     timers: [],
     recents: [{ duration: 540, label: 'Pasta' }, { duration: 300, label: '' }, { duration: 180, label: 'Tea' }],
+    stopwatch: emptyStopwatch,
     todos: [
       { id: uid(), title: 'Pay electricity bill', details: '', due: now - 2 * hour, isDone: false, createdAt: now - 9 * hour },
       { id: uid(), title: 'Call mom', details: 'Ask about Sunday dinner', due: now + 2 * hour, isDone: false, createdAt: now - 3 * hour },

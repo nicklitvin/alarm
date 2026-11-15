@@ -393,14 +393,14 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
       {tab !== 'talk' && (() => {
         const info = {
           alarms: { label: 'Delete All Alarms', count: data.alarms.length, ask: `Delete all ${data.alarms.length} alarms?` },
-          timers: { label: 'Delete All Timers', count: data.timers.length + data.recents.length, ask: 'Cancel running timers and clear recent times?' },
+          timers: { label: 'Delete All Timers', count: data.timers.length + data.recents.length + (data.stopwatch && (data.stopwatch.startedAt !== undefined || data.stopwatch.accumulated > 0 || data.stopwatch.laps.length) ? 1 : 0), ask: 'Cancel running timers and clear recent times?' },
           todos: { label: 'Delete All To-Dos', count: data.todos.length, ask: `Delete all ${data.todos.length} to-dos, including completed ones?` },
           notes: { label: 'Delete All Notes', count: data.notes.length, ask: `Delete all ${data.notes.length} notes?` },
         }[tab]
-        const clear = () => update((d) => tab === 'alarms' ? { ...d, alarms: [] } : tab === 'timers' ? { ...d, timers: [], recents: [] }
+        const clear = () => update((d) => tab === 'alarms' ? { ...d, alarms: [] } : tab === 'timers' ? { ...d, timers: [], recents: [], stopwatch: { accumulated: 0, laps: [] } }
           : tab === 'todos' ? { ...d, todos: [] } : { ...d, notes: [] })
         return (
-          <Section footer={tab === 'timers' ? 'Cancels any running timers and clears your recent times.' : 'Removes everything on this tab.'}>
+          <Section footer={tab === 'timers' ? 'Cancels any running timers, resets the stopwatch and clears your recent times.' : 'Removes everything on this tab.'}>
             <button className="row tappable red" style={{ width: '100%' }}
               onClick={() => { if (info.count) setConfirmDeleteAll(true) }}>🗑︎ {info.label}</button>
             {confirmDeleteAll && <Alert title={info.ask} message="This can't be undone." action="Delete All"

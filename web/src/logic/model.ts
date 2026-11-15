@@ -31,6 +31,19 @@ export interface TimerItem {
   remaining: number // seconds, while paused
 }
 
+/** The stopwatch (Shared/Stopwatch.swift): times, not a counter, so it keeps counting. */
+export interface Stopwatch { startedAt?: number; accumulated: number; laps: number[] }
+export const emptyStopwatch: Stopwatch = { accumulated: 0, laps: [] }
+export const stopwatchElapsed = (s: Stopwatch, now: number) => s.accumulated + (s.startedAt !== undefined ? Math.max(0, now - s.startedAt) / 1000 : 0)
+export const stopwatchIsReset = (s: Stopwatch) => s.startedAt === undefined && s.accumulated === 0 && s.laps.length === 0
+/** "1:05.07" or "1:02:03.50". */
+export function formatStopwatch(seconds: number) {
+  const cs = Math.floor(Math.max(0, seconds) * 100 + 0.0001)
+  const h = Math.floor(cs / 360000), m = Math.floor(cs / 6000) % 60, s = Math.floor(cs / 100) % 60, c = cs % 100
+  const two = (n: number) => String(n).padStart(2, '0')
+  return h > 0 ? `${h}:${two(m)}:${two(s)}.${two(c)}` : `${m}:${two(s)}.${two(c)}`
+}
+
 /** A timer used before (the Recents list). */
 export interface RecentTimer {
   duration: number // seconds

@@ -1,6 +1,16 @@
 {
   "releases": [
     {
+      "version": "1.26.0",
+      "build": 60,
+      "date": "2026-11-15",
+      "title": "Stopwatch",
+      "notes": [
+        "New Stopwatch on the Timers tab: tap Stopwatch next to New Timer to start counting up.",
+        "Tap the flag to record a lap, pause and resume, or reset it (also by swiping left). It keeps counting even when Alarmie is closed."
+      ]
+    },
+    {
       "version": "1.25.2",
       "build": 59,
       "date": "2026-11-15",

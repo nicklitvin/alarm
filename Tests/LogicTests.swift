@@ -468,5 +468,21 @@ let legacy = [TodoItem(title: "Late", due: d(2026, 11, 18, 9, 0)), TodoItem(titl
 check(legacy.inListOrder.map(\.title) == ["Soon", "Late"], "to-dos from before reordering keep deadline order")
 _ = oNow
 
+// Stopwatch.
+let sw0 = d(2026, 11, 17, 9, 0)
+var sw = Stopwatch()
+check(sw.isReset && sw.elapsed(at: sw0) == 0, "a new stopwatch is at zero")
+sw.start(at: sw0)
+check(sw.elapsed(at: sw0.addingTimeInterval(65)) == 65, "it counts while running (even with the app closed)")
+sw.lap(at: sw0.addingTimeInterval(30))
+sw.pause(at: sw0.addingTimeInterval(65))
+check(sw.elapsed(at: sw0.addingTimeInterval(500)) == 65, "paused, it holds its time")
+sw.start(at: sw0.addingTimeInterval(600))
+sw.lap(at: sw0.addingTimeInterval(610))
+check(sw.lapSplits().map(\.split) == [45, 30] && sw.lapSplits().first?.number == 2, "laps: newest first, each its own length")
+check(Stopwatch.format(65.07) == "1:05.07" && Stopwatch.format(3723.5) == "1:02:03.50", "stopwatch formatting")
+sw.reset()
+check(sw.isReset, "reset clears it")
+
 print(failures == 0 ? "\nALL PASSED" : "\n\(failures) FAILED")
 exit(failures == 0 ? 0 : 1)

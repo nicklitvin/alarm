@@ -90,6 +90,7 @@ private struct DeleteAllSection: View {
         switch tab {
         case .alarms: AlarmController.shared.alarms.count
         case .timers: TimerController.shared.timers.count + TimerController.shared.recents.count
+            + (StopwatchController.shared.stopwatch.isReset ? 0 : 1)
         case .todos: TodoController.shared.todos.count
         case .notes: NotesController.shared.notes.count
         case .talk: 0
@@ -118,7 +119,7 @@ private struct DeleteAllSection: View {
 
     private var footer: String {
         switch tab {
-        case .timers: "Cancels any running timers and clears your recent times."
+        case .timers: "Cancels any running timers, resets the stopwatch and clears your recent times."
         default: "Removes everything on this tab."
         }
     }
@@ -126,7 +127,9 @@ private struct DeleteAllSection: View {
     private func deleteAll() {
         switch tab {
         case .alarms: AlarmController.shared.deleteAll()
-        case .timers: TimerController.shared.deleteAll()
+        case .timers:
+            TimerController.shared.deleteAll()
+            StopwatchController.shared.reset()
         case .todos: TodoController.shared.deleteAll()
         case .notes: NotesController.shared.deleteAll()
         case .talk: break

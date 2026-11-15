@@ -1,15 +1,36 @@
 import SwiftUI
 
-/// Running timers. New timers are set up in a sheet (like adding an alarm), with your last three
-/// times one tap away.
+/// The stopwatch and running timers. New timers are set up in a sheet (like adding an alarm);
+/// Stopwatch starts one right away.
 struct TimersView: View {
     @Environment(TimerController.self) private var controller
+    @State private var stopwatch = StopwatchController.shared
     @State private var showNew = false
     @State private var errorMessage: String?
 
     var body: some View {
         NavigationStack {
             List {
+                if !stopwatch.stopwatch.isReset {
+                    Section("Stopwatch") {
+                        StopwatchRow(controller: stopwatch)
+                            .swipeActions {
+                                Button("Reset", systemImage: "arrow.counterclockwise", role: .destructive) { stopwatch.reset() }
+                                    .tint(.red)
+                            }
+                        ForEach(stopwatch.stopwatch.lapSplits(), id: \.number) { lap in
+                            HStack {
+                                Text("Lap \(lap.number)")
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Text(Stopwatch.format(lap.split))
+                                    .monospacedDigit()
+                            }
+                            .font(.subheadline)
+                        }
+                    }
+                }
+
                 if !controller.timers.isEmpty {
                     Section("Running") {
                         ForEach(controller.timers) { timer in
@@ -27,11 +48,11 @@ struct TimersView: View {
             .scrollContentBackground(.hidden)
             .background(Color(.systemGroupedBackground))
             .overlay {
-                if controller.timers.isEmpty {
+                if controller.timers.isEmpty && stopwatch.stopwatch.isReset {
                     ContentUnavailableView {
                         Label("No Timers", systemImage: "timer")
                     } description: {
-                        Text("Tap New Timer below. Your last three times are one tap away there.")
+                        Text("Tap New Timer below, or Stopwatch to start counting up.")
                     }
                 }
             }
@@ -50,7 +71,33 @@ struct TimersView: View {
                 }
             }
             .safeAreaInset(edge: .bottom) {
-                BottomActionButton(title: "New Timer", systemImage: "plus") { showNew = true }
+                // New Timer, and Stopwatch beside it while the stopwatch isn't in use.
+                HStack(spacing: 10) {
+                    Button { showNew = true } label: {
+                        Label("New Timer", systemImage: "plus")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .shadow(color: .orange.opacity(0.25), radius: 10, y: 4)
+
+                    if stopwatch.stopwatch.isReset {
+                        Button { stopwatch.start() } label: {
+                            Label("Stopwatch", systemImage: "stopwatch")
+                                .font(.headline)
+                                .padding(.vertical, 8)
+                        }
+                        .buttonStyle(.bordered)
+                        .transition(.opacity)
+                    }
+                }
+                .buttonBorderShape(.capsule)
+                .controlSize(.large)
+                .frame(maxWidth: 400)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 8)
+                .animation(.snappy, value: stopwatch.stopwatch.isReset)
             }
             .animation(.default, value: controller.timers)
             .sheet(isPresented: $showNew) {
@@ -163,6 +210,39 @@ private struct NewTimerSheet: View {
         guard duration > 0 else { return }
         onStart(duration, label.trimmingCharacters(in: .whitespacesAndNewlines))
         dismiss()
+    }
+}
+
+// MARK: - Stopwatch
+
+/// The running (or paused) stopwatch: elapsed time to the hundredth, with Lap and Pause while
+/// running, Reset and Resume while paused.
+private struct StopwatchRow: View {
+    let controller: StopwatchController
+
+    var body: some View {
+        let stopwatch = controller.stopwatch
+        HStack(spacing: 14) {
+            TimelineView(.animation(minimumInterval: 0.03, paused: !stopwatch.isRunning)) { context in
+                Text(Stopwatch.format(stopwatch.elapsed(at: context.date)))
+                    .font(.system(size: 34, weight: .light))
+                    .monospacedDigit()
+            }
+            Spacer(minLength: 0)
+            if stopwatch.isRunning {
+                CircleButton(systemImage: "flag.fill") { controller.lap() }
+                    .accessibilityLabel("Lap")
+                CircleButton(systemImage: "pause.fill") { controller.pause() }
+                    .accessibilityLabel("Pause")
+            } else {
+                CircleButton(systemImage: "arrow.counterclockwise") { controller.reset() }
+                    .accessibilityLabel("Reset")
+                CircleButton(systemImage: "play.fill") { controller.start() }
+                    .accessibilityLabel("Resume")
+            }
+        }
+        .padding(.vertical, 4)
+        .sensoryFeedback(.impact(weight: .light), trigger: stopwatch.laps.count)
     }
 }
 

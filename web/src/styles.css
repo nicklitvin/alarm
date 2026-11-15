@@ -513,3 +513,6 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 :root[data-theme='dark'] .alarm-glyph { filter: grayscale(1) brightness(0) invert(1); }
 .upnext-foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 500; color: var(--secondary); }
 .widget.small .dismiss-full { margin-bottom: -6px; }
+.bottom-action.two { display: flex; gap: 10px; }
+.bottom-action.two .btn.prominent { flex: 1; }
+.bottom-action.two .btn.gray { width: auto; padding: 15px 18px; font-size: 17px; font-weight: 600; box-shadow: none; background: var(--card); color: var(--orange); white-space: nowrap; }
