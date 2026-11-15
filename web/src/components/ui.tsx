@@ -242,21 +242,29 @@ function TimerQuickTimesSection() {
   )
 }
 
-/** To-Do settings → Quick Times: three compact time pickers side by side; tap one to change it. */
+/** To-Do settings → Quick Times: three buttons across the row; tap one to change it with a
+ *  time wheel right below. */
 function QuickTimesSection() {
   const { data, update } = useStore()
   const times = cleanQuickTimes(data.settings.todoQuickTimes)
-  const save = (list: number[]) => update((d) => ({ ...d, settings: { ...d.settings, todoQuickTimes: cleanQuickTimes(list) } }))
-  const pad = (n: number) => String(n).padStart(2, '0')
+  const [editing, setEditing] = useState<number | null>(null)
+  const change = (index: number, value: number) => {
+    const sorted = cleanQuickTimes(times.map((x, n) => (n === index ? value : x)))
+    update((d) => ({ ...d, settings: { ...d.settings, todoQuickTimes: sorted } }))
+    setEditing(sorted.indexOf(value) >= 0 ? sorted.indexOf(value) : index)
+  }
   return (
     <Section header="Quick Times" footer="One-tap times under a to-do's deadline. Tap one to change it.">
       <div className="row quick-times">
         {times.map((m, index) => (
-          <input key={index} className="time-pill" type="time" step={300} aria-label={`Quick time ${index + 1}`}
-            value={`${pad(Math.floor(m / 60))}:${pad(m % 60)}`}
-            onChange={(e) => { const [h, mm] = e.target.value.split(':').map(Number); if (!isNaN(h)) save(times.map((x, n) => (n === index ? h * 60 + mm : x))) }} />
+          <button key={index} className={`qt-chip ${editing === index ? 'selected' : ''}`} onClick={() => setEditing(editing === index ? null : index)}>{quickTimeLabel(m)}</button>
         ))}
       </div>
+      {editing !== null && (
+        <div style={{ padding: '0 12px 8px' }}>
+          <TimeWheel hour={Math.floor(times[editing] / 60)} minute={times[editing] % 60} onChange={(h, mm) => change(editing, h * 60 + mm)} />
+        </div>
+      )}
     </Section>
   )
 }

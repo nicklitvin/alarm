@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.21.8",
+      "build": 44,
+      "date": "2026-11-15",
+      "title": "Matching Quick Times",
+      "notes": [
+        "To-do quick times in settings now stretch across the full width, like the timer ones. Tap one to change it with a time wheel right below."
+      ]
+    },
+    {
       "version": "1.21.7",
       "build": 43,
       "date": "2026-11-15",
