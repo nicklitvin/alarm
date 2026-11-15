@@ -488,7 +488,7 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .small-alarm { display: flex; flex-direction: column; height: 100%; }
 .small-alarm .big { margin-top: auto; font-size: 36px; }
 .dismiss-full { margin-top: 8px; width: 100%; padding: 8px; border-radius: 999px; background: var(--orange); color: #fff; font-weight: 600; font-size: 14px; }
-.v-alarm-icon { font-size: 18px; flex: none; align-self: center; }
+.v-alarm-icon { font-size: 18px; flex: none; align-self: center; width: 20px; text-align: center; line-height: 1; }
 
 /* Liquid Glass buttons in the top-right corner (like iOS 26 toolbar buttons) */
 .gear, .header-pill, .icon-btn {
@@ -507,8 +507,9 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .sheet.small { height: 300px; }
 .widget-row .s.red { color: var(--red); }
 /* Up Next's alarm icons are black (white in dark mode), like the SF Symbol in the app. */
-.alarm-glyph { filter: grayscale(1) brightness(0); }
-:root[data-theme='dark'] .alarm-glyph { filter: grayscale(1) brightness(0) invert(1); }
+/* The widgets' alarm clock, in orange (the emoji drawn as a solid silhouette). */
+.alarm-glyph { color: transparent; text-shadow: 0 0 0 var(--orange); }
+.lock .alarm-glyph, .on-wallpaper .alarm-glyph { text-shadow: 0 0 0 #fff; }
 .upnext-foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 500; color: var(--secondary); }
 .widget.small .dismiss-full { margin-bottom: -6px; }
 .bottom-action.two { display: flex; gap: 10px; }

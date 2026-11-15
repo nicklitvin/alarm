@@ -235,14 +235,18 @@ private struct AlarmHeader: View {
                     .contentShape(Rectangle())
                 } else {
                     // Everything on one line: "⏰ 7:00 AM  in 2h 4m" (with the label, if it has one).
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    // The clock is centered on the line, in the same column as the to-do circles.
+                    HStack(alignment: .center, spacing: 8) {
                         Image(systemName: "alarm.fill")
                             .font(.headline)
-                            .foregroundStyle(.primary) // black (white in dark mode)
-                        time(parts, size: 24)
-                        details.font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
+                            .foregroundStyle(.orange)
+                            .frame(width: 20)
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            time(parts, size: 24)
+                            details.font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
@@ -305,7 +309,7 @@ struct SmallAlarm: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Image(systemName: "alarm.fill")
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(.orange)
                 Spacer(minLength: 4)
                 Text("in \(TimeFormat.countdown(from: now, to: upcoming.date))")
                     .font(.caption.weight(.semibold))
@@ -430,11 +434,11 @@ private struct UpNextRow: View {
             .buttonStyle(.plain)
             .accessibilityLabel(todo.isDone ? "Mark \(todo.title) as not done" : "Mark \(todo.title) as done")
         case .alarmSoon:
-            icon("alarm.fill", tint: .primary)
+            icon("alarm.fill")
         case .timer(let timer):
             icon(timer.state == .ringing ? "bell.fill" : "timer")
         case .nextAlarm:
-            icon("alarm.fill", tint: .primary)
+            icon("alarm.fill")
         }
     }
 

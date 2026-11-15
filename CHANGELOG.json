@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.30.1",
+      "build": 77,
+      "date": "2026-11-15",
+      "title": "Orange Alarm Icon",
+      "notes": [
+        "The alarm clock in the widgets is orange and centered on its line, lined up with the to-do circles."
+      ]
+    },
+    {
       "version": "1.30.0",
       "build": 76,
       "date": "2026-11-15",
