@@ -18,10 +18,9 @@ enum AppSettings {
     /// How many hours before a ring the alarm shows in the widgets (with Dismiss); the Alarms
     /// tab's Dismiss card appears at the same time.
     static let alarmWidgetHoursKey = "settings.alarm.widgetHours"
-    static let alarmWidgetHourChoices = [1, 3, 6, 12, 24]
+    static let alarmWidgetHourRange = 1...24
     static var alarmWidgetHours: Int {
-        let value = int(alarmWidgetHoursKey, default: 12)
-        return alarmWidgetHourChoices.contains(value) ? value : 12
+        min(max(int(alarmWidgetHoursKey, default: 12), alarmWidgetHourRange.lowerBound), alarmWidgetHourRange.upperBound)
     }
 
     static var alarmHeadsUpMinutes: Int {

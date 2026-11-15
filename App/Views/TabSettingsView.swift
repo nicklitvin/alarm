@@ -143,6 +143,7 @@ private struct AlarmSettingsSection: View {
     @AppStorage(AppSettings.alarmHeadsUpEnabledKey, store: AppSettings.store) private var headsUpEnabled = true
     @AppStorage(AppSettings.alarmHeadsUpMinutesKey, store: AppSettings.store) private var headsUpMinutes = 60
     @AppStorage(AppSettings.alarmWidgetHoursKey, store: AppSettings.store) private var widgetHours = 12
+    @State private var pickingWidgetHours = false
 
     var body: some View {
         Section {
@@ -164,10 +165,26 @@ private struct AlarmSettingsSection: View {
         .onChange(of: headsUpMinutes) { AlarmController.shared.refresh() }
 
         Section {
-            Picker("Show Alarm", selection: $widgetHours) {
-                ForEach(AppSettings.alarmWidgetHourChoices, id: \.self) { hours in
-                    Text(hours == 1 ? "1 hour before" : "\(hours) hours before").tag(hours)
+            // Tap to scroll to any number of hours (1–24), right below.
+            Button {
+                withAnimation(.snappy) { pickingWidgetHours.toggle() }
+            } label: {
+                LabeledContent("Show Alarm") {
+                    Text(widgetHours == 1 ? "1 hour before" : "\(widgetHours) hours before")
+                        .foregroundStyle(pickingWidgetHours ? Color.orange : Color.secondary)
                 }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            if pickingWidgetHours {
+                Picker("Hours Before", selection: $widgetHours) {
+                    ForEach(Array(AppSettings.alarmWidgetHourRange), id: \.self) { hours in
+                        Text(hours == 1 ? "1 hour" : "\(hours) hours").tag(hours)
+                    }
+                }
+                .pickerStyle(.wheel)
+                .labelsHidden()
+                .frame(maxWidth: .infinity)
             }
         } header: {
             Text("Widgets")

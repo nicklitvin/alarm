@@ -305,6 +305,7 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
   const { data, update } = useStore()
   const [about, setAbout] = useState(false)
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false)
+  const [pickingHours, setPickingHours] = useState(false)
   const s = data.settings
   const set = <K extends keyof Settings>(key: K, value: Settings[K]) => update((d) => ({ ...d, settings: { ...d.settings, [key]: value } }))
 
@@ -348,11 +349,20 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
       )}
       {tab === 'alarms' && (
         <Section header="Widgets" footer={`Your next alarm appears in the widgets ${s.alarmWidgetHours === 1 ? '1 hour' : `${s.alarmWidgetHours} hours`} before it rings, with a Dismiss button. The Alarms tab shows Dismiss from then too.`}>
-          <div className="row"><span className="grow">Show Alarm</span>
-            <select className="ios" value={s.alarmWidgetHours} onChange={(e) => set('alarmWidgetHours', Number(e.target.value))}>
-              {[1, 3, 6, 12, 24].map((h) => <option key={h} value={h}>{h === 1 ? '1 hour before' : `${h} hours before`}</option>)}
-            </select>
-          </div>
+          {/* Tap to scroll to any number of hours (1–24), right below. */}
+          <button className="row tappable" style={{ width: '100%', textAlign: 'left' }} onClick={() => setPickingHours(!pickingHours)}>
+            <span className="grow">Show Alarm</span>
+            <span className={pickingHours ? 'orange' : 'muted'}>{s.alarmWidgetHours === 1 ? '1 hour before' : `${s.alarmWidgetHours} hours before`}</span>
+          </button>
+          {pickingHours && (
+            <div className="wheels" style={{ padding: '4px 12px 8px', justifyContent: 'center' }}>
+              <div className="wheel-unit">
+                <Wheel items={Array.from({ length: 24 }, (_, i) => i + 1)} value={s.alarmWidgetHours} onChange={(v) => set('alarmWidgetHours', v)}
+                  render={(v) => <span className="num">{v}</span>} />
+                <span className="unit">{s.alarmWidgetHours === 1 ? 'hour' : 'hours'}</span>
+              </div>
+            </div>
+          )}
         </Section>
       )}
       {tab === 'alarms' && (

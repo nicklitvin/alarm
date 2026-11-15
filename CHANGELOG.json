@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.28.1",
+      "build": 67,
+      "date": "2026-11-15",
+      "title": "Any Number of Hours",
+      "notes": [
+        "Show Alarm in Alarm settings is now a number wheel: pick any number of hours from 1 to 24."
+      ]
+    },
+    {
       "version": "1.28.0",
       "build": 66,
       "date": "2026-11-15",
