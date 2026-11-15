@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.23.3",
+      "build": 52,
+      "date": "2026-11-15",
+      "title": "Ask Alarmie Fix",
+      "notes": [
+        "Fixed Ask Alarmie in Control Center not showing its text box."
+      ]
+    },
+    {
       "version": "1.23.2",
       "build": 51,
       "date": "2026-11-15",

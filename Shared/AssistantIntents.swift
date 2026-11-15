@@ -19,8 +19,16 @@ struct AskAssistantIntent: AppIntent, LiveActivityIntent {
     static let description = IntentDescription("Type a request to the on-device assistant and get the reply right away, without opening the app.")
     static var openAppWhenRun: Bool { false }
 
+    /// Optional, so running it with nothing filled in (as Control Center does) never fails
+    /// before `perform`; the text box is then asked for below.
     @Parameter(title: "Request", requestValueDialog: "What can I do for you?")
-    var request: String
+    var request: String?
+
+    /// iOS only shows the text box for a parameter that's part of the summary
+    /// (otherwise `requestValue` silently does nothing).
+    static var parameterSummary: some ParameterSummary {
+        Summary("Ask Alarmie \(\.$request)")
+    }
 
     init() {}
 
@@ -29,10 +37,10 @@ struct AskAssistantIntent: AppIntent, LiveActivityIntent {
     }
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        var text = request.trimmingCharacters(in: .whitespacesAndNewlines)
+        var text = (request ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         if text.isEmpty {
-            text = try await $request.requestValue("What can I do for you?")
-                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let asked: String? = try await $request.requestValue("What can I do for you?")
+            text = (asked ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         }
         guard !text.isEmpty else { return .result(dialog: "Okay, never mind.") }
 
