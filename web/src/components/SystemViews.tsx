@@ -224,7 +224,7 @@ function HomeScreen() {
                 {(shownNext.alarm.skippedOccurrence ?? 0) <= now &&
                   <button className="dismiss-full" onClick={(e) => { e.stopPropagation(); dismiss(shownNext.alarm.id, shownNext.date) }}>Dismiss</button>}
               </div>
-            ) : <div className="small-alarm" style={{ alignItems: 'center', justifyContent: 'center' }}><Zzz size={56} muted /></div>}
+            ) : <div className="small-alarm" style={{ alignItems: 'center', justifyContent: 'center' }}><Zzz size={72} muted /></div>}
           </div>
           {upNextWidget('medium')}
           {upNextWidget('large')}
@@ -237,15 +237,15 @@ function HomeScreen() {
 
 const keyOf = (i: UpNextItem) => i.kind + ('alarm' in i ? i.alarm.id : i.kind === 'timer' ? i.timer.id : i.todo.id)
 
-/** The stepped "zzz" SF Symbol: three z's climbing up and getting bigger. */
+/** The "zzz" SF Symbol (as on the lock screen): a big Z top-left, a small z under it, a medium z to the right. */
 function Zzz({ size, muted }: { size: number; muted?: boolean }) {
-  const z = (scale: number, drop: number) => (
-    <span style={{ fontSize: size * scale, lineHeight: 1, fontWeight: 700, transform: `translateY(${drop * size}px)` }}>z</span>
+  const z = (char: string, scale: number, left: number, top: number) => (
+    <span style={{ position: 'absolute', left: left * size, top: top * size, fontSize: size * scale, lineHeight: 1, fontWeight: 800 }}>{char}</span>
   )
   return (
     <span aria-label="zzz" className={muted ? 'muted' : undefined}
-      style={{ display: 'inline-flex', alignItems: 'flex-end', gap: size * 0.02, height: size * 0.75, fontFamily: 'ui-rounded, system-ui, sans-serif' }}>
-      {z(0.42, 0)}{z(0.58, -0.16)}{z(0.78, -0.34)}
+      style={{ position: 'relative', display: 'inline-block', width: size * 0.8, height: size * 0.85, fontFamily: 'ui-rounded, system-ui, sans-serif' }}>
+      {z('Z', 0.56, 0, 0)}{z('z', 0.5, 0.36, 0.22)}{z('z', 0.44, 0.04, 0.42)}
     </span>
   )
 }
@@ -267,7 +267,7 @@ function LockScreen() {
         <div className="lock-row">
           <button className="acc-circle" onClick={() => open(next ? { tab: 'alarms' } : { tab: 'alarms' })} aria-label="Next alarm">
             {soon ? <div><div style={{ fontSize: 11 }}>⏰</div><div style={{ fontSize: 17 }}>{bigTime(soon.date).time}</div><div style={{ fontSize: 9, opacity: 0.8 }}>{bigTime(soon.date).period}</div></div>
-              : <Zzz size={22} />}
+              : <Zzz size={30} />}
           </button>
           <button className="acc-rect" onClick={() => open(first ? linkFor(first) : { tab: 'todos' })}>
             {first ? <Row item={first} compact light /> : <><b>Up Next</b><span className="t">All clear</span></>}
