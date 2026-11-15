@@ -10,6 +10,9 @@ enum DeepLink: Hashable, Sendable {
     case todo(UUID)
     case notes
     case talk
+    /// Opens Talk and starts Live Talk (listening). Other apps can open it, e.g. a Mac app with
+    /// `NSWorkspace.shared.open(URL(string: "alarmapp://livetalk")!)`.
+    case liveTalk
     case note(UUID)
 
     static let scheme = "alarmapp"
@@ -25,6 +28,7 @@ enum DeepLink: Hashable, Sendable {
         case .todo(let id): components.host = "todo"; components.path = "/" + id.uuidString
         case .notes: components.host = "notes"
         case .talk: components.host = "talk"
+        case .liveTalk: components.host = "livetalk"
         case .note(let id): components.host = "note"; components.path = "/" + id.uuidString
         }
         return components.url!
@@ -43,6 +47,7 @@ enum DeepLink: Hashable, Sendable {
         case ("todo", nil): self = .todos
         case ("notes", _): self = .notes
         case ("talk", _), ("chat", _): self = .talk
+        case ("livetalk", _), ("live-talk", _), ("live", _): self = .liveTalk
         case ("note", let id?): self = .note(id)
         case ("note", nil): self = .notes
         default: return nil

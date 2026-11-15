@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.29.0",
+      "build": 75,
+      "date": "2026-11-15",
+      "title": "Live Talk From Other Apps",
+      "notes": [
+        "Other apps and shortcuts can now start Live Talk directly with the link alarmapp://livetalk."
+      ]
+    },
+    {
       "version": "1.28.8",
       "build": 74,
       "date": "2026-11-15",

@@ -86,6 +86,18 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 | Lock screen widget | `Widget/NextAlarmWidget.swift` |
 | Alarm sounds (made by `Tools/make_sounds.py`) | `Shared/AlarmSound.swift`, `App/Sounds/` |
 
+**Starting Live Talk from another app.** Open `alarmapp://livetalk`: Alarmie opens on Talk and
+starts listening. From a Mac app (Alarmie running on the same Mac as an iPhone app on Apple
+silicon):
+
+```swift
+NSWorkspace.shared.open(URL(string: "alarmapp://livetalk")!)
+```
+
+The **Start Live Talk** action in Shortcuts does the same; a Mac app can run a shortcut that
+uses it with `/usr/bin/shortcuts run "<shortcut name>"`. Other links: `alarmapp://talk` (just
+the tab), `alarmapp://alarms`, `alarmapp://todos`, `alarmapp://notes`, `alarmapp://timers`.
+
 **Dismissing one ring of a repeating alarm.** Each weekday of an alarm is its own weekly system alarm. AlarmKit can't skip a single occurrence, so when you dismiss Friday's ring, only Friday is touched: it's swapped for a one-time alarm next Friday, and Mon–Thu are left alone. The weekly Friday alarm comes back the first time any app code runs after the dismissed time:
 
 - iOS gives the app background time, which it requests for 1 minute after the dismissed ring.

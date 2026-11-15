@@ -37,6 +37,9 @@ final class AppNavigation {
             tab = .notes
         case .talk:
             tab = .talk
+        case .liveTalk:
+            tab = .talk
+            TalkModel.shared.startLive()
         case .note(let id):
             tab = .notes
             pendingNoteID = id
@@ -78,7 +81,8 @@ struct RootView: View {
             WhatsNewView(releases: updates.whatsNew)
         }
         .onOpenURL { url in
-            // Taps on widgets: open exactly what was tapped.
+            // Taps on widgets: open exactly what was tapped. Other apps can open these links too
+            // (alarmapp://livetalk starts Live Talk).
             if let link = DeepLink(url: url) { navigation.open(link) }
         }
         .task {
