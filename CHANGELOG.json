@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.25.2",
+      "build": 59,
+      "date": "2026-11-15",
+      "title": "Small Alarm Widget",
+      "notes": [
+        "The small home screen widget is Next Alarm again, now with the full-width Dismiss button: your next alarm, how long until it rings, and Dismiss. Up Next comes in medium and large."
+      ]
+    },
+    {
       "version": "1.25.1",
       "build": 58,
       "date": "2026-11-15",

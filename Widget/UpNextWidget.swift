@@ -304,9 +304,9 @@ private struct AlarmHeader: View {
     }
 }
 
-/// Small widget with an alarm: fills the space like the Next Alarm widget ("in 2h 4m" at the top,
-/// big time, label), with a full-width Dismiss button along the bottom.
-private struct SmallAlarm: View {
+/// The small home screen alarm widget (Next Alarm): "in 2h 4m" at the top, big time, label, and a
+/// full-width Dismiss button along the bottom.
+struct SmallAlarm: View {
     let upcoming: UpcomingAlarm
     let now: Date
 
@@ -542,7 +542,7 @@ struct UpNextWidget: Widget {
         }
         .configurationDisplayName("Up Next")
         .description("Your next alarm with a Dismiss button, then timers and to-dos. Tap the waveform to open Talk.")
-        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .accessoryRectangular, .accessoryInline])
+        .supportedFamilies([.systemMedium, .systemLarge, .accessoryRectangular, .accessoryInline]) // small: Next Alarm, with Dismiss
     }
 }
 

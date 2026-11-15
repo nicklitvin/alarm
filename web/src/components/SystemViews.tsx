@@ -120,7 +120,7 @@ function bigTime(date: number) {
 // MARK: - Home Screen
 
 function HomeScreen() {
-  const { now, items, open, dismiss, data } = useSystem()
+  const { now, items, open, dismiss, data, next } = useSystem()
   const first = items[0]
   const layout = upNextLayout(items, now)
   const featured = layout.alarm
@@ -189,12 +189,23 @@ function HomeScreen() {
     <>
       <div className="home">
         <div className="widgets">
-          {upNextWidget('small')}
+          {/* Next Alarm (small): the next alarm with a full-width Dismiss. */}
+          <div className="widget upnext small" onClick={() => open({ tab: 'alarms' })}>
+            {next ? (
+              <div className="small-alarm">
+                <div className="wh"><span className="alarm-glyph">⏰</span><span className="muted" style={{ fontSize: 12 }}>in {countdown(now, next.date)}</span></div>
+                <div className="big">{bigTime(next.date).time}<small> {bigTime(next.date).period}</small></div>
+                {next.alarm.label.trim() && <div className="muted ellipsis" style={{ fontSize: 14, fontWeight: 500 }}>{next.alarm.label.trim()}</div>}
+                {(next.alarm.skippedOccurrence ?? 0) <= now &&
+                  <button className="dismiss-full" onClick={(e) => { e.stopPropagation(); dismiss(next.alarm.id, next.date) }}>Dismiss</button>}
+              </div>
+            ) : <div className="small-alarm"><span className="alarm-glyph">⏰</span><div className="big" style={{ fontSize: 20 }}>No Alarms</div></div>}
+          </div>
           {upNextWidget('medium')}
           {upNextWidget('large')}
         </div>
       </div>
-      <Caption>Up Next (small, medium, large). The Next Alarm widget is lock screen only. Your next alarm always sits on top, however far away, with a Dismiss button for that ring; to-dos and timers follow. Tapping anything opens its tab, a to-do's circle checks it off, and the waveform button opens Talk.</Caption>
+      <Caption>Next Alarm (small, with Dismiss) and Up Next (medium, large). In Up Next, your next alarm always sits on top, however far away, with a Dismiss button for that ring; to-dos and timers follow. Tapping anything opens its tab, a to-do's circle checks it off, and the waveform button opens Talk.</Caption>
     </>
   )
 }

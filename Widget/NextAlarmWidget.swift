@@ -32,12 +32,17 @@ struct NextAlarmProvider: TimelineProvider {
 
         // Refresh when each alarm rings (move on to the next one) and when it comes within 24 hours
         // (the lock screen shows zzz until then).
+        // Also every minute for the next hour, so the small widget's "in 2h 4m" stays right; then
+        // a fresh timeline.
+        let horizon = now.addingTimeInterval(3600)
+        let minute = Calendar.current.dateInterval(of: .minute, for: now)?.start ?? now
+        let ticks = (1...60).map { minute.addingTimeInterval(TimeInterval($0 * 60)) }
         let moments = Set(upcoming.flatMap { [$0.date, $0.date.addingTimeInterval(-NextAlarmWidgetView.lockScreenWindow)] }
-            .filter { $0 > now })
-        let entries = ([now] + moments.sorted().prefix(40)).map { date in
+            .filter { $0 > now && $0 < horizon } + ticks)
+        let entries = ([now] + moments.sorted()).map { date in
             NextAlarmEntry(date: date, next: upcoming.first { $0.date > date })
         }
-        completion(Timeline(entries: entries, policy: .after(last.date)))
+        completion(Timeline(entries: entries, policy: .after(min(horizon, last.date))))
     }
 }
 
@@ -76,48 +81,23 @@ struct NextAlarmWidgetView: View {
         .widgetURL(DeepLink.alarms.url)
     }
 
-    // Home screen: big time, day and countdown.
+    // Home screen: the next alarm with a full-width Dismiss button (same as Up Next's alarm).
     @ViewBuilder
     private var small: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Image(systemName: entry.next == nil ? "alarm" : "alarm.fill")
+        if let next = entry.next {
+            SmallAlarm(upcoming: next, now: entry.date)
+        } else {
+            VStack(alignment: .leading, spacing: 2) {
+                Image(systemName: "alarm")
                     .font(.headline)
-                    .foregroundStyle(.orange)
-                Spacer()
-                if let next = entry.next {
-                    Text(TimeFormat.dayDescription(for: next.date, relativeTo: entry.date))
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                }
-            }
-            Spacer(minLength: 0)
-            if let next = entry.next {
-                let parts = TimeFormat.parts(for: next.date)
-                HStack(alignment: .firstTextBaseline, spacing: 3) {
-                    Text(parts.time)
-                        .font(.system(size: 40, weight: .semibold, design: .rounded))
-                        .monospacedDigit()
-                    if let period = parts.period {
-                        Text(period).font(.system(size: 17, weight: .semibold, design: .rounded))
-                    }
-                }
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-                Text(next.alarm.title)
-                    .font(.subheadline.weight(.medium))
-                    .lineLimit(1)
-                Text("in \(next.date, style: .relative)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            } else {
+                Spacer(minLength: 0)
                 Text("No Alarms")
                     .font(.title3.weight(.semibold))
                 Text("Tap to add one")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
     }
 
@@ -212,8 +192,8 @@ struct NextAlarmWidget: Widget {
                 .widgetBackground()
         }
         .configurationDisplayName("Next Alarm")
-        .description("See when your next alarm will go off.")
-        .supportedFamilies([.accessoryRectangular, .accessoryCircular, .accessoryInline]) // lock screen only: on the home screen, Up Next shows the alarm with Dismiss
+        .description("Your next alarm, with a Dismiss button on the home screen.")
+        .supportedFamilies([.systemSmall, .accessoryRectangular, .accessoryCircular, .accessoryInline])
     }
 }
 
