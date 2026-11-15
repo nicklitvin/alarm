@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.27.4",
+      "build": 65,
+      "date": "2026-11-15",
+      "title": "Even Buttons",
+      "notes": [
+        "New Timer and Stopwatch are now the same width."
+      ]
+    },
+    {
       "version": "1.27.3",
       "build": 64,
       "date": "2026-11-15",

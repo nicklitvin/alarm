@@ -82,6 +82,7 @@ struct TimersView: View {
                         Button { stopwatch.start() } label: {
                             Label("Stopwatch", systemImage: "stopwatch")
                                 .font(.headline)
+                                .frame(maxWidth: .infinity) // same width as New Timer
                                 .padding(.vertical, 8)
                         }
                         .buttonStyle(.bordered)
