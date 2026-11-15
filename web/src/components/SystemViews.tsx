@@ -134,8 +134,17 @@ function HomeScreen() {
     </div>
   )
   const upNextWidget = (size: 'small' | 'medium' | 'large') => {
-    const rows = featured ? (size === 'medium' ? 2 : 7) : (size === 'medium' ? 2 : 7)
-    const shown = layout.rows.slice(0, rows)
+    // As many rows as fit, measuring each: one-line to-dos take less room than two-line rows.
+    const space = (size === 'medium' ? 142 : 332) - (featured ? 66 : 22)
+    const twoLines = (i: UpNextItem) => i.kind !== 'todo' || !!i.todo.due || !!i.todo.details.trim()
+    const shown: UpNextItem[] = []
+    let used = 0
+    for (const r of layout.rows) {
+      const h = twoLines(r) ? 37 : 26
+      if (used + h > space && shown.length) break
+      used += h
+      shown.push(r)
+    }
     if (size === 'small') {
       return (
         <div className="widget upnext small" onClick={() => open(featured ? { tab: 'alarms' } : first ? linkFor(first) : { tab: 'todos' })}>

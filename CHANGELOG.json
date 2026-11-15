@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.21.7",
+      "build": 43,
+      "date": "2026-11-15",
+      "title": "More To-Dos in the Widget",
+      "notes": [
+        "The Up Next widget fits more to-dos: to-dos without a deadline or details take a single line, so the medium widget shows two or more under the alarm instead of one."
+      ]
+    },
+    {
       "version": "1.21.6",
       "build": 42,
       "date": "2026-11-15",

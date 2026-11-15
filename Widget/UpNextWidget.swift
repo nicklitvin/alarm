@@ -88,22 +88,32 @@ struct UpNextWidgetView: View {
         }.count
     }
 
-    /// Rows that fit in `height`, so the list uses the widget's full height.
-    private func rowCapacity(height: CGFloat) -> Int {
-        max(1, Int(height / Self.rowHeight))
+    /// As many rows as fit in `height`, measuring each: a one-line row ("Buy milk") takes less
+    /// room than one with a second line ("Due 5:00 PM"), so short to-dos pack in tighter.
+    private func rowsThatFit(_ rows: [UpNextItem], height: CGFloat) -> [UpNextItem] {
+        var used: CGFloat = 0
+        var fitting: [UpNextItem] = []
+        for row in rows {
+            let rowHeight = row.hasSecondLine ? Self.twoLineRowHeight : Self.oneLineRowHeight
+            guard used + rowHeight <= height || fitting.isEmpty else { break }
+            used += rowHeight
+            fitting.append(row)
+        }
+        return fitting
     }
-    private static let headerHeight: CGFloat = 22
-    private static let alarmHeight: CGFloat = 36
-    /// Generous rows, so items aren't crammed together.
-    private static let rowHeight: CGFloat = 44
+    private static let headerHeight: CGFloat = 20
+    private static let alarmHeight: CGFloat = 34
+    /// Row heights, including the tappable space above and below (tapPadding).
+    private static let oneLineRowHeight: CGFloat = 28
+    private static let twoLineRowHeight: CGFloat = 41
 
     // Medium / large: the next alarm on top with Dismiss on its line,
     // then as many rows as fit, and the ✦ (open Talk) button in the bottom-right corner.
     private var list: some View {
         GeometryReader { geometry in
             let layout = self.layout
-            let top = layout.alarm != nil ? Self.alarmHeight + 6 + Self.headerHeight : Self.headerHeight
-            let shown = Array(layout.rows.prefix(rowCapacity(height: geometry.size.height - top)))
+            let top = layout.alarm != nil ? Self.alarmHeight + 9 + Self.headerHeight : Self.headerHeight + 2
+            let shown = rowsThatFit(layout.rows, height: geometry.size.height - top)
             VStack(alignment: .leading, spacing: 2) {
                 if let alarm = layout.alarm {
                     AlarmHeader(upcoming: alarm, now: entry.date)
@@ -125,7 +135,7 @@ struct UpNextWidgetView: View {
                     // No gaps between rows: every point of a row opens its tab.
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(shown) { item in
-                            UpNextRow(item: item, now: entry.date, tapPadding: 5)
+                            UpNextRow(item: item, now: entry.date, tapPadding: 4)
                                 // The last row leaves room for ✦.
                                 .padding(.trailing, item.id == shown.last?.id ? 40 : 0)
                                 .transition(.opacity.combined(with: .move(edge: .trailing)))
@@ -489,6 +499,16 @@ private struct UpNextRow: View {
             .buttonStyle(.plain)
         default:
             EmptyView()
+        }
+    }
+}
+
+private extension UpNextItem {
+    /// Whether its widget row has a second line (due time, details, countdown).
+    var hasSecondLine: Bool {
+        switch kind {
+        case .todo(let todo): todo.due != nil || !todo.trimmedDetails.isEmpty
+        default: true
         }
     }
 }
