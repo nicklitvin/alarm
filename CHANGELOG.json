@@ -1,6 +1,16 @@
 {
   "releases": [
     {
+      "version": "1.22.1",
+      "build": 47,
+      "date": "2026-11-15",
+      "title": "Cleaner Widget",
+      "notes": [
+        "The Up Next widget drops the line under the alarm and the \"To-Do · N to-dos\" heading, so your to-dos start right below the alarm.",
+        "Swiping left on an alarm now shows a red Delete, like timers, to-dos and notes."
+      ]
+    },
+    {
       "version": "1.22.0",
       "build": 46,
       "date": "2026-11-15",

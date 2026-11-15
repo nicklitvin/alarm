@@ -135,7 +135,7 @@ function HomeScreen() {
   )
   const upNextWidget = (size: 'small' | 'medium' | 'large') => {
     // As many rows as fit, measuring each: one-line to-dos take less room than two-line rows.
-    const space = (size === 'medium' ? 142 : 332) - (featured ? 66 : 22)
+    const space = (size === 'medium' ? 142 : 332) - (featured ? 42 : 22)
     const twoLines = (i: UpNextItem) => i.kind !== 'todo' || !!i.todo.due || !!i.todo.details.trim()
     const shown: UpNextItem[] = []
     let used = 0
@@ -168,8 +168,9 @@ function HomeScreen() {
     }
     return (
       <div className={`widget upnext ${size}`} onClick={() => open(featured ? { tab: 'alarms' } : first ? linkFor(first) : { tab: 'todos' })}>
-        {featured && <>{alarmHeader(false)}<div className="v-divider" /></>}
-        <div className={`wh ${featured ? 'small' : ''}`}><span>{featured ? 'To-Do' : 'Up Next'}{todoCount > 0 && <span className="count"> {todoCount} to-do{todoCount === 1 ? '' : 's'}</span>}</span></div>
+        {/* With an alarm on top, rows follow it directly: no divider or "To-Do" line. */}
+        {featured ? <div style={{ marginBottom: 4 }}>{alarmHeader(false)}</div>
+          : <div className="wh"><span>Up Next{todoCount > 0 && <span className="count"> {todoCount} to-do{todoCount === 1 ? '' : 's'}</span>}</span></div>}
         {shown.length === 0 ? <div style={{ marginTop: 6 }}>{featured ? <span className="muted" style={{ fontSize: 12 }}>Nothing to do.</span> : <><b>All clear</b><div className="muted" style={{ fontSize: 12 }}>Nothing coming up.</div></>}</div>
           : shown.map((i, n) => <div key={keyOf(i)} style={{ paddingRight: n === shown.length - 1 ? 40 : 0 }}><Row item={i} /></div>)}
         <button className="ask corner" aria-label="Open Talk" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>〰︎</button>

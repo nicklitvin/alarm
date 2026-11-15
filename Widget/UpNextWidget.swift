@@ -112,15 +112,17 @@ struct UpNextWidgetView: View {
     private var list: some View {
         GeometryReader { geometry in
             let layout = self.layout
-            let top = layout.alarm != nil ? Self.alarmHeight + 9 + Self.headerHeight : Self.headerHeight + 2
+            // With an alarm on top, the rows follow it directly (no divider or "To-Do" line).
+            let top = layout.alarm != nil ? Self.alarmHeight + 6 : Self.headerHeight + 2
             let shown = rowsThatFit(layout.rows, height: geometry.size.height - top)
             VStack(alignment: .leading, spacing: 2) {
                 if let alarm = layout.alarm {
                     AlarmHeader(upcoming: alarm, now: entry.date)
                         .frame(height: Self.alarmHeight)
-                    Divider().padding(.vertical, 2)
+                        .padding(.bottom, 4)
+                } else {
+                    header(title: "Up Next")
                 }
-                header(title: layout.alarm != nil ? "To-Do" : "Up Next")
                 if shown.isEmpty {
                     if layout.alarm == nil {
                         Spacer(minLength: 0)

@@ -90,10 +90,11 @@ struct AlarmListView: View {
                         AlarmRow(alarm: alarm, now: now)
                             .contentShape(Rectangle())
                             .onTapGesture { editorTarget = .edit(alarm) }
-                    }
-                    .onDelete { offsets in
-                        let sorted = controller.sortedAlarms
-                        offsets.map { sorted[$0].id }.forEach(controller.delete)
+                            // A red Delete, like the other tabs (onDelete picked up the orange tint).
+                            .swipeActions(edge: .trailing) {
+                                Button("Delete", systemImage: "trash", role: .destructive) { controller.delete(alarm.id) }
+                                    .tint(.red)
+                            }
                     }
                 }
             }
