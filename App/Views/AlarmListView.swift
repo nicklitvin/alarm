@@ -17,6 +17,7 @@ struct AlarmListView: View {
     @Environment(AlarmController.self) private var controller
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var editorTarget: EditorTarget?
 
     var body: some View {
@@ -60,7 +61,8 @@ struct AlarmListView: View {
     private func content(now: Date) -> some View {
         if controller.alarms.isEmpty {
             ContentUnavailableView("No Alarms", systemImage: "alarm")
-        } else if verticalSizeClass == .compact {
+        } else if verticalSizeClass == .compact || horizontalSizeClass == .regular {
+            // iPhone sideways, iPad and the Mac: a grid of cards that uses the width.
             landscape(now: now)
         } else {
             List {
@@ -107,8 +109,8 @@ struct AlarmListView: View {
 // MARK: - Landscape
 
 extension AlarmListView {
-    /// Sideways, a long list wastes the width and shows two alarms at a time. Instead: a grid of
-    /// cards with big times, the dismiss card(s) across the top.
+    /// Sideways (and on iPad and the Mac), a long list wastes the width. Instead: a grid of cards
+    /// with big times, the dismiss card(s) across the top.
     fileprivate func landscape(now: Date) -> some View {
         ScrollView {
             VStack(spacing: 12) {

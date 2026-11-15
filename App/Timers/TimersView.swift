@@ -7,45 +7,14 @@ struct TimersView: View {
     @State private var stopwatch = StopwatchController.shared
     @State private var showNew = false
     @State private var errorMessage: String?
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
         NavigationStack {
-            List {
-                if !stopwatch.stopwatch.isReset {
-                    Section("Stopwatch") {
-                        StopwatchRow(controller: stopwatch)
-                            .swipeActions {
-                                Button("Reset", systemImage: "arrow.counterclockwise", role: .destructive) { stopwatch.reset() }
-                                    .tint(.red)
-                            }
-                        ForEach(stopwatch.stopwatch.lapSplits(), id: \.number) { lap in
-                            HStack {
-                                Text("Lap \(lap.number)")
-                                    .foregroundStyle(.secondary)
-                                Spacer()
-                                Text(Stopwatch.format(lap.split))
-                                    .monospacedDigit()
-                            }
-                            .font(.subheadline)
-                        }
-                    }
-                }
-
-                if !controller.timers.isEmpty {
-                    Section("Running") {
-                        ForEach(controller.timers) { timer in
-                            TimerRow(timer: timer)
-                                .swipeActions {
-                                    Button("Cancel", role: .destructive) { controller.cancel(timer.id) }
-                                }
-                        }
-                    }
-                }
-
+            Group {
+                // iPad and the Mac: the stopwatch in its own column, timers as a grid of cards.
+                if horizontalSizeClass == .regular { grid } else { list }
             }
-            .listStyle(.insetGrouped)
-            // Always the same light gray as the other tabs (an empty list would otherwise be white).
-            .scrollContentBackground(.hidden)
             .background(Color(.systemGroupedBackground))
             .overlay {
                 if controller.timers.isEmpty && stopwatch.stopwatch.isReset {
@@ -111,6 +80,103 @@ struct TimersView: View {
             }
         }
         .tint(.orange)
+    }
+
+    private var list: some View {
+        List {
+            if !stopwatch.stopwatch.isReset {
+                Section("Stopwatch") {
+                    StopwatchRow(controller: stopwatch)
+                        .swipeActions {
+                            Button("Reset", systemImage: "arrow.counterclockwise", role: .destructive) { stopwatch.reset() }
+                                .tint(.red)
+                        }
+                    ForEach(stopwatch.stopwatch.lapSplits(), id: \.number) { lap in
+                        HStack {
+                            Text("Lap \(lap.number)")
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Text(Stopwatch.format(lap.split))
+                                .monospacedDigit()
+                        }
+                        .font(.subheadline)
+                    }
+                }
+            }
+
+            if !controller.timers.isEmpty {
+                Section("Running") {
+                    ForEach(controller.timers) { timer in
+                        TimerRow(timer: timer)
+                            .swipeActions {
+                                Button("Cancel", role: .destructive) { controller.cancel(timer.id) }
+                            }
+                    }
+                }
+            }
+
+        }
+        .listStyle(.insetGrouped)
+        // Always the same light gray as the other tabs (an empty list would otherwise be white).
+        .scrollContentBackground(.hidden)
+    }
+
+    /// The wide layout: a stopwatch card (with its laps) on the left while it's in use, and the
+    /// timers as cards filling the rest. Long-press a card to cancel or reset.
+    private var grid: some View {
+        ScrollView {
+            HStack(alignment: .top, spacing: 16) {
+                if !stopwatch.stopwatch.isReset {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Stopwatch")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        VStack(spacing: 0) {
+                            StopwatchRow(controller: stopwatch)
+                                .padding(.vertical, 6)
+                            ForEach(stopwatch.stopwatch.lapSplits(), id: \.number) { lap in
+                                Divider()
+                                HStack {
+                                    Text("Lap \(lap.number)").foregroundStyle(.secondary)
+                                    Spacer()
+                                    Text(Stopwatch.format(lap.split)).monospacedDigit()
+                                }
+                                .font(.subheadline)
+                                .padding(.vertical, 8)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 6)
+                        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .contextMenu {
+                            Button("Reset", systemImage: "arrow.counterclockwise", role: .destructive) { stopwatch.reset() }
+                        }
+                    }
+                    .frame(width: 340)
+                }
+                if !controller.timers.isEmpty {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Running")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), spacing: 12)], spacing: 12) {
+                            ForEach(controller.timers) { timer in
+                                TimerRow(timer: timer)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                                    .contextMenu {
+                                        Button("Cancel", systemImage: "xmark", role: .destructive) { controller.cancel(timer.id) }
+                                    }
+                            }
+                        }
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 8)
+        }
     }
 
     private func start(_ duration: TimeInterval, label: String) {

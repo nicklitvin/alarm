@@ -4,82 +4,135 @@ struct NotesListView: View {
     @Environment(NotesController.self) private var controller
     @State private var path: [UUID] = []
     @State private var query = ""
+    /// The note open beside the list (iPad and the Mac).
+    @State private var selection: UUID?
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     private var visible: [Note] {
         let q = query.trimmingCharacters(in: .whitespaces).lowercased()
-        let notes = controller.sortedNotes.filter { !$0.isEmpty || path.contains($0.id) }
+        let notes = controller.sortedNotes.filter { !$0.isEmpty || path.contains($0.id) || selection == $0.id }
         guard !q.isEmpty else { return notes }
         return notes.filter { $0.title.lowercased().contains(q) || $0.body.lowercased().contains(q) }
     }
 
     var body: some View {
-        NavigationStack(path: $path) {
-            let pinned = visible.filter(\.isPinned)
-            let others = visible.filter { !$0.isPinned }
-            List {
-                // No empty header views: the list used to reserve header space on the first frame
-                // and then collapse it, so the notes jumped up toward the search field.
-                if pinned.isEmpty {
-                    Section {
-                        ForEach(others) { row($0) }
-                    }
-                } else {
-                    Section("Pinned") {
-                        ForEach(pinned) { row($0) }
-                    }
-                    if !others.isEmpty {
-                        Section("Notes") {
-                            ForEach(others) { row($0) }
+        Group {
+            if horizontalSizeClass == .regular {
+                // iPad and the Mac: the notes on the left, the open note beside them.
+                HStack(spacing: 0) {
+                    notesColumn
+                        .frame(width: 340)
+                    Divider()
+                    detail
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                .background(Color(.systemGroupedBackground))
+            } else {
+                NavigationStack(path: $path) {
+                    notesColumn
+                        .navigationDestination(for: UUID.self) { id in
+                            NoteEditorView(noteID: id)
                         }
-                    }
                 }
-            }
-            .listStyle(.insetGrouped)
-            .listSectionSpacing(.compact)
-            .contentMargins(.top, 8, for: .scrollContent)
-            .overlay {
-                if controller.notes.isEmpty {
-                    ContentUnavailableView("No Notes", systemImage: "note.text")
-                } else if visible.isEmpty {
-                    ContentUnavailableView.search(text: query)
-                }
-            }
-            .navigationTitle("Notes")
-            .toolbar(.hidden, for: .navigationBar)
-            .safeAreaInset(edge: .top, spacing: 0) {
-                VStack(spacing: 0) {
-                    TabHeader(title: "Notes", tab: .notes) { _ in
-                        controller.notes.isEmpty ? nil : "\(controller.notes.count) note\(controller.notes.count == 1 ? "" : "s")"
-                    }
-                    SearchField(text: $query)
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 6)
-                        .background(Color(.systemGroupedBackground))
-                }
-            }
-            .navigationDestination(for: UUID.self) { id in
-                NoteEditorView(noteID: id)
-            }
-            .safeAreaInset(edge: .bottom) {
-                BottomActionButton(title: "New Note", systemImage: "square.and.pencil") {
-                    path.append(controller.add().id)
-                }
-            }
-            // No list-wide animation: notes re-sort while you edit one, and animating that
-            // on the way back made the edited note flicker into place.
-            .task(id: AppNavigation.shared.pendingNoteID) {
-                // Opened from a chat event: show that note.
-                guard let id = AppNavigation.shared.pendingNoteID else { return }
-                AppNavigation.shared.pendingNoteID = nil
-                if controller.note(id) != nil { path = [id] }
             }
         }
         .tint(.orange)
     }
 
+    /// Opens a note: pushed on iPhone, shown beside the list on iPad and the Mac.
+    private func open(_ id: UUID) {
+        if horizontalSizeClass == .regular { selection = id } else { path = [id] }
+    }
+
+    /// The open note in the wide layout (each note gets a fresh editor).
+    @ViewBuilder
+    private var detail: some View {
+        if let id = selection, controller.note(id) != nil {
+            NavigationStack {
+                NoteEditorView(noteID: id)
+            }
+            .id(id)
+        } else {
+            ContentUnavailableView("No Note Selected", systemImage: "note.text",
+                                   description: Text("Pick a note, or make a new one."))
+        }
+    }
+
+    @ViewBuilder
+    private var notesColumn: some View {
+        let pinned = visible.filter(\.isPinned)
+        let others = visible.filter { !$0.isPinned }
+        List {
+            // No empty header views: the list used to reserve header space on the first frame
+            // and then collapse it, so the notes jumped up toward the search field.
+            if pinned.isEmpty {
+                Section {
+                    ForEach(others) { row($0) }
+                }
+            } else {
+                Section("Pinned") {
+                    ForEach(pinned) { row($0) }
+                }
+                if !others.isEmpty {
+                    Section("Notes") {
+                        ForEach(others) { row($0) }
+                    }
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .listSectionSpacing(.compact)
+        .contentMargins(.top, 8, for: .scrollContent)
+        .overlay {
+            if controller.notes.isEmpty {
+                ContentUnavailableView("No Notes", systemImage: "note.text")
+            } else if visible.isEmpty {
+                ContentUnavailableView.search(text: query)
+            }
+        }
+        .navigationTitle("Notes")
+        .toolbar(.hidden, for: .navigationBar)
+        .safeAreaInset(edge: .top, spacing: 0) {
+            VStack(spacing: 0) {
+                TabHeader(title: "Notes", tab: .notes) { _ in
+                    controller.notes.isEmpty ? nil : "\(controller.notes.count) note\(controller.notes.count == 1 ? "" : "s")"
+                }
+                SearchField(text: $query)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 6)
+                    .background(Color(.systemGroupedBackground))
+            }
+        }
+        .safeAreaInset(edge: .bottom) {
+            BottomActionButton(title: "New Note", systemImage: "square.and.pencil") {
+                open(controller.add().id)
+            }
+        }
+        // No list-wide animation: notes re-sort while you edit one, and animating that
+        // on the way back made the edited note flicker into place.
+        .task(id: AppNavigation.shared.pendingNoteID) {
+            // Opened from a chat event: show that note.
+            guard let id = AppNavigation.shared.pendingNoteID else { return }
+            AppNavigation.shared.pendingNoteID = nil
+            if controller.note(id) != nil { open(id) }
+        }
+    }
+
     private func row(_ note: Note) -> some View {
-        NavigationLink(value: note.id) {
-            NoteRow(note: note)
+        Group {
+            if horizontalSizeClass == .regular {
+                // Wide layout: tapping shows the note beside the list; the open one is highlighted.
+                Button { selection = note.id } label: {
+                    NoteRow(note: note)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .listRowBackground(selection == note.id ? Color.orange.opacity(0.18) : nil)
+            } else {
+                NavigationLink(value: note.id) {
+                    NoteRow(note: note)
+                }
+            }
         }
         .swipeActions(edge: .leading) {
             Button(note.isPinned ? "Unpin" : "Pin", systemImage: note.isPinned ? "pin.slash" : "pin") {

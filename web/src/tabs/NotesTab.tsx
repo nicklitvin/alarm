@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { SwipeRow } from '../components/SwipeRow'
 import { Alert, BottomAction, Section, TabHeader } from '../components/ui'
 import { firstLineCaret, checklistProgress, checklistReturn, lineBounds, lineKind, noteCopyText, notePreview, noteTitle, sortNotes, toggleItem, toggleList, autoBullet, uid, type ListStyle, type Note } from '../logic/model'
+import { useWide } from '../logic/layout'
 import { useStore } from '../logic/store'
 
 const progressLabel = (n: Note) => {
@@ -33,6 +34,7 @@ export function NotesTab() {
   const { data, update, now, pending, clearPending } = useStore()
   const [openID, setOpenID] = useState<string | null>(null)
   const [query, setQuery] = useState('')
+  const wide = useWide()
   const sort = data.settings.notesSort
 
   useEffect(() => {
@@ -45,19 +47,24 @@ export function NotesTab() {
   const q = query.trim().toLowerCase()
   const visible = sortNotes(data.notes, sort).filter((n) => !q || n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q))
 
-  if (openID) {
-    const note = data.notes.find((n) => n.id === openID)
-    if (note) return <NoteEditor note={note} onBack={() => {
-      if (!note.title.trim() && !note.body.trim()) setNotes((ns) => ns.filter((n) => n.id !== note.id))
-      setOpenID(null)
-    }} />
+  const openNote = openID ? data.notes.find((n) => n.id === openID) : undefined
+  // Leaving a note you didn't write anything in throws it away.
+  const close = () => {
+    if (openNote && !openNote.title.trim() && !openNote.body.trim()) setNotes((ns) => ns.filter((n) => n.id !== openNote.id))
+    setOpenID(null)
   }
+  const select = (id: string) => {
+    if (openNote && openNote.id !== id && !openNote.title.trim() && !openNote.body.trim()) setNotes((ns) => ns.filter((n) => n.id !== openNote.id))
+    setOpenID(id)
+  }
+
+  if (openNote && !wide) return <NoteEditor note={openNote} onBack={close} />
 
   const newNote = () => {
     const top = Math.min(0, ...data.notes.map((n) => n.sortIndex)) - 1
     const note: Note = { id: uid(), title: '', body: '', createdAt: Date.now(), updatedAt: Date.now(), isPinned: false, sortIndex: top }
     setNotes((ns) => [...ns, note])
-    setOpenID(note.id)
+    select(note.id)
   }
 
   const info = (n: Note) => (
@@ -69,7 +76,7 @@ export function NotesTab() {
 
   // Swipe left to delete, right to pin.
   const row = (n: Note) => (
-    <SwipeRow key={n.id} dataId={n.id} onClick={() => setOpenID(n.id)}
+    <SwipeRow key={n.id} dataId={n.id} onClick={() => select(n.id)} className={wide && n.id === openID ? 'selected' : ''}
       leading={{ label: n.isPinned ? 'Unpin' : 'Pin', color: 'var(--orange)', onAction: () => setNotes((ns) => ns.map((x) => (x.id === n.id ? { ...x, isPinned: !x.isPinned } : x))) }}
       trailing={{ label: 'Delete', color: 'var(--red)', onAction: () => setNotes((ns) => ns.filter((x) => x.id !== n.id)) }}>
       {info(n)}
@@ -78,7 +85,7 @@ export function NotesTab() {
 
   const pinned = visible.filter((n) => n.isPinned)
   const others = visible.filter((n) => !n.isPinned)
-  return (
+  const list = (
     <>
       <TabHeader title="Notes" tab="notes" detail={data.notes.length ? `${data.notes.length} note${data.notes.length === 1 ? '' : 's'}` : null} />
       <div style={{ padding: '0 20px 10px', position: 'sticky', top: 52, zIndex: 19, background: 'var(--bg-grouped)' }}>
@@ -91,9 +98,21 @@ export function NotesTab() {
       <BottomAction label="New Note" onClick={newNote} />
     </>
   )
+  // In the Mac window: the notes on the left, the open note beside them.
+  if (wide) return (
+    <div className="notes-split">
+      <div className="notes-col">{list}</div>
+      <div className="notes-detail">
+        {openNote ? <NoteEditor key={openNote.id} note={openNote} onBack={close} />
+          : <div className="talk-empty"><div className="big">🗒</div><h3>No Note Selected</h3>Pick a note, or make a new one.</div>}
+      </div>
+    </div>
+  )
+  return list
 }
 
 function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
+  const besideList = useWide()
   const { update } = useStore()
   const { copied, copy } = useCopy()
   const [confirm, setConfirm] = useState<'clear' | 'delete' | null>(null)
@@ -142,7 +161,8 @@ function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
   return (
     <>
       <div className="header plain" style={{ background: 'var(--bg)', justifyContent: 'space-between' }}>
-        <button className="text-btn" style={{ fontSize: 17 }} onClick={onBack}>‹ Notes</button>
+        {/* Beside the list (Mac window) there's nothing to go back to. */}
+        {besideList ? <span /> : <button className="text-btn" style={{ fontSize: 17 }} onClick={onBack}>‹ Notes</button>}
         {/* One glass pill, as iOS groups toolbar buttons. */}
         <div className="header-pill">
           <button className="icon-btn" aria-label={copied === note.id ? 'Copied' : 'Copy All'} title="Copy All" onClick={() => copy(note)}>{copied === note.id ? '✓' : '⧉'}</button>

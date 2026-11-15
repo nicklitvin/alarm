@@ -5,7 +5,7 @@ import {
   ALARM_SOUNDS, alarmTitle, countdown, alarmWindow, dayDescription, nextAlarm, nextFire, repeatSummary, roundTo5, soundName, timeOf, timeParts, uid,
   weekdayInitial, type Alarm, type Weekday,
 } from '../logic/model'
-import { useLandscape } from '../logic/orientation'
+import { useWide } from '../logic/layout'
 import { useStore } from '../logic/store'
 
 const ORDER: Weekday[] = [1, 2, 3, 4, 5, 6, 7]
@@ -13,7 +13,8 @@ const ORDER: Weekday[] = [1, 2, 3, 4, 5, 6, 7]
 export function AlarmsTab() {
   const { data, update, now, pending, clearPending } = useStore()
   const [editing, setEditing] = useState<Alarm | 'new' | null>(null)
-  const landscape = useLandscape()
+  // The Mac window (and iPad): a grid of cards, like the app in a wide window.
+  const landscape = useWide()
   const headsUp = alarmWindow(data.settings) // the Dismiss card shows from the widget window on
   const next = nextAlarm(data.alarms, now)
   const sorted = [...data.alarms].sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute))

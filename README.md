@@ -39,6 +39,7 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 - Xcode 26 or later
 - iOS 26 or later on a real iPhone (AlarmKit alarms don't ring in the Simulator)
 - For the Talk tab: an iPhone with Apple Intelligence turned on (iPhone 15 Pro or newer)
+- For the Mac app: macOS 26 or later on an Apple silicon Mac (pick **My Mac (Mac Catalyst)** as the run destination)
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen) to generate the Xcode project
 
 ## Getting started
@@ -106,9 +107,24 @@ the tab), `alarmapp://alarms`, `alarmapp://todos`, `alarmapp://notes`, `alarmapp
 
 **Dismissing a one-time alarm** simply turns it off.
 
+## Mac and iPad
+
+The same target runs on iPad and, through Mac Catalyst, as a Mac app (same bundle ID and App Group,
+so it shares data with its own widgets). In a wide window the tab bar becomes a sidebar
+(`.sidebarAdaptable`) and each tab switches to a wide layout when the horizontal size class is
+regular: Alarms as a grid of cards, Timers with the stopwatch in its own column and timers as cards,
+To-Do in two columns (your to-dos and Completed | Deadlines), Notes with the list beside the open
+note, and Talk in a centered column. The Mac window has a minimum size of 820 × 560
+(`MacWindow` in `App/RootView.swift`). The Mac build uses its own entitlements
+(`App/Alarm-Mac.entitlements`, `Widget/AlarmWidget-Mac.entitlements`) for the sandbox, network and
+microphone.
+
+Alarms on the Mac depend on AlarmKit, which Apple lists for Mac Catalyst; a Mac that's asleep may not
+wake up to ring, so the iPhone remains the alarm clock.
+
 ## Web preview
 
-`web/` is a browser copy of the app's screens (Vite + React) for reviewing the design without building in Xcode. It never rings, isn't part of the iPhone app, and can be deployed on Vercel. See [web/README.md](web/README.md).
+`web/` is a browser copy of the app's screens (Vite + React) for reviewing the design without building in Xcode. Tabs at the top switch between the iPhone app, the Mac app (sidebar and wide layouts) and Widgets & System. It never rings, isn't part of the iPhone app, and can be deployed on Vercel. See [web/README.md](web/README.md).
 
 ## Versions and updates
 

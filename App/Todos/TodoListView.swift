@@ -20,6 +20,7 @@ struct TodoListView: View {
     /// The Add To-Do sheet, like Add Alarm and New Timer.
     @State private var addingNew = false
     @FocusState private var focus: TodoField?
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
         NavigationStack {
@@ -71,16 +72,42 @@ struct TodoListView: View {
         .tint(.orange)
     }
 
+    @ViewBuilder
     private func list(now: Date) -> some View {
-        ScrollViewReader { _ in
-            List {
-                // To-dos without a deadline, in your order: press and hold one, then drag it.
-                ForEach(controller.undatedTodos) { todo in
-                    row(todo, now: now)
+        if horizontalSizeClass == .regular {
+            // iPad and the Mac: your to-dos (and Completed) on the left, Deadlines on the right.
+            HStack(spacing: 0) {
+                styled(List {
+                    undatedRows(now: now)
+                    completedSection(now: now)
+                    tapToStopEditing
+                })
+                Divider()
+                styled(List {
+                    Section {
+                        if controller.deadlineTodos.isEmpty {
+                            Text("No deadlines")
+                                .foregroundStyle(.secondary)
+                                .listRowBackground(Color.clear)
+                        }
+                        ForEach(controller.deadlineTodos) { todo in
+                            row(todo, now: now)
+                        }
+                    } header: {
+                        sectionHeader("Deadlines")
+                    }
+                    tapToStopEditing
+                })
+            }
+            .overlay {
+                if controller.todos.isEmpty {
+                    ContentUnavailableView("Nothing To Do", systemImage: "checklist")
+                        .allowsHitTesting(false)
                 }
-                .onMove { source, destination in
-                    controller.moveUndated(from: source, to: destination)
-                }
+            }
+        } else {
+            styled(List {
+                undatedRows(now: now)
 
                 // To-dos with a deadline, below them: soonest first.
                 if !controller.deadlineTodos.isEmpty {
@@ -93,37 +120,60 @@ struct TodoListView: View {
                     }
                 }
 
-                if !controller.completedTodos.isEmpty {
-                    Section {
-                        ForEach(controller.completedTodos) { todo in
-                            row(todo, now: now)  // same size as open to-dos
-                        }
-                    } header: {
-                        sectionHeader("Completed") { withAnimation { controller.clearCompleted() } }
-                    }
+                completedSection(now: now)
+                tapToStopEditing
+            })
+            .overlay {
+                if controller.todos.isEmpty {
+                    ContentUnavailableView("Nothing To Do", systemImage: "checklist")
+                        .allowsHitTesting(false)
                 }
-
-                // Empty space below the rows: tapping it stops editing.
-                Color.clear
-                    .frame(height: 240)
-                    .contentShape(Rectangle())
-                    .onTapGesture { focus = nil }
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
             }
+        }
+    }
+
+    /// To-dos without a deadline, in your order: press and hold one, then drag it.
+    private func undatedRows(now: Date) -> some View {
+        ForEach(controller.undatedTodos) { todo in
+            row(todo, now: now)
+        }
+        .onMove { source, destination in
+            controller.moveUndated(from: source, to: destination)
+        }
+    }
+
+    @ViewBuilder
+    private func completedSection(now: Date) -> some View {
+        if !controller.completedTodos.isEmpty {
+            Section {
+                ForEach(controller.completedTodos) { todo in
+                    row(todo, now: now)  // same size as open to-dos
+                }
+            } header: {
+                sectionHeader("Completed") { withAnimation { controller.clearCompleted() } }
+            }
+        }
+    }
+
+    /// Empty space below the rows: tapping it stops editing.
+    private var tapToStopEditing: some View {
+        Color.clear
+            .frame(height: 240)
+            .contentShape(Rectangle())
+            .onTapGesture { focus = nil }
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+    }
+
+    /// The look every to-do list shares: plain rows on the tab's gray.
+    private func styled<Content: View>(_ list: List<Never, Content>) -> some View {
+        list
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .background(Color(.systemGroupedBackground))
             .environment(\.defaultMinListRowHeight, 0)
             .scrollDismissesKeyboard(.immediately)
-            .overlay {
-                if controller.todos.isEmpty {
-                    ContentUnavailableView("Nothing To Do", systemImage: "checklist")
-                    .allowsHitTesting(false)
-                }
-            }
             .animation(.snappy, value: controller.todos)
-        }
     }
 
     /// "Deadlines" and "Completed" (with Clear) above their rows.

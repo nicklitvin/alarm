@@ -395,32 +395,11 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .qt-chip.selected { background: var(--orange); color: #fff; }
 
 /* ---------- Landscape gallery ---------- */
-.landscape-gallery { padding: 0 32px 64px; max-width: 1840px; margin: 0 auto; }
-.landscape-gallery h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: #8e8e93; margin: 0 0 4px; font-weight: 600; }
-.landscape-gallery > p { margin: 0 0 18px; color: #8e8e93; font-size: 13px; }
-.landscape-list { display: flex; flex-wrap: wrap; gap: 36px 40px; justify-content: center; }
-.landscape-figure { margin: 0; }
-.landscape-figure figcaption { text-align: center; color: #8e8e93; font-size: 13px; margin-top: 10px; }
-.phone.landscape { width: 852px; height: 393px; max-width: calc(100vw - 32px); }
-.phone.landscape .island { top: 50%; left: 11px; transform: translateY(-50%); width: 35px; height: 122px; }
-.phone.landscape .app { left: 52px; right: 40px; }
-.phone.landscape .app-body { padding-top: 10px; padding-bottom: 150px; }
-.phone.landscape .app-body > *:not(.alarm-grid):not(.sheet-backdrop):not(.bottom-action) { max-width: 620px; margin-left: auto; margin-right: auto; }
-.phone.landscape .tabbar { left: 50%; right: auto; transform: translateX(-50%); width: 420px; height: 50px; bottom: 12px; }
-.phone.landscape .tabbar button { font-size: 12px; padding: 8px 0; }
-.phone.landscape .bottom-action { left: auto; right: 14px; bottom: 12px; width: 150px; }
-.phone.landscape .bottom-action .btn { padding: 13px 8px; font-size: 15px; }
-.phone.landscape .home-indicator { bottom: 6px; }
 .alarm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; padding: 0 20px; }
 .alarm-card { background: var(--card); border-radius: 20px; padding: 14px 16px; cursor: pointer; }
 .alarm-card-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--orange); font-weight: 600; font-size: 15px; }
 .alarm-card.off .alarm-card-top, .alarm-card.off .alarm-time { color: var(--secondary); }
 .alarm-card .alarm-time { font-size: 46px; }
-.ringing.landscape { height: 100%; border-radius: 0; flex-direction: row; align-items: center; justify-content: space-between; padding: 0 60px 0 80px; }
-.ringing.landscape .ring-left { display: flex; flex-direction: column; }
-.ringing.landscape .ring-time { margin-top: 6px; font-size: 104px; }
-.ringing.landscape .ring-time small { font-size: 32px; font-weight: 600; letter-spacing: 0; }
-.ringing.landscape .ring-stop { width: 220px; }
 
 /* ---------- System views as one long list ---------- */
 .system-list { display: flex; flex-direction: column; gap: 34px; }
@@ -551,3 +530,64 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .idea-rail-wrap { flex: 1; min-height: 0; display: flex; gap: 10px; }
 .idea-rail-wrap .idea-lines { flex: 1; min-width: 0; }
 .idea-rail { display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 4px 0 0; }
+
+/* ── Page: tabs at the top choose iPhone, Mac, or Widgets & System ───────────────────────── */
+.page { min-height: 100vh; }
+.topbar { position: sticky; top: 0; z-index: 100; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding: 14px 24px; background: color-mix(in srgb, var(--page) 85%, transparent); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-bottom: 0.5px solid var(--separator); }
+.topbar h1 { font-size: 20px; margin: 0; }
+.topbar .panel-actions { margin: 0 0 0 auto; }
+.view-tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--fill-strong); }
+.view-tabs button { padding: 8px 18px; border-radius: 999px; font-size: 14px; font-weight: 700; color: var(--page-text); }
+.view-tabs button.active { background: var(--orange); color: #fff; box-shadow: 0 2px 8px rgba(255, 149, 0, 0.35); }
+.view-blurb { max-width: 900px; margin: 16px auto 0; padding: 0 24px; text-align: center; color: #8e8e93; font-size: 13px; line-height: 1.5; }
+.view-blurb b { color: var(--page-text); }
+.system-page { max-width: 1280px; margin: 0 auto; padding: 24px 24px 64px; }
+.system-page h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: #8e8e93; margin: 0 0 12px; font-weight: 600; }
+.system-page .examples { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 28px 32px; align-items: start; }
+.system-page #ideas .examples { grid-template-columns: 1fr; }
+@media (max-width: 480px) { .system-page .examples { grid-template-columns: 1fr; } .topbar { padding: 12px 16px; } .topbar .panel-actions { margin-left: 0; } }
+
+/* ── Mac window: a sidebar instead of the tab bar, and room for wide layouts ─────────────── */
+.mac-window { width: min(1180px, calc(100vw - 32px)); height: 720px; max-height: calc(100vh - 140px); min-height: 520px; display: flex; border-radius: 14px; overflow: hidden; background: var(--bg-grouped); color: var(--label); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3), 0 0 0 0.5px rgba(0, 0, 0, 0.35); }
+.mac-sidebar { width: 200px; flex: none; display: flex; flex-direction: column; gap: 2px; padding: 14px 10px; background: color-mix(in srgb, var(--bg-grouped) 82%, #8e8e93); border-right: 0.5px solid var(--separator); }
+.mac-lights { display: flex; gap: 8px; padding: 2px 6px 20px; }
+.mac-lights i { width: 12px; height: 12px; border-radius: 6px; background: #ff5f57; }
+.mac-lights i:nth-child(2) { background: #febc2e; }
+.mac-lights i:nth-child(3) { background: #28c840; }
+.mac-sidebar button { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; font-size: 14px; font-weight: 500; color: var(--label); text-align: left; }
+.mac-sidebar button .glyph { width: 20px; text-align: center; }
+.mac-sidebar button.active { background: color-mix(in srgb, var(--orange) 20%, transparent); color: var(--orange); font-weight: 600; }
+.mac-content { flex: 1; min-width: 0; position: relative; }
+.mac-app .app-body { position: relative; padding-top: 12px; padding-bottom: 90px; }
+.mac-app .bottom-action { left: 50%; right: auto; transform: translateX(-50%); width: 380px; bottom: 20px; }
+.mac-app .input-bar { padding-bottom: 18px; }
+.mac-app .composer { padding-bottom: 18px; }
+.mac-app .sheet-backdrop { align-items: center; justify-content: center; }
+.mac-app .sheet { width: 520px; max-width: 92%; height: min(640px, 90%); border-radius: 14px; }
+.mac-app .sheet.medium { height: min(460px, 80%); }
+
+/* Timers: the stopwatch in its own column, timers as cards. */
+.mac-app .timers-wide { display: grid; grid-template-columns: 340px 1fr; align-items: start; }
+.mac-app .timers-wide > :only-child { grid-column: 1 / -1; }
+.mac-app .timers-wide .timers-running .card { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; background: none; }
+.mac-app .timers-wide .timers-running .card > .swipe { border-radius: 18px; }
+.mac-app .timers-wide .timers-running .swipe + .swipe > .swipe-content::before { display: none; }
+
+/* To-Do: your to-dos (and Completed) on the left, Deadlines on the right. */
+.mac-app .todo-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; align-items: start; padding: 0 8px; }
+.mac-app .todo-columns .todo-undated { grid-column: 1; grid-row: 1; }
+.mac-app .todo-columns .todo-deadlines { grid-column: 2; grid-row: 1 / span 2; border-left: 0.5px solid var(--separator); padding-left: 8px; min-height: 200px; }
+.mac-app .todo-columns .todo-completed { grid-column: 1; grid-row: 2; }
+.mac-app .todo-columns .todo-deadlines .todo-flat-header { margin-top: 2px; }
+
+/* Notes: the list on the left, the open note beside it. */
+.notes-split { position: absolute; inset: 0; display: grid; grid-template-columns: 320px 1fr; }
+.notes-col, .notes-detail { position: relative; overflow-y: auto; scrollbar-width: none; padding-bottom: 90px; }
+.notes-col { border-right: 0.5px solid var(--separator); }
+.notes-col .bottom-action { position: sticky; left: auto; transform: none; width: auto; margin: 24px 20px 0; bottom: 20px; }
+.notes-detail { background: var(--bg); }
+.notes-col .swipe.selected .swipe-content { background: color-mix(in srgb, var(--orange) 16%, var(--card)); }
+
+/* Talk: a readable column instead of lines across the whole window. */
+.mac-app .chat, .mac-app .input-bar > * { width: 100%; max-width: 760px; margin-left: auto; margin-right: auto; }
+.mac-app .input-bar { align-items: center; }

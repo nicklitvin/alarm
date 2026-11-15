@@ -5,6 +5,8 @@ struct TalkView: View {
     @State private var model = TalkModel.shared
     @FocusState private var inputFocused: Bool
     @State private var confirmClear = false
+    /// The conversation's widest width (wider windows center it).
+    private static let columnWidth: CGFloat = 760
 
     var body: some View {
         NavigationStack {
@@ -38,7 +40,11 @@ struct TalkView: View {
             // The message field sits on the outermost content view, which SwiftUI moves above the
             // keyboard reliably (nested insets inside the scroll view sometimes stayed behind it).
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                if model.unavailableReason == nil { inputBar }
+                if model.unavailableReason == nil {
+                    inputBar
+                        .frame(maxWidth: Self.columnWidth)
+                        .frame(maxWidth: .infinity)
+                }
             }
         }
         .tint(.orange)
@@ -72,6 +78,9 @@ struct TalkView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
+                // A readable column on iPad and the Mac instead of lines across the whole window.
+                .frame(maxWidth: Self.columnWidth)
+                .frame(maxWidth: .infinity)
                 .animation(.snappy, value: model.messages)
             }
             .defaultScrollAnchor(.bottom)

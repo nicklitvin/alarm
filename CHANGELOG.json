@@ -1,6 +1,16 @@
 {
   "releases": [
     {
+      "version": "1.33.0",
+      "build": 81,
+      "date": "2026-11-15",
+      "title": "Alarmie for Mac and iPad",
+      "notes": [
+        "Alarmie now runs on the Mac and iPad, with a sidebar instead of the tab bar.",
+        "Wide windows use the space: alarms as a grid of cards, the stopwatch beside your timers, to-dos and deadlines side by side, notes next to the list, and Talk in a centered column."
+      ]
+    },
+    {
       "version": "1.32.0",
       "build": 80,
       "date": "2026-11-15",

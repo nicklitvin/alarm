@@ -1,5 +1,6 @@
 import Observation
 import SwiftUI
+import UIKit
 
 enum AppTab: Hashable {
     case alarms, timers, todos, notes, talk
@@ -74,7 +75,10 @@ struct RootView: View {
                 TalkView()
             }
         }
+        // A tab bar on iPhone; a sidebar on iPad and the Mac, where there's room for one.
+        .tabViewStyle(.sidebarAdaptable)
         .tint(.orange)
+        .onAppear(perform: MacWindow.configure)
         .sheet(item: $updates.updatePrompt) { release in
             UpdatePromptView(release: release)
         }
@@ -100,5 +104,19 @@ struct RootView: View {
                 updates.checkIfNeeded()
             }
         }
+    }
+}
+
+/// The Mac app's window: big enough for the wide layouts (sidebar plus two columns), and the
+/// iPhone-style title bar hidden since every tab draws its own header.
+enum MacWindow {
+    static func configure() {
+        #if targetEnvironment(macCatalyst)
+        for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
+            scene.sizeRestrictions?.minimumSize = CGSize(width: 820, height: 560)
+            scene.titlebar?.titleVisibility = .hidden
+            scene.titlebar?.toolbar = nil
+        }
+        #endif
     }
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { SwipeRow } from '../components/SwipeRow'
 import { BottomAction, DeadlineInputs, Section, Sheet, Switch, TabHeader, TimeOfDayChips } from '../components/ui'
 import { dueDescription, isOverdue, moveTodo, nextQuickTime, roundTo5, sortIndexForNew, todoSections, uid, type Todo } from '../logic/model'
+import { useWide } from '../logic/layout'
 import { useStore } from '../logic/store'
 
 // A flat list on the gray background: each to-do is a checkbox and its text. New To-Do adds an
@@ -19,6 +20,7 @@ export function TodoTab() {
     clearPending()
   }, [pending, data.todos, clearPending])
 
+  const wide = useWide()
   const sections = todoSections(data.todos)
   const open = [...sections.todos, ...sections.deadlines]
   const done = data.todos.filter((t) => t.isDone).sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0))
@@ -76,22 +78,26 @@ export function TodoTab() {
     <>
       <TabHeader title="To-Do" tab="todos" detail={open.length ? (overdue ? `${overdue} overdue · ${open.length} left` : `${open.length} left`) : null} />
       {data.todos.length === 0 && <div className="talk-empty"><div className="big">☑︎</div><h3>Nothing To Do</h3></div>}
-      <div className="todo-flat">
+      {/* In the Mac window: your to-dos (and Completed) on the left, Deadlines on the right. */}
+      <div className="todo-columns">
+      <div className="todo-flat todo-undated">
         {sections.todos.map((t) => row(t, true))}
       </div>
-      {sections.deadlines.length > 0 && (
-        <div className="todo-flat">
+      {(sections.deadlines.length > 0 || (wide && data.todos.length > 0)) && (
+        <div className="todo-flat todo-deadlines">
           <div className="todo-flat-header"><span>Deadlines</span></div>
           {sections.deadlines.map((t) => row(t))}
+          {sections.deadlines.length === 0 && <div className="muted" style={{ padding: '8px 16px', fontSize: 15 }}>No deadlines</div>}
         </div>
       )}
       {done.length > 0 && (
-        <div className="todo-flat">
+        <div className="todo-flat todo-completed">
           <div className="todo-flat-header"><span>Completed</span>
             <button className="text-btn" onClick={() => update((d) => ({ ...d, todos: d.todos.filter((t) => !t.isDone) }))}>Clear</button></div>
           {done.map((t) => row(t))}
         </div>
       )}
+      </div>
       <BottomAction label="New To-Do" onClick={() => setAdding(true)} />
       {adding && <NewTodoSheet onClose={() => setAdding(false)} />}
       {editing && <TodoEditor todo={editing} onClose={() => setEditing(null)} />}

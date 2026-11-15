@@ -71,12 +71,14 @@ export function SystemViews() {
       {SECTIONS.map((section) => (
         <section key={section.id} id={section.id} className="system-section">
           <h2>{section.label}</h2>
-          {section.examples.map(([label, make]) => (
-            <div key={label} className="example">
-              {label && <div className="example-label">{label}</div>}
-              <ExampleStore make={make}>{section.view()}</ExampleStore>
-            </div>
-          ))}
+          <div className="examples">
+            {section.examples.map(([label, make]) => (
+              <div key={label} className="example">
+                {label && <div className="example-label">{label}</div>}
+                <ExampleStore make={make}>{section.view()}</ExampleStore>
+              </div>
+            ))}
+          </div>
         </section>
       ))}
     </div>

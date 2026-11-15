@@ -29,6 +29,8 @@ export function TimersTab() {
   return (
     <>
       <TabHeader title="Timers" tab="timers" detail={detail} />
+      {/* In the Mac window: the stopwatch in its own column, timers as cards beside it. */}
+      <div className="timers-wide">
       {!stopwatchIsReset(sw) && (
         <Section header="Stopwatch">
           <SwipeRow trailing={{ label: 'Reset', color: 'var(--red)', onAction: () => setSw(() => ({ accumulated: 0, laps: [] })) }}>
@@ -53,7 +55,7 @@ export function TimersTab() {
         </Section>
       )}
       {timers.length > 0 && (
-        <Section header="Running">
+        <div className="timers-running"><Section header="Running">
           {timers.map((t) => {
             const left = t.state === 'running' ? Math.max(0, (t.fireDate - now) / 1000) : t.state === 'paused' ? t.remaining : 0
             const progress = t.duration ? left / t.duration : 0
@@ -76,8 +78,9 @@ export function TimersTab() {
               </SwipeRow>
             )
           })}
-        </Section>
+        </Section></div>
       )}
+      </div>
 
       {timers.length === 0 && stopwatchIsReset(sw) && (
         <div className="talk-empty"><div className="big">⏱</div><h3>No Timers Yet</h3></div>
