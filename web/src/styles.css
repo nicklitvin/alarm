@@ -520,3 +520,7 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .note-backdrop .box { position: relative; color: transparent; }
 .note-backdrop .box::after { content: ''; position: absolute; left: 50%; top: 50%; width: 1.05em; height: 1.05em; transform: translate(-50%, -48%); border-radius: 50%; border: 1.6px solid var(--tertiary); box-sizing: border-box; }
 .note-backdrop .box.checked::after { background: var(--orange); border-color: var(--orange); color: #fff; content: '✓'; font-size: 11px; line-height: 1; font-weight: 700; display: grid; place-items: center; }
+.title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.version-badge { background: var(--orange); color: #fff; font-weight: 700; font-size: 15px; padding: 4px 12px; border-radius: 999px; letter-spacing: 0.2px; }
+.example + .example { margin-top: 22px; }
+.example-label { font-size: 13px; font-weight: 600; color: var(--page-text); margin: 0 2px 8px; opacity: 0.85; }

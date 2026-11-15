@@ -3,20 +3,35 @@ import {
   alarmTitle, clock, countdown, dayDescription, dueDescription, durationName, isOverdue, leadTimeName, nextAlarm, nextFire,
   timeOf, timeParts, upNext, upNextLayout, DISMISS_WINDOW, type Alarm, type TimerItem, type Todo, type UpNextItem,
 } from '../logic/model'
-import { useStore, type Link } from '../logic/store'
+import * as ex from '../logic/examples'
+import { ExampleStore, useStore, type AppData, type Link } from '../logic/store'
 import { useAsk } from '../tabs/TalkTab'
 
-// Previews of everything the app shows outside itself: widgets, lock screen, notifications,
-// Live Activities, Control Center and the ringing alarm. They use the preview's real data and
-// their buttons work, but nothing here is a real iOS surface.
+// Examples of everything the app shows outside itself: widgets, lock screen, notifications,
+// Live Activities, Control Center and the ringing alarm. Each example has its own fixed data
+// (never your preview's), shows one situation, and its buttons work. Nothing here is a real iOS
+// surface.
 
-const SECTIONS: { id: string; label: string; view: () => ReactNode }[] = [
-  { id: 'home', label: 'Home Screen', view: () => <HomeScreen /> },
-  { id: 'lock', label: 'Lock Screen', view: () => <LockScreen /> },
-  { id: 'notifications', label: 'Notifications', view: () => <Notifications /> },
-  { id: 'live', label: 'Live Activity', view: () => <LiveActivity /> },
-  { id: 'control', label: 'Control Center', view: () => <ControlCenter /> },
-  { id: 'ringing', label: 'Alarm Ringing', view: () => <Ringing /> },
+type Example = [label: string, make: (now: number) => AppData]
+
+const SECTIONS: { id: string; label: string; examples: Example[]; view: () => ReactNode }[] = [
+  { id: 'home', label: 'Home Screen', view: () => <HomeScreen />, examples: [
+    ['Alarm within 12 hours: Dismiss shows; more to-dos than fit', ex.alarmSoon],
+    ['Next alarm days away: no Dismiss yet; Live Talk button off', ex.alarmFar],
+    ['No alarms: Next Alarm shows zzz', ex.noAlarms],
+    ['Nothing at all', ex.empty],
+  ] },
+  { id: 'lock', label: 'Lock Screen', view: () => <LockScreen />, examples: [
+    ['Alarm within 24 hours, with a running timer', ex.timerRunning],
+    ['No alarm in the next 24 hours: zzz', ex.alarmFar],
+  ] },
+  { id: 'notifications', label: 'Notifications', view: () => <Notifications />, examples: [['', ex.notifications]] },
+  { id: 'live', label: 'Live Activity', view: () => <LiveActivity />, examples: [
+    ['Running', ex.timerRunning],
+    ['Paused', ex.timerPaused],
+  ] },
+  { id: 'control', label: 'Control Center', view: () => <ControlCenter />, examples: [['', ex.alarmSoon]] },
+  { id: 'ringing', label: 'Alarm Ringing', view: () => <Ringing />, examples: [['', ex.alarmSoon]] },
 ]
 
 const linkFor = (item: UpNextItem): Link => {
@@ -44,14 +59,19 @@ function useSystem() {
   return { ...store, next, within24h, items, dismiss, complete, snooze, setTimer }
 }
 
-/** Every system view, one after another in a long list. */
+/** Every system view, one after another in a long list, each in all its example situations. */
 export function SystemViews() {
   return (
     <div className="system-list">
       {SECTIONS.map((section) => (
         <section key={section.id} id={section.id} className="system-section">
           <h2>{section.label}</h2>
-          {section.view()}
+          {section.examples.map(([label, make]) => (
+            <div key={label} className="example">
+              {label && <div className="example-label">{label}</div>}
+              <ExampleStore make={make}>{section.view()}</ExampleStore>
+            </div>
+          ))}
         </section>
       ))}
     </div>
@@ -216,8 +236,7 @@ const keyOf = (i: UpNextItem) => i.kind + ('alarm' in i ? i.alarm.id : i.kind ==
 
 function LockScreen() {
   const { now, next, within24h, items, open, data } = useSystem()
-  const [showZzz, setShowZzz] = useState(false)
-  const soon = showZzz ? undefined : within24h
+  const soon = within24h
   const first = items[0]
   const d = new Date(now)
   const timer = data.timers.find((t) => t.state !== 'ringing')
@@ -248,9 +267,6 @@ function LockScreen() {
           </button>
         </div>
         {timer && <div style={{ marginTop: 14 }}><TimerLockActivity timer={timer} /></div>}
-      </div>
-      <div className="panel-actions">
-        <button className={`pill ${showZzz ? 'active' : ''}`} onClick={() => setShowZzz(!showZzz)}>{showZzz ? 'Showing: no alarm within 24 h' : 'Show the zzz state'}</button>
       </div>
       <Caption>Inline text above the clock, Next Alarm (circular and rectangular) and Up Next (rectangular). They show zzz when no alarm rings in the next 24 hours.{timer ? ' The running timer shows as a Live Activity.' : ''}</Caption>
     </>
@@ -364,11 +380,10 @@ function TimerLockActivity({ timer }: { timer: TimerItem }) {
 }
 
 function LiveActivity() {
-  const { data, now, setTimer, update } = useSystem()
+  const { data, now, setTimer } = useSystem()
   const real = data.timers.find((t) => t.state !== 'ringing')
   const timer: TimerItem = real ?? { id: 'example', label: 'Pasta', duration: 540, state: 'running', fireDate: now + 312_000, remaining: 540 }
   const left = timer.state === 'running' ? Math.max(0, (timer.fireDate - now) / 1000) : timer.remaining
-  const startExample = () => update((d) => ({ ...d, timers: [...d.timers, { ...timer, id: Math.random().toString(36).slice(2), fireDate: Date.now() + 540_000 }] }))
   return (
     <>
       <div className="island-stage">
@@ -393,8 +408,7 @@ function LiveActivity() {
       <div className="lock" style={{ marginTop: 14, padding: 16 }}>
         <TimerLockActivity timer={timer} />
       </div>
-      {!real && <div className="panel-actions"><button className="pill" onClick={startExample}>Start a 9-minute example timer</button></div>}
-      <Caption>A running timer in the Dynamic Island (compact, minimal, expanded) and on the lock screen, with Pause and Cancel. {real ? 'This is your running timer.' : 'No timer is running, so this is an example.'}</Caption>
+      <Caption>A timer in the Dynamic Island (compact, minimal, expanded) and on the lock screen, with Pause/Resume and Cancel.</Caption>
     </>
   )
 }

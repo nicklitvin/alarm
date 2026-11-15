@@ -60,11 +60,14 @@ export default function App() {
 
       <aside className="panel">
         <div>
-          <h1>Alarmie · UI Preview</h1>
+          <div className="title-row">
+            <h1>Alarmie · UI Preview</h1>
+            <span className="version-badge" title="App version this preview matches">v{appVersion}</span>
+          </div>
           <p>
-            A browser copy of the iOS app (version {appVersion}) for reviewing design without building in Xcode.
+            A browser copy of the iOS app for reviewing design without building in Xcode. The phone on the left
+            is yours to use: changes are saved in this browser. The examples below use their own sample data.
             Nothing here rings or sends notifications, and the assistant only fakes a few requests.
-            Your changes are saved in this browser.
           </p>
           <div className="panel-actions">
             <button className={`pill ${theme === 'light' ? 'active' : ''}`} onClick={() => setTheme('light')}>Light</button>

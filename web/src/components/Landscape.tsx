@@ -1,6 +1,7 @@
 import { timeParts } from '../logic/model'
 import { LandscapeContext } from '../logic/orientation'
-import { useStore, type Tab } from '../logic/store'
+import { alarmSoon } from '../logic/examples'
+import { ExampleStore, useStore, type Tab } from '../logic/store'
 import { AlarmsTab } from '../tabs/AlarmsTab'
 import { NotesTab } from '../tabs/NotesTab'
 import { TalkTab } from '../tabs/TalkTab'
@@ -20,11 +21,13 @@ export function LandscapeGallery() {
   return (
     <section className="landscape-gallery">
       <h2>Landscape</h2>
-      <p>Each tab with the iPhone turned sideways. Alarms switches to a grid of cards; the other tabs keep their lists, centered.</p>
-      <div className="landscape-list">
-        {SCREENS.map((s) => <LandscapePhone key={s.tab} tab={s.tab} label={s.label} />)}
-        <LandscapeRinging />
-      </div>
+      <p>Each tab with the iPhone turned sideways, with example data. Alarms switches to a grid of cards; the other tabs keep their lists, centered.</p>
+      <ExampleStore make={alarmSoon}>
+        <div className="landscape-list">
+          {SCREENS.map((s) => <LandscapePhone key={s.tab} tab={s.tab} label={s.label} />)}
+          <LandscapeRinging />
+        </div>
+      </ExampleStore>
     </section>
   )
 }

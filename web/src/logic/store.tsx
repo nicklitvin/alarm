@@ -128,3 +128,25 @@ export function useStore() {
   if (!store) throw new Error('useStore outside StoreProvider')
   return store
 }
+
+/**
+ * A self-contained store for the example views (widgets, notifications, landscape…): fixed
+ * example data, kept in memory only, so the examples never show or change your own preview data.
+ * Buttons still work inside the example.
+ */
+export function ExampleStore({ make, children }: { make: (now: number) => AppData; children: ReactNode }) {
+  const [data, setData] = useState<AppData>(() => make(Date.now()))
+  const [now, setNow] = useState(Date.now())
+  const [tab, setTab] = useState<Tab>('alarms')
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 500)
+    return () => clearInterval(id)
+  }, [])
+  const update = useCallback((change: (draft: AppData) => AppData) => setData((d) => change(d)), [])
+  const value = useMemo<Store>(() => ({
+    data, update, now, tab, setTab, pending: null,
+    open: () => {}, clearPending: () => {},
+    reset: () => setData(make(Date.now())),
+  }), [data, update, now, tab, make])
+  return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
+}
