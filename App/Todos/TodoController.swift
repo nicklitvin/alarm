@@ -116,6 +116,7 @@ final class TodoController {
     private func commit(reloadWidget: Bool = true) -> Task<Void, Never> {
         TodoStorage.save(todos)
         if reloadWidget { WidgetCenter.shared.reloadAllTimelines() }
+        MenuBarBridge.update()
 
         let previous = syncTask
         let task = Task { @MainActor in

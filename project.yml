@@ -3,6 +3,7 @@ name: Alarm
 options:
   deploymentTarget:
     iOS: "26.0"
+    macOS: "26.0"
   createIntermediateGroups: true
 
 settings:
@@ -16,8 +17,8 @@ settings:
     SWIFT_VERSION: "5.0"
     # Version: bump both for every release and add a matching entry to CHANGELOG.json
     # (Tests/run.sh fails if they don't match).
-    MARKETING_VERSION: "1.34.0"
-    CURRENT_PROJECT_VERSION: "82"
+    MARKETING_VERSION: "1.35.0"
+    CURRENT_PROJECT_VERSION: "83"
     # iPhone and iPad; the Mac app is the iPad build running on the Mac (Mac Catalyst), which
     # keeps AlarmKit alarms, widgets and Talk without a separate codebase.
     TARGETED_DEVICE_FAMILY: "1,2"
@@ -37,6 +38,13 @@ targets:
         buildPhase: resources
     dependencies:
       - target: AlarmWidget
+      # The Mac app's menu bar item: an AppKit plugin, only in the Mac (Catalyst) build.
+      - target: AlarmieMenuBar
+        platformFilter: macOS
+        embed: true
+        codeSign: true
+        copy:
+          destination: plugins
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
@@ -66,4 +74,18 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Widget/AlarmWidget.entitlements
         "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": Widget/AlarmWidget-Mac.entitlements
         INFOPLIST_KEY_CFBundleDisplayName: Alarmie Widgets
+        SKIP_INSTALL: YES
+
+  # The Mac app's menu bar item (next to the battery): Mac Catalyst can't use AppKit, so this
+  # small AppKit bundle is embedded in the app's PlugIns folder and loaded at launch.
+  AlarmieMenuBar:
+    type: bundle
+    platform: macOS
+    sources:
+      - path: MenuBar
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).menubar
+        PRODUCT_NAME: AlarmieMenuBar
+        INFOPLIST_KEY_NSPrincipalClass: AlarmieMenuBar
         SKIP_INSTALL: YES

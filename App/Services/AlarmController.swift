@@ -159,6 +159,7 @@ final class AlarmController {
     private func commit() -> Task<Void, Never> {
         AlarmStorage.save(alarms)
         WidgetCenter.shared.reloadAllTimelines()
+        MenuBarBridge.update()
         BackgroundRefresh.schedule(at: AlarmPlan.nextRestoreDate(for: alarms, now: .now))
 
         let previous = syncTask

@@ -38,6 +38,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
             AppNavigation.shared.tab = .talk
             TalkModel.shared.startLive()
         }
+        // The Mac app's menu bar item (does nothing on iPhone and iPad).
+        MenuBarBridge.install()
         return true
     }
 

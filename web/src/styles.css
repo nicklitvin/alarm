@@ -595,3 +595,21 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .split-alarm-row .mini { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--orange); color: #fff; }
 .split-alarm-in { font-size: 12px; color: var(--secondary); white-space: nowrap; overflow: hidden; }
 .split-left { align-items: flex-start; }
+
+/* Mac menu bar above the Mac window, with Alarmie's ⏰ status item. */
+.mac-desktop { display: flex; flex-direction: column; align-items: center; gap: 22px; width: min(1180px, calc(100vw - 32px)); }
+.mac-menubar { width: 100%; height: 30px; display: flex; align-items: center; gap: 16px; padding: 0 14px; border-radius: 10px; font-size: 13px; color: var(--page-text); background: color-mix(in srgb, var(--card) 70%, transparent); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 0 0 0.5px var(--separator); position: relative; z-index: 120; }
+.mac-menubar .apple { font-size: 15px; }
+.mac-menubar-spacer { flex: 1; }
+.mac-menubar .batt { font-size: 15px; }
+.status-item-wrap { position: relative; }
+.status-item { font-size: 14px; padding: 2px 6px; border-radius: 5px; filter: grayscale(1) contrast(1.4); }
+.status-item:hover, .status-item.open { background: var(--fill-strong); }
+.status-menu { position: absolute; top: 26px; right: -8px; width: 240px; padding: 5px; border-radius: 10px; background: color-mix(in srgb, var(--card) 92%, transparent); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25), 0 0 0 0.5px var(--separator); display: flex; flex-direction: column; }
+.status-menu .status-info { padding: 4px 10px; color: var(--secondary); font-size: 13px; }
+.status-menu hr { border: 0; border-top: 0.5px solid var(--separator); margin: 5px 8px; }
+.status-menu button { display: flex; justify-content: space-between; align-items: center; padding: 4px 10px; border-radius: 6px; font-size: 13px; color: var(--label); text-align: left; }
+.status-menu button i { font-style: normal; display: inline-block; width: 22px; }
+.status-menu button:hover { background: var(--orange); color: #fff; }
+.status-menu kbd { font-family: inherit; color: var(--secondary); font-size: 12px; }
+.status-menu button:hover kbd { color: #fff; }

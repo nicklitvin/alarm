@@ -119,6 +119,12 @@ note, and Talk in a centered column. The Mac window has a minimum size of 820 ×
 (`App/Alarm-Mac.entitlements`, `Widget/AlarmWidget-Mac.entitlements`) for the sandbox, network and
 microphone.
 
+**Menu bar item.** On the Mac, Alarmie puts a ⏰ in the menu bar (next to the battery). Its menu
+shows the next alarm and how many to-dos are open, and opens any tab or Live Talk. Mac Catalyst
+can't use AppKit, so the item is a small AppKit bundle (`MenuBar/AlarmieMenuBar.swift`, target
+`AlarmieMenuBar`) embedded in the Mac build's PlugIns folder and loaded at launch by
+`App/Services/MenuBarBridge.swift`; its items open Alarmie's own `alarmapp://` links.
+
 Alarms on the Mac depend on AlarmKit, which Apple lists for Mac Catalyst; a Mac that's asleep may not
 wake up to ring, so the iPhone remains the alarm clock.
 
