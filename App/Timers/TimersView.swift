@@ -97,6 +97,7 @@ struct TimersView: View {
                 .animation(.snappy, value: stopwatch.stopwatch.isReset)
             }
             .animation(.default, value: controller.timers)
+            .onChange(of: AppNavigation.shared.linkOpenCount) { showNew = false }
             .sheet(isPresented: $showNew) {
                 NewTimerSheet(recentTimes: controller.newTimerChoices, title: AppSettings.timerUsesRecentTimes ? "Recent" : "Quick Times") { duration, label in start(duration, label: label) }
             }

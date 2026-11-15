@@ -54,6 +54,12 @@ struct TodoListView: View {
             .sheet(isPresented: $addingNew) {
                 NewTodoSheet()
             }
+            // A widget tap or notification closes these sheets (unless it opens a to-do itself).
+            .onChange(of: AppNavigation.shared.linkOpenCount) {
+                addingNew = false
+                editingDue = nil
+                if AppNavigation.shared.pendingTodoID == nil { editing = nil }
+            }
             .task(id: AppNavigation.shared.pendingTodoID) {
                 // Opened from a widget, notification or chat event: show that to-do.
                 guard let id = AppNavigation.shared.pendingTodoID else { return }

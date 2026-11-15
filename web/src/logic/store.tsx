@@ -84,6 +84,8 @@ interface Store {
   /** An item to open once its tab shows (chat links, widget taps). */
   pending: Link | null
   open: (link: Link) => void
+  /** Goes up with every opened link; open settings panels watch it and close (AppNavigation.linkOpenCount). */
+  linkOpenCount: number
   clearPending: () => void
 }
 
@@ -112,13 +114,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const update = useCallback((change: (draft: AppData) => AppData) => setData((d) => change(d)), [])
-  const open = useCallback((link: Link) => { setTab(link.tab); setPending(link.id ? link : null) }, [])
+  const [linkOpenCount, setLinkOpenCount] = useState(0)
+  const open = useCallback((link: Link) => { setLinkOpenCount((n) => n + 1); setTab(link.tab); setPending(link.id ? link : null) }, [])
 
   const value = useMemo<Store>(() => ({
-    data, update, now, tab, setTab, pending, open,
+    data, update, now, tab, setTab, pending, open, linkOpenCount,
     clearPending: () => setPending(null),
     reset: () => setData(seedData()),
-  }), [data, update, now, tab, pending, open])
+  }), [data, update, now, tab, pending, open, linkOpenCount])
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
 }
@@ -145,7 +148,7 @@ export function ExampleStore({ make, children }: { make: (now: number) => AppDat
   const update = useCallback((change: (draft: AppData) => AppData) => setData((d) => change(d)), [])
   const value = useMemo<Store>(() => ({
     data, update, now, tab, setTab, pending: null,
-    open: () => {}, clearPending: () => {},
+    open: () => {}, linkOpenCount: 0, clearPending: () => {},
     reset: () => setData(make(Date.now())),
   }), [data, update, now, tab, make])
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>

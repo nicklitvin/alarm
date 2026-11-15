@@ -86,6 +86,8 @@ struct TabHeader<Accessory: View>: View {
         .sheet(isPresented: $showSettings) {
             TabSettingsView(tab: tab)
         }
+        // A widget tap or notification closes settings, then shows its tab.
+        .onChange(of: AppNavigation.shared.linkOpenCount) { showSettings = false }
     }
 }
 

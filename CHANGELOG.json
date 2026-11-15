@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.31.1",
+      "build": 79,
+      "date": "2026-11-15",
+      "title": "Widget Taps Close Settings",
+      "notes": [
+        "Tapping a widget or notification while settings are open now closes settings and goes straight to the right tab."
+      ]
+    },
+    {
       "version": "1.31.0",
       "build": 78,
       "date": "2026-11-15",

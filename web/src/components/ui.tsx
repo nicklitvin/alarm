@@ -57,6 +57,9 @@ export function TabHeader({ title, tab, detail, accessory, plain, actions = [] }
   title?: string; tab: Tab; detail?: string | null; accessory?: ReactNode; plain?: boolean; actions?: HeaderAction[]
 }) {
   const [open, setOpen] = useState(false)
+  // A widget tap or notification closes settings, then shows its tab (like the app).
+  const { linkOpenCount } = useStore()
+  useEffect(() => setOpen(false), [linkOpenCount])
   return (
     <>
       <div className={`header ${plain ? 'plain' : ''}`}>

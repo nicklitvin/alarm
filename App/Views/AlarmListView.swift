@@ -42,6 +42,10 @@ struct AlarmListView: View {
                     editorTarget = .edit(alarm)
                 }
             }
+            // A widget tap or notification closes the editor (unless it opens one itself).
+            .onChange(of: AppNavigation.shared.linkOpenCount) {
+                if AppNavigation.shared.pendingAlarmID == nil { editorTarget = nil }
+            }
             .sheet(item: $editorTarget) { target in
                 AlarmEditorView(target: target)
             }

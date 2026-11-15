@@ -18,8 +18,12 @@ final class AppNavigation {
     var pendingAlarmID: UUID?
     var pendingTodoID: UUID?
     var pendingNoteID: UUID?
+    /// Goes up every time a link is opened (a widget tap, a notification, a chat event). Open
+    /// sheets (settings, editors) watch it and close, so the tab underneath shows.
+    private(set) var linkOpenCount = 0
 
     func open(_ link: DeepLink) {
+        linkOpenCount += 1
         switch link {
         case .alarms:
             tab = .alarms
