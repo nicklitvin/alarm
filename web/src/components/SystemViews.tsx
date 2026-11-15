@@ -237,16 +237,18 @@ function HomeScreen() {
 
 const keyOf = (i: UpNextItem) => i.kind + ('alarm' in i ? i.alarm.id : i.kind === 'timer' ? i.timer.id : i.todo.id)
 
-/** The "zzz" SF Symbol (as on the lock screen): a big Z top-left, a small z under it, a medium z to the right. */
+/** The "zzz" SF Symbol (as on the lock screen): a big Z top-left, a small z under it, a medium z
+ *  to the right. An SVG whose viewBox hugs the strokes, so it centers exactly like the symbol does. */
 function Zzz({ size, muted }: { size: number; muted?: boolean }) {
-  const z = (char: string, scale: number, left: number, top: number) => (
-    <span style={{ position: 'absolute', left: left * size, top: top * size, fontSize: size * scale, lineHeight: 1, fontWeight: 800 }}>{char}</span>
-  )
+  const z = (x: number, y: number, s: number) => `M${x} ${y}h${s}l${-s} ${s}h${s}`
   return (
-    <span aria-label="zzz" className={muted ? 'muted' : undefined}
-      style={{ position: 'relative', display: 'inline-block', width: size * 0.8, height: size * 0.85, fontFamily: 'ui-rounded, system-ui, sans-serif' }}>
-      {z('Z', 0.56, 0, 0)}{z('z', 0.5, 0.36, 0.22)}{z('z', 0.44, 0.04, 0.42)}
-    </span>
+    <svg aria-label="zzz" role="img" className={muted ? 'muted' : undefined} width={size * 0.8} height={size * 0.8}
+      viewBox="-1.6 -1.6 23.2 23.2" fill="none" stroke="currentColor" strokeWidth={3.2} strokeLinecap="round" strokeLinejoin="round"
+      style={{ display: 'block' }}>
+      <path d={z(0, 0, 10)} />
+      <path d={z(12, 6, 8)} />
+      <path d={z(1, 14, 6)} />
+    </svg>
   )
 }
 
