@@ -142,7 +142,7 @@ struct UpNextWidgetView: View {
     private var small: some View {
         VStack(alignment: .leading, spacing: 6) {
             if let alarm = layout.alarm {
-                AlarmHeader(upcoming: alarm, now: entry.date, stacked: true)
+                SmallAlarm(upcoming: alarm, now: entry.date)
             } else {
                 header(title: "Up Next")
                 if let first = entry.items.first {
@@ -290,6 +290,57 @@ private struct AlarmHeader: View {
         }
         .foregroundStyle(.secondary)
         .lineLimit(1)
+    }
+}
+
+/// Small widget with an alarm: fills the space like the Next Alarm widget (day at the top, big
+/// time, label), with a full-width Dismiss button along the bottom.
+private struct SmallAlarm: View {
+    let upcoming: UpcomingAlarm
+    let now: Date
+
+    var body: some View {
+        let parts = TimeFormat.parts(for: upcoming.date)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Image(systemName: "alarm.fill")
+                    .foregroundStyle(.orange)
+                Spacer(minLength: 4)
+                Text(TimeFormat.dayDescription(for: upcoming.date, relativeTo: now))
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 2)
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text(parts.time)
+                    .font(.system(size: 38, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+                if let period = parts.period {
+                    Text(period).font(.system(size: 16, weight: .semibold))
+                }
+            }
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
+            Text(upcoming.alarm.title)
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            Spacer(minLength: 6)
+            // One skipped ring per alarm (see AlarmHeader).
+            if (upcoming.alarm.skippedOccurrence ?? .distantPast) <= now {
+                Button(intent: DismissNextAlarmIntent(alarmID: upcoming.alarm.id)) {
+                    Text("Dismiss")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(Capsule().fill(Color.orange))
+                        .foregroundStyle(.white)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Dismiss the \(TimeFormat.string(for: upcoming.date)) alarm")
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
 

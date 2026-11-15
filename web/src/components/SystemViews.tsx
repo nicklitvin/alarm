@@ -137,7 +137,16 @@ function HomeScreen() {
     if (size === 'small') {
       return (
         <div className="widget upnext small" onClick={() => open(featured ? { tab: 'alarms' } : first ? linkFor(first) : { tab: 'todos' })}>
-          {featured ? alarmHeader(true) : (
+          {featured ? (
+            // Fills the widget like Next Alarm: day, big time, label, then a full-width Dismiss.
+            <div className="small-alarm">
+              <div className="wh"><span>⏰</span><span className="muted" style={{ fontSize: 12 }}>{dayDescription(featured.date, now)}</span></div>
+              <div className="big">{bigTime(featured.date).time}<small> {bigTime(featured.date).period}</small></div>
+              <div className="muted ellipsis" style={{ fontSize: 14, fontWeight: 500 }}>{alarmTitle(featured.alarm)}</div>
+              {(featured.alarm.skippedOccurrence ?? 0) <= now &&
+                <button className="dismiss-full" onClick={(e) => { e.stopPropagation(); dismiss(featured.alarm.id, featured.date) }}>Dismiss</button>}
+            </div>
+          ) : (
             <>
               <div className="wh"><span>Up Next{todoCount > 0 && <span className="count"> {todoCount} to-do{todoCount === 1 ? '' : 's'}</span>}</span></div>
               {first ? <Row item={first} compact /> : <div style={{ marginTop: 10 }}><b>All clear</b></div>}

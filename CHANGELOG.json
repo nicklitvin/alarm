@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.21.3",
+      "build": 39,
+      "date": "2026-11-15",
+      "title": "Fuller Small Widget",
+      "notes": [
+        "The small Up Next widget fills its space like the Next Alarm widget: the day at the top, a big time and the label, with a full-width Dismiss button along the bottom."
+      ]
+    },
+    {
       "version": "1.21.2",
       "build": 38,
       "date": "2026-11-15",
