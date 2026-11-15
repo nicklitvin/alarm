@@ -68,9 +68,13 @@ struct TodoListView: View {
     private func list(now: Date) -> some View {
         ScrollViewReader { _ in
             List {
-                // Open to-dos: soonest deadline first, then the ones without a deadline. No sections.
+                // Open to-dos in your order: press and hold one, then drag it. New ones slot in by
+                // deadline. No sections.
                 ForEach(controller.openTodos) { todo in
                     row(todo, now: now)
+                }
+                .onMove { source, destination in
+                    controller.moveOpen(from: source, to: destination)
                 }
 
                 if !controller.completedTodos.isEmpty {

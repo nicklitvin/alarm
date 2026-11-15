@@ -1,6 +1,16 @@
 {
   "releases": [
     {
+      "version": "1.25.0",
+      "build": 57,
+      "date": "2026-11-15",
+      "title": "Rearrange To-Dos",
+      "notes": [
+        "Press and hold a to-do, then drag it to put your list in any order.",
+        "New to-dos slot in by deadline: before the first one that's due later, or at the end if they have no deadline."
+      ]
+    },
+    {
       "version": "1.24.2",
       "build": 56,
       "date": "2026-11-15",

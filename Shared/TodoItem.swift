@@ -10,9 +10,12 @@ struct TodoItem: Identifiable, Codable, Hashable, Sendable {
     var isDone: Bool = false
     var completedAt: Date? = nil
     var createdAt: Date = Date()
+    /// Its place on the To-Do tab (lower is higher up), set when you drag to-dos around.
+    /// Nil for to-dos saved before you could.
+    var sortIndex: Double? = nil
 
     init(id: UUID = UUID(), title: String, details: String = "", due: Date? = nil,
-         isDone: Bool = false, completedAt: Date? = nil, createdAt: Date = Date()) {
+         isDone: Bool = false, completedAt: Date? = nil, createdAt: Date = Date(), sortIndex: Double? = nil) {
         self.id = id
         self.title = title
         self.details = details
@@ -20,6 +23,7 @@ struct TodoItem: Identifiable, Codable, Hashable, Sendable {
         self.isDone = isDone
         self.completedAt = completedAt
         self.createdAt = createdAt
+        self.sortIndex = sortIndex
     }
 
     // Tolerates to-dos saved by older versions (e.g. without `details`).
@@ -32,6 +36,7 @@ struct TodoItem: Identifiable, Codable, Hashable, Sendable {
         isDone = try c.decodeIfPresent(Bool.self, forKey: .isDone) ?? false
         completedAt = try c.decodeIfPresent(Date.self, forKey: .completedAt)
         createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
+        sortIndex = try c.decodeIfPresent(Double.self, forKey: .sortIndex)
     }
 
     var trimmedDetails: String { details.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -48,6 +53,48 @@ struct TodoItem: Identifiable, Codable, Hashable, Sendable {
 }
 
 extension Array where Element == TodoItem {
+    /// The To-Do tab's order: the order you arranged by dragging. To-dos that were never placed
+    /// (from before reordering existed) follow, by deadline.
+    var inListOrder: [TodoItem] {
+        let byDeadline = sortedForDisplay.map(\.id)
+        return sorted { a, b in
+            switch (a.sortIndex, b.sortIndex) {
+            case let (x?, y?) where x != y: return x < y
+            case (_?, nil): return true
+            case (nil, _?): return false
+            default: return (byDeadline.firstIndex(of: a.id) ?? 0) < (byDeadline.firstIndex(of: b.id) ?? 0)
+            }
+        }
+    }
+
+    /// Where a new to-do goes among these open to-dos (in list order): just before the first one
+    /// with a later deadline (or none), so new to-dos land by deadline; without a deadline, last.
+    func sortIndex(forNew todo: TodoItem) -> Double {
+        let list = inListOrder
+        let last = (list.compactMap(\.sortIndex).max() ?? -1) + 1
+        guard let due = todo.due,
+              let next = list.firstIndex(where: { other in other.due.map { $0 > due } ?? true })
+        else { return last }
+        let after = list[next].sortIndex ?? Double(next)
+        let before = next > 0 ? (list[next - 1].sortIndex ?? Double(next - 1)) : after - 2
+        return (before + after) / 2
+    }
+
+    /// Drag-to-reorder on the list (these are in list order): moves the rows and renumbers
+    /// every to-do's place.
+    func moving(from source: IndexSet, to destination: Int) -> [TodoItem] {
+        var items = self
+        let moved = source.sorted().map { items[$0] }
+        for index in source.sorted(by: >) { items.remove(at: index) }
+        let insertAt = destination - source.filter { $0 < destination }.count
+        items.insert(contentsOf: moved, at: Swift.min(Swift.max(0, insertAt), items.count))
+        return items.enumerated().map { offset, todo in
+            var placed = todo
+            placed.sortIndex = Double(offset)
+            return placed
+        }
+    }
+
     /// Open to-dos first, soonest deadline first (no deadline last), then by creation.
     var sortedForDisplay: [TodoItem] {
         sorted { a, b in

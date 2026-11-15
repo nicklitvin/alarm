@@ -68,6 +68,8 @@ export interface Todo {
   isDone: boolean
   completedAt?: number
   createdAt: number
+  /** Its place on the To-Do tab, set by dragging (TodoItem.sortIndex). */
+  sortIndex?: number
 }
 
 export interface Note {
@@ -289,6 +291,39 @@ export function sortTodos(todos: Todo[]) {
     if (a.due === undefined && b.due !== undefined) return 1
     return a.createdAt - b.createdAt
   })
+}
+
+/** The To-Do tab's order: your arranged places, then never-placed to-dos by deadline (inListOrder). */
+export function todosInListOrder(todos: Todo[]) {
+  const byDeadline = sortTodos(todos).map((t) => t.id)
+  return [...todos].sort((a, b) => {
+    if (a.sortIndex !== undefined && b.sortIndex !== undefined && a.sortIndex !== b.sortIndex) return a.sortIndex - b.sortIndex
+    if (a.sortIndex !== undefined && b.sortIndex === undefined) return -1
+    if (a.sortIndex === undefined && b.sortIndex !== undefined) return 1
+    return byDeadline.indexOf(a.id) - byDeadline.indexOf(b.id)
+  })
+}
+
+/** Where a new to-do goes: just before the first with a later deadline (or none); otherwise last. */
+export function sortIndexForNew(open: Todo[], due: number | undefined) {
+  const list = todosInListOrder(open)
+  const last = Math.max(-1, ...list.map((t) => t.sortIndex ?? -1)) + 1
+  if (due === undefined) return last
+  const next = list.findIndex((t) => t.due === undefined || t.due > due)
+  if (next === -1) return last
+  const after = list[next].sortIndex ?? next
+  const before = next > 0 ? (list[next - 1].sortIndex ?? next - 1) : after - 2
+  return (before + after) / 2
+}
+
+/** Drop `id` onto `target` (press and hold, then drag): renumbers the open to-dos' places. */
+export function moveTodo(open: Todo[], id: string, target: string): Map<string, number> {
+  const order = todosInListOrder(open).map((t) => t.id)
+  const from = order.indexOf(id), to = order.indexOf(target)
+  if (from === -1 || to === -1 || from === to) return new Map()
+  order.splice(from, 1)
+  order.splice(to, 0, id)
+  return new Map(order.map((x, i) => [x, i]))
 }
 
 export interface Suggestion { title: string; date: number }

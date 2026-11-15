@@ -21,7 +21,8 @@ final class TodoController {
         commit(reloadWidget: false)
     }
 
-    var openTodos: [TodoItem] { todos.filter { !$0.isDone }.sortedForDisplay }
+    /// Open to-dos in the order on the To-Do tab (drag to rearrange).
+    var openTodos: [TodoItem] { todos.filter { !$0.isDone }.inListOrder }
     var completedTodos: [TodoItem] {
         todos.filter(\.isDone).sorted { ($0.completedAt ?? .distantPast) > ($1.completedAt ?? .distantPast) }
     }
@@ -30,8 +31,9 @@ final class TodoController {
 
     @discardableResult
     func add(title: String, details: String = "", due: Date?) -> TodoItem {
-        let todo = TodoItem(title: title.trimmingCharacters(in: .whitespacesAndNewlines),
+        var todo = TodoItem(title: title.trimmingCharacters(in: .whitespacesAndNewlines),
                             details: details.trimmingCharacters(in: .whitespacesAndNewlines), due: due)
+        todo.sortIndex = todos.filter { !$0.isDone }.sortIndex(forNew: todo)
         todos.append(todo)
         commit()
         return todo
@@ -64,6 +66,15 @@ final class TodoController {
         todos[index].due = Date().addingTimeInterval(interval)
         todos[index].setDone(false)
         await commit().value
+    }
+
+    /// Drag-to-reorder on the To-Do tab (offsets into `openTodos`).
+    func moveOpen(from source: IndexSet, to destination: Int) {
+        let placed = Dictionary(uniqueKeysWithValues: openTodos.moving(from: source, to: destination).map { ($0.id, $0.sortIndex) })
+        for index in todos.indices {
+            if let sortIndex = placed[todos[index].id] { todos[index].sortIndex = sortIndex }
+        }
+        commit()
     }
 
     func delete(_ id: UUID) {

@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { SwipeRow } from '../components/SwipeRow'
 import { BottomAction, DeadlineInputs, Section, Sheet, Switch, TabHeader, TimeOfDayChips } from '../components/ui'
-import { dueDescription, isOverdue, nextQuickTime, roundTo5, sortTodos, uid, type Todo } from '../logic/model'
+import { dueDescription, isOverdue, moveTodo, nextQuickTime, roundTo5, sortIndexForNew, todosInListOrder, uid, type Todo } from '../logic/model'
 import { useStore } from '../logic/store'
 
 // A flat list on the gray background: each to-do is a checkbox and its text. New To-Do adds an
@@ -19,15 +19,54 @@ export function TodoTab() {
     clearPending()
   }, [pending, data.todos, clearPending])
 
-  const open = sortTodos(data.todos.filter((t) => !t.isDone))
+  const open = todosInListOrder(data.todos.filter((t) => !t.isDone))
   const done = data.todos.filter((t) => t.isDone).sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0))
   const overdue = open.filter((t) => isOverdue(t, now)).length
   const toggle = (id: string) => update((d) => ({
     ...d, todos: d.todos.map((t) => (t.id === id ? { ...t, isDone: !t.isDone, completedAt: t.isDone ? undefined : Date.now() } : t)),
   }))
 
+  // Press and hold an open to-do, then drag it onto another to move it there.
+  const [drag, setDrag] = useState<{ id: string; overId: string | null } | null>(null)
+  const dragRef = useRef(drag)
+  dragRef.current = drag
+  useEffect(() => {
+    if (!drag) return
+    const over = (e: PointerEvent) => {
+      const id = (document.elementFromPoint(e.clientX, e.clientY)?.closest('.swipe[data-id]') as HTMLElement | null)?.dataset.id ?? null
+      setDrag((d) => (d && d.overId !== id ? { ...d, overId: id } : d))
+    }
+    const drop = () => {
+      const d = dragRef.current
+      if (d?.overId && d.overId !== d.id) {
+        const { id, overId } = d
+        update((s) => {
+          const places = moveTodo(s.todos.filter((t) => !t.isDone), id, overId)
+          return { ...s, todos: s.todos.map((t) => (places.has(t.id) ? { ...t, sortIndex: places.get(t.id) } : t)) }
+        })
+      }
+      setDrag(null)
+    }
+    document.addEventListener('pointermove', over)
+    document.addEventListener('pointerup', drop)
+    document.body.style.userSelect = 'none'
+    return () => {
+      document.removeEventListener('pointermove', over)
+      document.removeEventListener('pointerup', drop)
+      document.body.style.userSelect = ''
+    }
+  }, [drag?.id, update]) // eslint-disable-line react-hooks/exhaustive-deps
+  const order = open.map((t) => t.id)
+  const dragClass = (t: Todo) => {
+    if (!drag) return ''
+    if (drag.id === t.id) return 'lifted'
+    if (drag.overId !== t.id) return ''
+    return order.indexOf(drag.id) < order.indexOf(t.id) ? 'drop-after' : 'drop-before'
+  }
+
   const row = (t: Todo, compact = false) => (
     <TodoRow key={t.id} todo={t} now={now} compact={compact} onToggle={() => toggle(t.id)} onDue={() => setEditingDue(t)} onDetails={() => setEditing(t)}
+      dragClass={compact ? '' : dragClass(t)} onHold={compact ? undefined : () => setDrag({ id: t.id, overId: null })}
       onDelete={() => update((d) => ({ ...d, todos: d.todos.filter((x) => x.id !== t.id) }))} />
   )
 
@@ -62,7 +101,8 @@ function NewTodoSheet({ onClose }: { onClose: () => void }) {
   const [due, setDue] = useState(() => roundTo5(nextQuickTime(now, data.settings.todoQuickTimes)))
   const add = () => {
     if (!title.trim()) return
-    update((d) => ({ ...d, todos: [...d.todos, { id: uid(), title: title.trim(), details: details.trim(), due: hasDeadline ? due : undefined, isDone: false, createdAt: Date.now() }] }))
+    update((d) => ({ ...d, todos: [...d.todos, { id: uid(), title: title.trim(), details: details.trim(), due: hasDeadline ? due : undefined, isDone: false, createdAt: Date.now(),
+      sortIndex: sortIndexForNew(d.todos.filter((t) => !t.isDone), hasDeadline ? due : undefined) }] }))
     onClose()
   }
   return (
@@ -86,8 +126,9 @@ function NewTodoSheet({ onClose }: { onClose: () => void }) {
 }
 
 /** Edit right in the list, like Reminders: tap to type, details underneath, 📅 opens the deadline sheet. */
-function TodoRow({ todo, now, compact, onToggle, onDelete, onDue, onDetails }: {
+function TodoRow({ todo, now, compact, onToggle, onDelete, onDue, onDetails, onHold, dragClass = '' }: {
   todo: Todo; now: number; compact: boolean; onToggle: () => void; onDelete: () => void; onDue: () => void; onDetails: () => void
+  onHold?: () => void; dragClass?: string
 }) {
   const { update } = useStore()
   const [editing, setEditing] = useState(false)
@@ -106,7 +147,7 @@ function TodoRow({ todo, now, compact, onToggle, onDelete, onDue, onDetails }: {
   }
 
   return (
-    <SwipeRow className={`todo-item ${compact ? 'compact' : ''}`} onClick={() => !editing && setEditing(true)}
+    <SwipeRow className={`todo-item ${compact ? 'compact' : ''} ${dragClass}`} dataId={todo.id} onHold={editing ? undefined : onHold} onClick={() => !editing && setEditing(true)}
       leading={{ label: todo.isDone ? 'Undo' : 'Done', color: 'var(--orange)', onAction: onToggle }}
       trailing={{ label: 'Delete', color: 'var(--red)', onAction: onDelete }}>
       <button className={`check ${todo.isDone ? 'done' : late ? 'overdue' : ''}`} aria-label={todo.isDone ? 'Mark as not done' : 'Mark as done'}

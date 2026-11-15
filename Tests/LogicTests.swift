@@ -452,5 +452,21 @@ check(RecentTimer.newTimerChoices(recents: usedTimers, quickTimes: [60, 120, 180
 check(TimeFormat.countdown(from: d(2026, 11, 17, 6, 0), to: d(2026, 11, 18, 11, 37)) == "1d 5h", "days away → days and hours, no minutes")
 check(TimeFormat.countdown(from: d(2026, 11, 17, 6, 0), to: d(2026, 11, 17, 8, 4)) == "2h 4m", "hours away → hours and minutes")
 
+// To-do order on the To-Do tab.
+let oNow = d(2026, 11, 17, 9, 0)
+let tA = TodoItem(title: "A", due: d(2026, 11, 17, 10, 0), sortIndex: 0)
+let tB = TodoItem(title: "B", due: d(2026, 11, 17, 18, 0), sortIndex: 1)
+let tC = TodoItem(title: "C", sortIndex: 2)
+check([tC, tA, tB].inListOrder.map(\.title) == ["A", "B", "C"], "list order follows the arranged places")
+check([tA, tB, tC].moving(from: IndexSet(integer: 2), to: 0).map(\.title) == ["C", "A", "B"], "dragging the last to-do to the top")
+check([tA, tB, tC].moving(from: IndexSet(integer: 0), to: 3).map(\.title) == ["B", "C", "A"], "dragging the first to-do to the bottom")
+let noon = TodoItem(title: "Noon", due: d(2026, 11, 17, 12, 0))
+let placedNoon = [tA, tB, tC].sortIndex(forNew: noon)
+check(placedNoon > 0 && placedNoon < 1, "a new to-do slots in by deadline (between A and B)")
+check([tA, tB, tC].sortIndex(forNew: TodoItem(title: "Later")) > 2, "a new to-do without a deadline goes last")
+let legacy = [TodoItem(title: "Late", due: d(2026, 11, 18, 9, 0)), TodoItem(title: "Soon", due: d(2026, 11, 17, 11, 0))]
+check(legacy.inListOrder.map(\.title) == ["Soon", "Late"], "to-dos from before reordering keep deadline order")
+_ = oNow
+
 print(failures == 0 ? "\nALL PASSED" : "\n\(failures) FAILED")
 exit(failures == 0 ? 0 : 1)
