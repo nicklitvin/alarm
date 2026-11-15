@@ -98,6 +98,7 @@ export interface Settings {
   widgetShowsAlarms: boolean
   widgetShowsTimedTodos: boolean
   widgetShowsUntimedTodos: boolean
+  widgetShowsTalkButton: boolean
 }
 
 export const defaultSettings: Settings = {
@@ -116,6 +117,7 @@ export const defaultSettings: Settings = {
   widgetShowsAlarms: true,
   widgetShowsTimedTodos: true,
   widgetShowsUntimedTodos: true,
+  widgetShowsTalkButton: true,
 }
 
 export const uid = () => Math.random().toString(36).slice(2, 10)

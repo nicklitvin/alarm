@@ -1,6 +1,16 @@
 {
   "releases": [
     {
+      "version": "1.24.0",
+      "build": 54,
+      "date": "2026-11-15",
+      "title": "Live Talk Button Option",
+      "notes": [
+        "New setting in Talk settings: Show Live Talk Button. Turn it off to remove the waveform button from the Up Next widget and fit one more item.",
+        "With the button on, the bottom line of the widget says how many more to-dos there are, like \"+3 to-dos\", next to the button."
+      ]
+    },
+    {
       "version": "1.23.4",
       "build": 53,
       "date": "2026-11-15",

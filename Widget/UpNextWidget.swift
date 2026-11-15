@@ -105,6 +105,14 @@ struct UpNextWidgetView: View {
     private static let alarmHeight: CGFloat = 34
     /// A one-line row, including the tappable space above and below (tapPadding).
     private static let rowHeight: CGFloat = 26
+    /// The bottom line with "+3 to-dos" and the Live Talk button.
+    private static let footerHeight: CGFloat = 34
+
+    /// "+3 to-dos" for the to-dos that didn't fit ("+2 more" if only alarms or timers didn't).
+    private static func moreText(_ hidden: [UpNextItem]) -> String {
+        let todos = hidden.filter { if case .todo = $0.kind { true } else { false } }.count
+        return todos > 0 ? "+\(todos) to-do\(todos == 1 ? "" : "s")" : "+\(hidden.count) more"
+    }
 
     // Medium / large: the next alarm on top with Dismiss on its line,
     // then as many rows as fit, and the ✦ (open Talk) button in the bottom-right corner.
@@ -113,7 +121,11 @@ struct UpNextWidgetView: View {
             let layout = self.layout
             // With an alarm on top, the rows follow it directly (no divider or "To-Do" line).
             let top = layout.alarm != nil ? Self.alarmHeight + 6 : Self.headerHeight + 2
-            let shown = rowsThatFit(layout.rows, height: geometry.size.height - top)
+            // With the Live Talk button, the bottom line holds "+3 to-dos" and the button.
+            let showsTalk = AppSettings.widgetShowsTalkButton
+            let footer: CGFloat = showsTalk ? Self.footerHeight : 0
+            let shown = rowsThatFit(layout.rows, height: geometry.size.height - top - footer)
+            let hidden = Array(layout.rows.dropFirst(shown.count))
             VStack(alignment: .leading, spacing: 2) {
                 if let alarm = layout.alarm {
                     AlarmHeader(upcoming: alarm, now: entry.date)
@@ -137,18 +149,25 @@ struct UpNextWidgetView: View {
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(shown) { item in
                             UpNextRow(item: item, now: entry.date, singleLine: true, tapPadding: 3)
-                                // The last row leaves room for ✦.
-                                .padding(.trailing, item.id == shown.last?.id ? 40 : 0)
                                 .transition(.opacity.combined(with: .move(edge: .trailing)))
                         }
                     }
                     Spacer(minLength: 0)
                 }
+                if showsTalk {
+                    HStack(alignment: .center) {
+                        if !hidden.isEmpty {
+                            Text(Self.moreText(hidden))
+                                .font(.caption.weight(.medium))
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer(minLength: 0)
+                        AskButton()
+                    }
+                    .frame(height: Self.footerHeight)
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .overlay(alignment: .bottomTrailing) {
-                AskButton()
-            }
         }
     }
 

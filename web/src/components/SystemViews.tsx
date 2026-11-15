@@ -120,7 +120,7 @@ function bigTime(date: number) {
 // MARK: - Home Screen
 
 function HomeScreen() {
-  const { now, next, items, open, dismiss } = useSystem()
+  const { now, next, items, open, dismiss, data } = useSystem()
   const first = items[0]
   const todoCount = items.filter((i) => i.kind === 'todo' && !i.todo.isDone).length
   const layout = upNextLayout(items, now)
@@ -145,8 +145,13 @@ function HomeScreen() {
   )
   const upNextWidget = (size: 'small' | 'medium' | 'large') => {
     // One-line rows: the medium widget fits the alarm and three rows (four lines), large about ten.
-    const rowCount = size === 'medium' ? (featured ? 3 : 4) : (featured ? 10 : 11)
+    // With the Live Talk button, the bottom line holds "+3 to-dos" and the button instead of a row.
+    const showsTalk = data.settings.widgetShowsTalkButton
+    const rowCount = (size === 'medium' ? (featured ? 3 : 4) : (featured ? 10 : 11)) - (showsTalk ? 1 : 0)
     const shown = layout.rows.slice(0, rowCount)
+    const hidden = layout.rows.slice(shown.length)
+    const hiddenTodos = hidden.filter((i) => i.kind === 'todo').length
+    const more = hiddenTodos > 0 ? `+${hiddenTodos} to-do${hiddenTodos === 1 ? '' : 's'}` : `+${hidden.length} more`
     if (size === 'small') {
       return (
         <div className="widget upnext small" onClick={() => open(featured ? { tab: 'alarms' } : first ? linkFor(first) : { tab: 'todos' })}>
@@ -174,8 +179,13 @@ function HomeScreen() {
         {featured ? <div style={{ marginBottom: 4 }}>{alarmHeader(false)}</div>
           : <div className="wh"><span>Up Next{todoCount > 0 && <span className="count"> {todoCount} to-do{todoCount === 1 ? '' : 's'}</span>}</span></div>}
         {shown.length === 0 ? <div style={{ marginTop: 6 }}>{featured ? <span className="muted" style={{ fontSize: 12 }}>Nothing to do.</span> : <><b>All clear</b><div className="muted" style={{ fontSize: 12 }}>Nothing coming up.</div></>}</div>
-          : shown.map((i, n) => <div key={keyOf(i)} style={{ paddingRight: n === shown.length - 1 ? 40 : 0 }}><Row item={i} single /></div>)}
-        <button className="ask corner" aria-label="Open Talk" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>〰︎</button>
+          : shown.map((i) => <Row key={keyOf(i)} item={i} single />)}
+        {showsTalk && (
+          <div className="upnext-foot">
+            <span>{hidden.length > 0 ? more : ''}</span>
+            <button className="ask" aria-label="Open Talk" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>〰︎</button>
+          </div>
+        )}
       </div>
     )
   }

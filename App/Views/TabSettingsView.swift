@@ -437,5 +437,9 @@ private struct TalkSettingsSection: View {
         } footer: {
             Text("Applied to every conversation and reply. Everything runs on your iPhone with Apple's on-device model; nothing you say is sent anywhere.")
         }
+
+        WidgetToggles(rows: [
+            ("Show Live Talk Button", AppSettings.widgetShowsTalkButtonKey),
+        ], footer: "The waveform button in the corner of the medium and large Up Next widget. Without it, the widget fits one more item.")
     }
 }
