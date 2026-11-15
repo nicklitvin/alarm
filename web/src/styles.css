@@ -515,21 +515,6 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .list-menu button { display: flex; width: 100%; justify-content: space-between; align-items: center; padding: 12px 16px; font-size: 16px; color: var(--label); text-align: left; }
 .list-menu button + button { border-top: 0.5px solid var(--separator, rgba(0, 0, 0, 0.12)); }
 .list-menu-icon { color: var(--secondary); font-weight: 600; width: 22px; text-align: center; }
-/* Up Next ideas: medium widgets with four equal lines of content. */
-.ideas { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 18px 16px; }
-.ideas .widget { grid-column: auto; }
-.idea-title { font-size: 14px; font-weight: 700; color: var(--page-text); margin: 0 2px 8px; }
-.idea-lines .idea-line { gap: 6px; }
-.idea-lines .idea-line > .widget-row { flex: 1; min-width: 0; }
-.idea-lines .idea-line > :not(.widget-row) { flex: none; }
-.idea-alarm { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.idea-alarm .v-alarm { flex: 1; }
-.idea-count { font-size: 11px; font-weight: 700; color: var(--secondary); background: var(--fill, rgba(120, 120, 128, 0.14)); padding: 2px 7px; border-radius: 999px; }
-.idea-corner { position: absolute; right: 14px; bottom: 17.75px; line-height: 0; } /* centred on the last of four 35.5px lines */
-.idea-corner-space { width: 30px; }
-.idea-rail-wrap { flex: 1; min-height: 0; display: flex; gap: 10px; }
-.idea-rail-wrap .idea-lines { flex: 1; min-width: 0; }
-.idea-rail { display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 4px 0 0; }
 
 /* ── Page: tabs at the top choose iPhone, Mac, or Widgets & System ───────────────────────── */
 .page { min-height: 100vh; }
@@ -544,7 +529,6 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .system-page { max-width: 1280px; margin: 0 auto; padding: 24px 24px 64px; }
 .system-page h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: #8e8e93; margin: 0 0 12px; font-weight: 600; }
 .system-page .examples { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 28px 32px; align-items: start; }
-.system-page #ideas .examples { grid-template-columns: 1fr; }
 @media (max-width: 480px) { .system-page .examples { grid-template-columns: 1fr; } .topbar { padding: 12px 16px; } .topbar .panel-actions { margin-left: 0; } }
 
 /* ── Mac window: a sidebar instead of the tab bar, and room for wide layouts ─────────────── */
@@ -592,22 +576,11 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .mac-app .chat, .mac-app .input-bar > * { width: 100%; max-width: 760px; margin-left: auto; margin-right: auto; }
 .mac-app .input-bar { align-items: center; }
 
-/* Up Next ideas, split like the Reminders widget. */
-.ideas-group { font-size: 13px; font-weight: 600; color: var(--page-text); opacity: 0.8; margin: 4px 2px 12px; }
-.ideas + .ideas-group { margin-top: 28px; }
+/* Up Next (medium, large), laid out like the Reminders widget. */
 .widget.split { flex-direction: row; gap: 14px; }
-.split-left { width: 38%; flex: none; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
-.split-top { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; }
-.split-alarm { min-width: 0; max-width: 100%; cursor: pointer; }
-.split-alarm-big { font-size: 26px; font-weight: 600; letter-spacing: -0.5px; line-height: 1.05; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
-.split-alarm-big small { font-size: 12px; font-weight: 600; margin-left: -3px; align-self: flex-end; margin-bottom: 3px; }
+.split-left { width: 34%; flex: none; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
 .split-glyph { font-size: 17px; }
-.split-alarm-sub { font-size: 12px; color: var(--secondary); margin-top: 2px; }
-.split-buttons { display: flex; align-items: center; gap: 8px; }
-.split-buttons .mini { font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 999px; background: var(--orange); color: #fff; }
-.split-ask { width: 30px; height: 30px; border-radius: 15px; font-size: 14px; }
-.reminders .split-top .split-ask, .split-top-icon .split-ask { width: 40px; height: 40px; border-radius: 20px; font-size: 18px; }
-.split-icon { width: 40px; height: 40px; border-radius: 20px; background: var(--orange); color: #fff; display: grid; place-items: center; font-size: 18px; font-weight: 700; }
+.split-icon { width: 40px; height: 40px; border-radius: 20px; background: linear-gradient(var(--orange), #ff6a00); color: #fff; display: grid; place-items: center; font-size: 18px; font-weight: 700; }
 .split-count { display: flex; flex-direction: column; line-height: 1.05; cursor: pointer; }
 .split-count b { font-size: 30px; font-weight: 800; }
 .split-count span { font-size: 15px; font-weight: 700; color: var(--orange); }
@@ -620,3 +593,5 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .split-alarm-time small { font-size: 11px; }
 .split-spacer { flex: 1; }
 .split-alarm-row .mini { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--orange); color: #fff; }
+.split-alarm-in { font-size: 12px; color: var(--secondary); white-space: nowrap; overflow: hidden; }
+.split-left { align-items: flex-start; }

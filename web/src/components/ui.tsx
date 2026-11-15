@@ -406,7 +406,7 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
           <Section footer="Reads replies aloud during Live Talk.">
             <div className="row"><span className="grow">Speak Replies</span><Switch label="Speak replies" on={s.speakReplies} onChange={(v) => set('speakReplies', v)} /></div>
           </Section>
-          <Section header="Up Next Widget" footer="The waveform button in the corner of the medium and large Up Next widget. Without it, the widget fits one more item.">
+          <Section header="Up Next Widget" footer="The waveform button at the top left of the Up Next widget. Without it, a to-do icon sits there.">
             <div className="row"><span className="grow">Show Live Talk Button</span>
               <Switch label="Show Live Talk button" on={s.widgetShowsTalkButton} onChange={(v) => set('widgetShowsTalkButton', v)} /></div>
           </Section>

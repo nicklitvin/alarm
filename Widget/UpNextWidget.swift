@@ -11,16 +11,20 @@ import WidgetKit
 struct UpNextEntry: TimelineEntry {
     let date: Date
     let items: [UpNextItem]
+    /// How many to-dos are open (bottom left of the medium and large widget).
+    var todoCount = 0
 }
 
 struct UpNextProvider: TimelineProvider {
     func placeholder(in context: Context) -> UpNextEntry {
-        UpNextEntry(date: .now, items: UpNextEntry.samples)
+        UpNextEntry(date: .now, items: UpNextEntry.samples, todoCount: 5)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (UpNextEntry) -> Void) {
         let items = Self.items(at: .now)
-        completion(UpNextEntry(date: .now, items: items.isEmpty && context.isPreview ? UpNextEntry.samples : items))
+        let preview = items.isEmpty && context.isPreview
+        completion(UpNextEntry(date: .now, items: preview ? UpNextEntry.samples : items,
+                               todoCount: preview ? 5 : TodoStorage.load().filter { !$0.isDone }.count))
     }
 
     /// An entry every minute for the next hour (so the alarm's "in 2h 4m" stays right), plus one
@@ -34,8 +38,10 @@ struct UpNextProvider: TimelineProvider {
         let ticks = (1...60).map { minute.addingTimeInterval(TimeInterval($0 * 60)) }
         let changes = UpNext.changeDates(alarms: alarms, todos: todos, timers: timers, now: now).filter { $0 < horizon }
         let dates = Array(Set([now] + ticks + changes)).sorted()
+        let openCount = todos.filter { !$0.isDone }.count
         let entries = dates.map { date in
-            UpNextEntry(date: date, items: UpNext.items(alarms: alarms, todos: todos, timers: timers, now: date, options: .current))
+            UpNextEntry(date: date, items: UpNext.items(alarms: alarms, todos: todos, timers: timers, now: date, options: .current),
+                        todoCount: openCount)
         }
         completion(Timeline(entries: entries, policy: .after(horizon)))
     }
@@ -80,70 +86,79 @@ struct UpNextWidgetView: View {
 
     private var layout: UpNext.Layout { UpNext.layout(entry.items, now: entry.date) }
 
-    /// The widget is split into equal lines, so every line (the alarm, each row and the
-    /// "+3 to-dos" / Live Talk line) has the same height: four in the medium widget.
-    private func lineCount(height: CGFloat) -> Int {
-        family == .systemMedium ? 4 : max(4, Int(height / 31))
-    }
-
-    /// "+3 to-dos" for the to-dos that didn't fit ("+2 more" if only alarms or timers didn't).
-    private static func moreText(_ hidden: [UpNextItem]) -> String {
-        let todos = hidden.filter { if case .todo = $0.kind { true } else { false } }.count
-        return todos > 0 ? "+\(todos) to-do\(todos == 1 ? "" : "s")" : "+\(hidden.count) more"
-    }
-
-    // Medium / large: the next alarm on top with Dismiss on its line, then as many rows as fit,
-    // and the last line holds "+3 to-dos" and the Live Talk button. All lines are the same height.
+    // Medium / large, like the Reminders widget: the Live Talk button (or a to-do icon) top left,
+    // how many to-dos are open bottom left; on the right the next alarm with Dismiss, then to-dos
+    // and timers, in equal-height rows (four in the medium widget).
     private var list: some View {
         GeometryReader { geometry in
             let layout = self.layout
-            let lines = lineCount(height: geometry.size.height)
+            let lines = family == .systemMedium ? 4 : max(4, Int(geometry.size.height / 31))
             let line = geometry.size.height / CGFloat(lines)
-            // No titles: no divider, no "Up Next".
-            let rowLines = lines - (layout.alarm != nil ? 1 : 0)
-            let showsTalk = AppSettings.widgetShowsTalkButton
-            let needsFooter = showsTalk || layout.rows.count > rowLines
-            let shown = Array(layout.rows.prefix(rowLines - (needsFooter ? 1 : 0)))
-            let hidden = Array(layout.rows.dropFirst(shown.count))
-            VStack(alignment: .leading, spacing: 0) {
-                if let alarm = layout.alarm {
-                    AlarmHeader(upcoming: alarm, now: entry.date)
-                        .frame(height: line)
+            // The featured alarm is the first row; other alarms stay off this narrower column.
+            let others = layout.rows.filter { item in
+                switch item.kind {
+                case .alarmSoon, .nextAlarm: false
+                case .timer, .todo: true
                 }
-                if shown.isEmpty {
-                    if layout.alarm == nil {
-                        Spacer(minLength: 0)
-                        allClear
-                    } else {
-                        Text("Nothing to do.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+            }
+            let shown = Array(others.prefix(lines - (layout.alarm != nil ? 1 : 0)))
+            HStack(alignment: .top, spacing: 14) {
+                summary
+                    .frame(width: geometry.size.width * 0.34, alignment: .leading)
+                    .frame(maxHeight: .infinity, alignment: .leading)
+                VStack(alignment: .leading, spacing: 0) {
+                    if let alarm = layout.alarm {
+                        UpNextAlarmLine(upcoming: alarm, now: entry.date)
                             .frame(height: line)
                     }
-                } else {
                     // No gaps between rows: every point of a row opens its tab.
                     ForEach(shown) { item in
                         UpNextRow(item: item, now: entry.date, singleLine: true)
                             .frame(height: line)
                             .transition(.opacity.combined(with: .move(edge: .trailing)))
                     }
-                }
-                Spacer(minLength: 0)
-                if needsFooter {
-                    // The last line: "+3 to-dos" on the left, the Live Talk button on the right.
-                    HStack(alignment: .center) {
-                        if !hidden.isEmpty {
-                            Text(Self.moreText(hidden))
-                                .font(.caption.weight(.medium))
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer(minLength: 0)
-                        if showsTalk { AskButton(size: min(28, line - 2)) }
+                    if layout.alarm == nil && shown.isEmpty {
+                        Text("Nothing coming up")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .frame(height: line)
                     }
-                    .frame(height: line)
+                    Spacer(minLength: 0)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+    }
+
+    /// The left column: the Live Talk button (or a to-do icon when it's off in Talk settings) and
+    /// the number of open to-dos, which also tells you how many didn't fit on the right.
+    private var summary: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if AppSettings.widgetShowsTalkButton {
+                Link(destination: DeepLink.talk.url) {
+                    SummaryIcon(systemImage: "waveform") // the Live Talk icon, as on the Talk tab
+                }
+                .accessibilityLabel("Open Talk")
+            } else {
+                Link(destination: DeepLink.todos.url) {
+                    SummaryIcon(systemImage: "checklist")
+                }
+                .accessibilityLabel("Open To-Do")
+            }
+            Spacer(minLength: 0)
+            Link(destination: DeepLink.todos.url) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("\(entry.todoCount)")
+                        .font(.system(size: 32, weight: .heavy, design: .rounded))
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
+                    Text(entry.todoCount == 1 ? "To-Do" : "To-Dos")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(.orange)
+                }
+                .foregroundStyle(.primary)
+            }
+            .accessibilityLabel("\(entry.todoCount) to-dos")
         }
     }
 
@@ -213,83 +228,6 @@ struct UpNextWidgetView: View {
     }
 }
 
-/// The next alarm across the top (however far away): big time, label and when, with Dismiss on
-/// the right. Dismiss always works for the next ring, however far away it is.
-private struct AlarmHeader: View {
-    let upcoming: UpcomingAlarm
-    let now: Date
-    /// Small widget: Dismiss under the time instead of beside it.
-    var stacked = false
-
-    var body: some View {
-        let parts = TimeFormat.parts(for: upcoming.date)
-        let layout = stacked ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6)) : AnyLayout(HStackLayout(alignment: .center, spacing: 8))
-        layout {
-            Link(destination: DeepLink.alarms.url) {
-                if stacked {
-                    VStack(alignment: .leading, spacing: 1) {
-                        time(parts, size: 34)
-                        details.font(.caption2).foregroundStyle(.secondary).lineLimit(1)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
-                } else {
-                    // Everything on one line: "⏰ 7:00 AM  in 2h 4m" (with the label, if it has one).
-                    // The clock is centered on the line, in the same column as the to-do circles.
-                    HStack(alignment: .center, spacing: 8) {
-                        Image(systemName: "alarm.fill")
-                            .font(.headline)
-                            .foregroundStyle(.orange)
-                            .frame(width: 20)
-                        HStack(alignment: .firstTextBaseline, spacing: 6) {
-                            time(parts, size: 24)
-                            details.font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
-                }
-            }
-            .foregroundStyle(.primary)
-
-            // Dismiss within 12 hours of the ring. One skipped ring per alarm: once its next ring
-            // is dismissed, the one after it (shown here) can't be dismissed too.
-            if upcoming.canDismiss(now: now) {
-            Button(intent: DismissNextAlarmIntent(alarmID: upcoming.alarm.id)) {
-                Text("Dismiss")
-                    .font(.caption.weight(.semibold))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Capsule().fill(Color.orange))
-                    .foregroundStyle(.white)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Dismiss the \(TimeFormat.string(for: upcoming.date)) alarm")
-            }
-        }
-    }
-
-    private func time(_ parts: (time: String, period: String?), size: CGFloat) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 2) {
-            Text(parts.time)
-                .font(.system(size: size, weight: .semibold, design: .rounded))
-                .monospacedDigit()
-            if let period = parts.period {
-                Text(period).font(.system(size: size * 0.5, weight: .semibold))
-            }
-        }
-        .lineLimit(1)
-        .fixedSize()
-    }
-
-    /// "in 2h 4m" (two units at most: "in 1d 5h" when it's days away), after the alarm's own
-    /// label if it has one ("Gym · in 2h 4m"). An unlabeled alarm doesn't say "Alarm".
-    private var details: some View {
-        Text(upcoming.alarm.customLabel.map { "\($0) · " } ?? "") + Text("in \(TimeFormat.countdown(from: now, to: upcoming.date))")
-    }
-}
 
 extension UpcomingAlarm {
     /// Dismiss is offered within 12 hours of the ring, unless the alarm already skips a ring.
@@ -333,7 +271,7 @@ struct SmallAlarm: View {
                     .lineLimit(1)
             }
             Spacer(minLength: 6)
-            // Within 12 hours, and one skipped ring per alarm (see AlarmHeader).
+            // Within the Show Alarm window, and one skipped ring per alarm.
             if upcoming.canDismiss(now: now) {
                 Button(intent: DismissNextAlarmIntent(alarmID: upcoming.alarm.id)) {
                     Text("Dismiss")
@@ -353,19 +291,77 @@ struct SmallAlarm: View {
     }
 }
 
-/// Opens Alarmie on the Talk tab. (Widgets can't show the system's type-a-request prompt,
-/// so the assistant is one tap away in the app instead.)
-private struct AskButton: View {
-    var size: CGFloat = 34
+
+/// The round orange icon top left (like the Reminders widget's list icon).
+private struct SummaryIcon: View {
+    let systemImage: String
+
     var body: some View {
-        Link(destination: DeepLink.talk.url) {
-            Image(systemName: "waveform") // the Live Talk icon, as on the Talk tab
-                .font(.system(size: size * 0.45, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: size, height: size)
-                .background(Circle().fill(Color.orange.gradient))
+        Image(systemName: systemImage)
+            .font(.system(size: 18, weight: .semibold))
+            .foregroundStyle(.white)
+            .frame(width: 40, height: 40)
+            .background(Circle().fill(Color.orange.gradient))
+    }
+}
+
+/// The next alarm as the first row on the right: "⏰ 9:50 PM  in 38m" with Dismiss (the countdown
+/// is left out when there isn't room).
+private struct UpNextAlarmLine: View {
+    let upcoming: UpcomingAlarm
+    let now: Date
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Link(destination: DeepLink.alarms.url) {
+                ViewThatFits(in: .horizontal) {
+                    label(withCountdown: true)
+                    label(withCountdown: false)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .foregroundStyle(.primary)
+
+            // One skipped ring per alarm: once its next ring is dismissed, the one after it can't be.
+            if upcoming.canDismiss(now: now) {
+                Button(intent: DismissNextAlarmIntent(alarmID: upcoming.alarm.id)) {
+                    Text("Dismiss")
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Capsule().fill(Color.orange))
+                        .foregroundStyle(.white)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Dismiss the \(TimeFormat.string(for: upcoming.date)) alarm")
+            }
         }
-        .accessibilityLabel("Open Talk")
+    }
+
+    private func label(withCountdown: Bool) -> some View {
+        let parts = TimeFormat.parts(for: upcoming.date)
+        return HStack(spacing: 8) {
+            Image(systemName: "alarm.fill")
+                .font(.body)
+                .foregroundStyle(.orange)
+                .frame(width: 20) // the to-do circles' column
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text(parts.time)
+                    .font(.subheadline.weight(.semibold))
+                    .monospacedDigit()
+                if let period = parts.period {
+                    Text(period).font(.caption2.weight(.semibold))
+                }
+            }
+            if withCountdown {
+                Text("in \(TimeFormat.countdown(from: now, to: upcoming.date))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .lineLimit(1)
+        .fixedSize()
     }
 }
 

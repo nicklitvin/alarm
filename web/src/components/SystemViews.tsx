@@ -21,10 +21,6 @@ const SECTIONS: { id: string; label: string; examples: Example[]; view: () => Re
     ['No alarms: Next Alarm shows zzz', ex.noAlarms],
     ['Nothing at all', ex.empty],
   ] },
-  { id: 'ideas', label: 'Up Next Ideas (4 rows of content)', view: () => <UpNextIdeas />, examples: [
-    ['With an alarm', ex.alarmSoon],
-    ['Just to-dos', ex.noAlarms],
-  ] },
   { id: 'lock', label: 'Lock Screen', view: () => <LockScreen />, examples: [
     ['Alarm within the widget window, with a running timer', ex.timerRunning],
     ['No alarm within the widget window: zzz', ex.alarmFar],
@@ -152,35 +148,7 @@ function HomeScreen() {
   const first = items[0]
   const layout = upNextLayout(items, now)
   const featured = layout.alarm
-  // Variant B: the next alarm on top (within 24 hours) with Dismiss on its line, then the rest;
-  // the Live Talk waveform in the bottom-right corner. Every tap opens the tab.
-  const alarmHeader = (stacked: boolean) => featured && (
-    <div className={`v-top ${stacked ? 'stacked' : ''}`}>
-      <div className="v-alarm" onClick={(e) => { e.stopPropagation(); open({ tab: 'alarms' }) }}>
-        {/* One line on medium and large ("7:00 AM  ⏰ Wake up · Tomorrow"); stacked on small. */}
-        {/* "⏰ 7:00 AM  in 2h 4m": the clock before the time, the label only if it has one. */}
-        <div className={stacked ? '' : 'v-alarm-line'}>
-          {!stacked && <span className="v-alarm-icon alarm-glyph">⏰</span>}
-          <div className="v-alarm-time">{bigTime(featured.date).time}<small> {bigTime(featured.date).period}</small></div>
-          <div className="v-alarm-sub ellipsis">{featured.alarm.label.trim() ? `${featured.alarm.label.trim()} · ` : ''}in {countdown(now, featured.date)}</div>
-        </div>
-      </div>
-      {/* One skipped ring per alarm: once dismissed, the ring after it can't be dismissed too. */}
-      {(featured.alarm.skippedOccurrence ?? 0) <= now && featured.date - now <= alarmWindow(data.settings) &&
-        <button className="mini dismiss" onClick={(e) => { e.stopPropagation(); dismiss(featured.alarm.id, featured.date) }}>Dismiss</button>}
-    </div>
-  )
   const upNextWidget = (size: 'small' | 'medium' | 'large') => {
-    // Equal-height lines, no title: the alarm, the rows, and the last line with "+3 to-dos"
-    // (when some don't fit) and the Live Talk button. Four lines in the medium widget.
-    const showsTalk = data.settings.widgetShowsTalkButton
-    const lines = size === 'medium' ? 4 : 11
-    const capacity = lines - (featured ? 1 : 0)
-    const needsFooter = showsTalk || layout.rows.length > capacity
-    const shown = layout.rows.slice(0, capacity - (needsFooter ? 1 : 0))
-    const hidden = layout.rows.slice(shown.length)
-    const hiddenTodos = hidden.filter((i) => i.kind === 'todo').length
-    const more = hiddenTodos > 0 ? `+${hiddenTodos} to-do${hiddenTodos === 1 ? '' : 's'}` : `+${hidden.length} more`
     if (size === 'small') {
       return (
         <div className="widget upnext small" onClick={() => open(featured ? { tab: 'alarms' } : first ? linkFor(first) : { tab: 'todos' })}>
@@ -199,22 +167,8 @@ function HomeScreen() {
         </div>
       )
     }
-    return (
-      <div className={`widget upnext ${size}`} onClick={() => open(featured ? { tab: 'alarms' } : first ? linkFor(first) : { tab: 'todos' })}>
-        {/* The alarm (if any), then the rows directly: no divider, no "Up Next" title. */}
-        <div className="upnext-lines" style={{ gridTemplateRows: `repeat(${lines}, 1fr)` }}>
-          {featured && <div className="line">{alarmHeader(false)}</div>}
-          {shown.length === 0 ? <div style={{ gridRow: featured ? undefined : 'span 2' }}>{featured ? <span className="muted" style={{ fontSize: 12 }}>Nothing to do.</span> : <><b>All clear</b><div className="muted" style={{ fontSize: 12 }}>Nothing coming up.</div></>}</div>
-            : shown.map((i) => <div className="line" key={keyOf(i)}><Row item={i} single /></div>)}
-          {needsFooter && (
-            <div className="upnext-foot" style={{ gridRow: lines }}>
-              <span>{hidden.length > 0 ? more : ''}</span>
-              {showsTalk && <button className="ask line-ask" aria-label="Open Talk" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>〰︎</button>}
-            </div>
-          )}
-        </div>
-      </div>
-    )
+    // Medium and large, like the Reminders widget.
+    return <UpNextSplit size={size} />
   }
   return (
     <>
@@ -236,7 +190,7 @@ function HomeScreen() {
           {upNextWidget('large')}
         </div>
       </div>
-      <Caption>Next Alarm (small, with Dismiss) and Up Next (medium, large). Your next alarm shows (with Dismiss) from 12 hours before it rings, or whatever Alarm settings → Show Alarm says; to-dos and timers follow. Tapping anything opens its tab, a to-do's circle checks it off, and the waveform button opens Talk.</Caption>
+      <Caption>Next Alarm (small, with Dismiss) and Up Next (medium, large). Your next alarm shows (with Dismiss) from 12 hours before it rings, or whatever Alarm settings → Show Alarm says; to-dos and timers follow. Up Next is laid out like the Reminders widget: the waveform button (opens Talk) and the number of open to-dos on the left, the alarm with Dismiss and then to-dos on the right. Tapping anything opens its tab and a to-do's circle checks it off.</Caption>
     </>
   )
 }
@@ -258,163 +212,46 @@ function Zzz({ size, muted }: { size: number; muted?: boolean }) {
   )
 }
 
-// MARK: - Up Next ideas
+// MARK: - Up Next (medium, large)
 
-type Idea = 'corner' | 'cornerCount' | 'topButton' | 'rail' | 'noButton'
-const IDEAS: [Idea, string, string][] = [
-  ['corner', 'A · Corner button', 'The Live Talk button floats in the bottom-right corner; the last row stops short of it. No "+N": tap the widget to see everything.'],
-  ['cornerCount', 'B · Corner button + count', 'Like A, with a small "+N" (the to-dos that don’t fit) just left of the button on the last row.'],
-  ['topButton', 'C · Button on the top row', 'The button sits at the end of the first line (after Dismiss, or after the first to-do); "+N" is a small badge at the end of the last row.'],
-  ['rail', 'D · Side rail', 'A narrow column on the right holds "+N" and the button; every row is a little narrower.'],
-  ['noButton', 'E · No button', 'Just content: "+N" as a badge at the end of the last row. Live Talk stays in Control Center and the app.'],
-]
-
-/** One medium Up Next widget in each idea, all with four equal lines of content. */
-function UpNextIdeas() {
-  return (
-    <>
-      <div className="ideas-group">Split, like the Reminders widget: a summary on the left, four named to-dos on the right</div>
-      <div className="ideas">
-        {SPLIT_IDEAS.map(([idea, title, caption]) => (
-          <div key={idea}>
-            <div className="idea-title">{title}</div>
-            <SplitIdea idea={idea} />
-            <p className="view-caption">{caption}</p>
-          </div>
-        ))}
-      </div>
-      <div className="ideas-group">One list with the button tucked in</div>
-      <div className="ideas">
-        {IDEAS.map(([idea, title, caption]) => (
-          <div key={idea}>
-            <div className="idea-title">{title}</div>
-            <UpNextIdea idea={idea} />
-            <p className="view-caption">{caption}</p>
-          </div>
-        ))}
-      </div>
-    </>
-  )
-}
-
-type SplitIdeaKind = 'alarmDismiss' | 'alarmButtons' | 'reminders'
-const SPLIT_IDEAS: [SplitIdeaKind, string, string][] = [
-  ['alarmButtons', 'F · Alarm, buttons, count', 'Top left: the next alarm and when it rings. Under it: Dismiss and the Live Talk button. Bottom left: how many to-dos are open. Right: four to-dos. With no alarm, the Live Talk button takes the alarm\u2019s place.'],
-  ['alarmDismiss', 'G · Alarm and count, no Talk', 'Like F without the Live Talk button: the alarm with Dismiss on the left, the count below, four to-dos on the right. With no alarm, a to-do icon sits top left like Reminders.'],
-  ['reminders', 'H · Just like Reminders', 'The Live Talk button top left (like the Reminders icon), the count bottom left. The alarm is the first row on the right, with Dismiss, then three to-dos.'],
-]
-
-/** A medium Up Next widget split in two: summary column on the left, four equal rows on the right. */
-function SplitIdea({ idea }: { idea: SplitIdeaKind }) {
+/** The Up Next widget, like the Reminders widget: the Live Talk button (or a to-do icon when it's
+ *  off) top left and the number of open to-dos bottom left; on the right the next alarm with
+ *  Dismiss, then to-dos and timers, in equal rows (four in the medium widget). */
+function UpNextSplit({ size }: { size: 'medium' | 'large' }) {
   const { now, items, open, dismiss, data } = useSystem()
   const layout = upNextLayout(items, now)
   const featured = layout.alarm
+  const lines = size === 'medium' ? 4 : 11
   const openTodos = data.todos.filter((t) => !t.isDone).length
   const canDismiss = featured && (featured.alarm.skippedOccurrence ?? 0) <= now && featured.date - now <= alarmWindow(data.settings)
-  const dismissButton = canDismiss && (
-    <button className="mini dismiss" onClick={(e) => { e.stopPropagation(); dismiss(featured.alarm.id, featured.date) }}>Dismiss</button>
-  )
-  const ask = (
-    <button className="ask split-ask" aria-label="Open Talk" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>〰︎</button>
-  )
-  // Right column: to-dos and timers (the alarm lives on the left), or for H the alarm first.
+  // The featured alarm is the first row; other alarms stay off this narrower column.
   const others = layout.rows.filter((i) => i.kind !== 'alarmSoon' && i.kind !== 'nextAlarm')
   const rows: ReactNode[] = []
-  if (idea === 'reminders' && featured) {
+  if (featured) {
     rows.push(
       <div className="split-row split-alarm-row" key="alarm" onClick={(e) => { e.stopPropagation(); open({ tab: 'alarms' }) }}>
         <span className="alarm-glyph split-glyph">⏰</span>
         <span className="split-alarm-time">{bigTime(featured.date).time}<small> {bigTime(featured.date).period}</small></span>
+        <span className="split-alarm-in">in {countdown(now, featured.date)}</span>
         <span className="split-spacer" />
-        {dismissButton}
+        {canDismiss && <button className="mini" onClick={(e) => { e.stopPropagation(); dismiss(featured.alarm.id, featured.date) }}>Dismiss</button>}
       </div>,
     )
   }
-  others.slice(0, 4 - rows.length).forEach((item) => rows.push(<div className="split-row" key={keyOf(item)}><Row item={item} single /></div>))
-  if (rows.length === 0) rows.push(<div className="split-row muted" key="none" style={{ fontSize: 14 }}>Nothing to do</div>)
-
-  const alarmBlock = featured && idea !== 'reminders' && (
-    <div className="split-alarm" onClick={(e) => { e.stopPropagation(); open({ tab: 'alarms' }) }}>
-      <div className="split-alarm-big"><span className="alarm-glyph split-glyph">⏰</span>{bigTime(featured.date).time}<small> {bigTime(featured.date).period}</small></div>
-      <div className="split-alarm-sub ellipsis">{featured.alarm.label.trim() ? `${featured.alarm.label.trim()} · ` : ''}in {countdown(now, featured.date)}</div>
-    </div>
-  )
-  let top: ReactNode
-  if (idea === 'reminders') top = ask
-  else if (featured) top = (
-    <>
-      {alarmBlock}
-      <div className="split-buttons">{dismissButton}{idea === 'alarmButtons' && ask}</div>
-    </>
-  )
-  else top = idea === 'alarmButtons' ? <div className="split-top-icon">{ask}</div> : <span className="split-icon" aria-hidden>☰</span>
-
+  others.slice(0, lines - rows.length).forEach((item) => rows.push(<div className="split-row" key={keyOf(item)}><Row item={item} single /></div>))
+  if (rows.length === 0) rows.push(<div className="split-row muted" key="none" style={{ fontSize: 14 }}>Nothing coming up</div>)
   return (
-    <div className={`widget upnext medium split ${idea}`} onClick={() => open({ tab: 'todos' })}>
+    <div className={`widget upnext ${size} split`} onClick={() => open({ tab: 'todos' })}>
       <div className="split-left">
-        <div className="split-top">{top}</div>
+        {data.settings.widgetShowsTalkButton
+          ? <button className="split-icon" aria-label="Open Talk" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>〰︎</button>
+          : <button className="split-icon" aria-label="Open To-Do" onClick={(e) => { e.stopPropagation(); open({ tab: 'todos' }) }}>☰</button>}
         <div className="split-count" onClick={(e) => { e.stopPropagation(); open({ tab: 'todos' }) }}>
           <b>{openTodos}</b>
           <span>{openTodos === 1 ? 'To-Do' : 'To-Dos'}</span>
         </div>
       </div>
-      <div className="split-right" style={{ gridTemplateRows: 'repeat(4, 1fr)' }}>{rows}</div>
-    </div>
-  )
-}
-
-function UpNextIdea({ idea }: { idea: Idea }) {
-  const { now, items, open, dismiss, data } = useSystem()
-  const layout = upNextLayout(items, now)
-  const featured = layout.alarm
-  const shown = layout.rows.slice(0, 4 - (featured ? 1 : 0))
-  const hidden = layout.rows.length - shown.length
-  const ask = (
-    <button className="ask line-ask" aria-label="Open Talk" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>〰︎</button>
-  )
-  const count = hidden > 0 ? <span className="idea-count">+{hidden}</span> : null
-  const canDismiss = featured && (featured.alarm.skippedOccurrence ?? 0) <= now && featured.date - now <= alarmWindow(data.settings)
-  // Each line is a quarter of the widget. `last` and `first` mark where the button or count goes.
-  const lines: ReactNode[] = []
-  if (featured) {
-    lines.push(
-      <div className="v-top idea-alarm" key="alarm">
-        <div className="v-alarm" onClick={(e) => { e.stopPropagation(); open({ tab: 'alarms' }) }}>
-          <div className="v-alarm-line">
-            <span className="v-alarm-icon alarm-glyph">⏰</span>
-            <div className="v-alarm-time">{bigTime(featured.date).time}<small> {bigTime(featured.date).period}</small></div>
-            <div className="v-alarm-sub ellipsis">{featured.alarm.label.trim() ? `${featured.alarm.label.trim()} · ` : ''}in {countdown(now, featured.date)}</div>
-          </div>
-        </div>
-        {canDismiss && <button className="mini dismiss" onClick={(e) => { e.stopPropagation(); dismiss(featured.alarm.id, featured.date) }}>Dismiss</button>}
-        {idea === 'topButton' && ask}
-      </div>,
-    )
-  }
-  shown.forEach((item, index) => {
-    const isFirstLine = !featured && index === 0
-    const isLast = index === shown.length - 1 && lines.length + 1 === 4
-    lines.push(
-      <div className="line idea-line" key={keyOf(item)}>
-        <Row item={item} single />
-        {idea === 'topButton' && isFirstLine && ask}
-        {isLast && (idea === 'topButton' || idea === 'noButton') && count}
-        {isLast && idea === 'cornerCount' && count}
-        {isLast && (idea === 'corner' || idea === 'cornerCount') && <span className="idea-corner-space" />}
-      </div>,
-    )
-  })
-  if (lines.length === 0) lines.push(<div key="clear"><b>All clear</b><div className="muted" style={{ fontSize: 12 }}>Nothing coming up.</div></div>)
-  const grid = <div className="upnext-lines idea-lines" style={{ gridTemplateRows: 'repeat(4, 1fr)' }}>{lines}</div>
-  return (
-    <div className={`widget upnext medium idea ${idea}`} onClick={() => open(featured ? { tab: 'alarms' } : { tab: 'todos' })}>
-      {idea === 'rail' ? (
-        <div className="idea-rail-wrap">
-          {grid}
-          <div className="idea-rail">{count ?? <span />}{ask}</div>
-        </div>
-      ) : grid}
-      {(idea === 'corner' || idea === 'cornerCount') && <div className="idea-corner">{ask}</div>}
+      <div className="split-right" style={{ gridTemplateRows: `repeat(${lines}, 1fr)` }}>{rows}</div>
     </div>
   )
 }

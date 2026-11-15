@@ -484,6 +484,6 @@ private struct TalkSettingsSection: View {
 
         WidgetToggles(rows: [
             ("Show Live Talk Button", AppSettings.widgetShowsTalkButtonKey),
-        ], footer: "The waveform button in the corner of the medium and large Up Next widget. Without it, the widget fits one more item.")
+        ], footer: "The waveform button at the top left of the Up Next widget. Without it, a to-do icon sits there.")
     }
 }
