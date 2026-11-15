@@ -348,7 +348,7 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
         </Section>
       )}
       {tab === 'alarms' && (
-        <Section header="Widgets" footer={`Your next alarm appears in the widgets ${s.alarmWidgetHours === 1 ? '1 hour' : `${s.alarmWidgetHours} hours`} before it rings, with a Dismiss button. The Alarms tab shows Dismiss from then too.`}>
+        <Section header="Widgets" footer="When your next alarm appears in widgets and can be dismissed.">
           {/* Tap to scroll to any number of hours (1–24), right below. */}
           <button className="row tappable" style={{ width: '100%', textAlign: 'left' }} onClick={() => setPickingHours(!pickingHours)}>
             <span className="grow">Show Alarm</span>

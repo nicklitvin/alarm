@@ -189,7 +189,7 @@ private struct AlarmSettingsSection: View {
         } header: {
             Text("Widgets")
         } footer: {
-            Text("Your next alarm appears in the widgets \(widgetHours == 1 ? "1 hour" : "\(widgetHours) hours") before it rings, with a Dismiss button. The Alarms tab shows Dismiss from then too.")
+            Text("When your next alarm appears in widgets and can be dismissed.")
         }
         .onChange(of: widgetHours) {
             AlarmController.shared.refresh()
