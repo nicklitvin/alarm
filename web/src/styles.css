@@ -524,3 +524,10 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .version-badge { background: var(--orange); color: #fff; font-weight: 700; font-size: 15px; padding: 4px 12px; border-radius: 999px; letter-spacing: 0.2px; }
 .example + .example { margin-top: 22px; }
 .example-label { font-size: 13px; font-weight: 600; color: var(--page-text); margin: 0 2px 8px; opacity: 0.85; }
+/* Up Next (medium, large): equal-height lines; the last one holds "+3 to-dos" and the Live Talk button. */
+.upnext-lines { flex: 1; min-height: 0; display: grid; }
+.upnext-lines .line { display: flex; align-items: center; min-height: 0; }
+.upnext-lines .line > * { flex: 1; min-width: 0; }
+.upnext-lines .line .widget-row { height: 100%; padding: 0; }
+.upnext-lines .upnext-foot { margin-top: 0; }
+.ask.line-ask { width: 28px; height: 28px; border-radius: 14px; font-size: 13px; }

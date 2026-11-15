@@ -165,10 +165,11 @@ function HomeScreen() {
     </div>
   )
   const upNextWidget = (size: 'small' | 'medium' | 'large') => {
-    // One-line rows, no title. The last line holds "+3 to-dos" (when some don't fit) and the
-    // Live Talk button; it takes one row's space.
+    // Equal-height lines, no title: the alarm, the rows, and the last line with "+3 to-dos"
+    // (when some don't fit) and the Live Talk button. Four lines in the medium widget.
     const showsTalk = data.settings.widgetShowsTalkButton
-    const capacity = size === 'medium' ? (featured ? 3 : 4) : (featured ? 10 : 12)
+    const lines = size === 'medium' ? 4 : 11
+    const capacity = lines - (featured ? 1 : 0)
     const needsFooter = showsTalk || layout.rows.length > capacity
     const shown = layout.rows.slice(0, capacity - (needsFooter ? 1 : 0))
     const hidden = layout.rows.slice(shown.length)
@@ -195,15 +196,17 @@ function HomeScreen() {
     return (
       <div className={`widget upnext ${size}`} onClick={() => open(featured ? { tab: 'alarms' } : first ? linkFor(first) : { tab: 'todos' })}>
         {/* The alarm (if any), then the rows directly: no divider, no "Up Next" title. */}
-        {featured && <div style={{ marginBottom: 4 }}>{alarmHeader(false)}</div>}
-        {shown.length === 0 ? <div style={{ marginTop: 6 }}>{featured ? <span className="muted" style={{ fontSize: 12 }}>Nothing to do.</span> : <><b>All clear</b><div className="muted" style={{ fontSize: 12 }}>Nothing coming up.</div></>}</div>
-          : shown.map((i) => <Row key={keyOf(i)} item={i} single />)}
-        {needsFooter && (
-          <div className="upnext-foot">
-            <span>{hidden.length > 0 ? more : ''}</span>
-            {showsTalk && <button className="ask" aria-label="Open Talk" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>〰︎</button>}
-          </div>
-        )}
+        <div className="upnext-lines" style={{ gridTemplateRows: `repeat(${lines}, 1fr)` }}>
+          {featured && <div className="line">{alarmHeader(false)}</div>}
+          {shown.length === 0 ? <div style={{ gridRow: featured ? undefined : 'span 2' }}>{featured ? <span className="muted" style={{ fontSize: 12 }}>Nothing to do.</span> : <><b>All clear</b><div className="muted" style={{ fontSize: 12 }}>Nothing coming up.</div></>}</div>
+            : shown.map((i) => <div className="line" key={keyOf(i)}><Row item={i} single /></div>)}
+          {needsFooter && (
+            <div className="upnext-foot" style={{ gridRow: lines }}>
+              <span>{hidden.length > 0 ? more : ''}</span>
+              {showsTalk && <button className="ask line-ask" aria-label="Open Talk" onClick={(e) => { e.stopPropagation(); open({ tab: 'talk' }) }}>〰︎</button>}
+            </div>
+          )}
+        </div>
       </div>
     )
   }

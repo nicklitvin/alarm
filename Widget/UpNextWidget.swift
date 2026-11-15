@@ -80,24 +80,11 @@ struct UpNextWidgetView: View {
 
     private var layout: UpNext.Layout { UpNext.layout(entry.items, now: entry.date) }
 
-    /// As many one-line rows as fit in `height`: the medium widget shows the alarm and three
-    /// rows (four lines of content), the large one about ten.
-    private func rowsThatFit(_ rows: [UpNextItem], height: CGFloat) -> [UpNextItem] {
-        var used: CGFloat = 0
-        var fitting: [UpNextItem] = []
-        for row in rows {
-            let rowHeight = Self.rowHeight
-            guard used + rowHeight <= height || fitting.isEmpty else { break }
-            used += rowHeight
-            fitting.append(row)
-        }
-        return fitting
+    /// The widget is split into equal lines, so every line (the alarm, each row and the
+    /// "+3 to-dos" / Live Talk line) has the same height: four in the medium widget.
+    private func lineCount(height: CGFloat) -> Int {
+        family == .systemMedium ? 4 : max(4, Int(height / 31))
     }
-    private static let alarmHeight: CGFloat = 34
-    /// A one-line row, including the tappable space above and below (tapPadding).
-    private static let rowHeight: CGFloat = 26
-    /// The bottom line with "+3 to-dos" and the Live Talk button.
-    private static let footerHeight: CGFloat = 34
 
     /// "+3 to-dos" for the to-dos that didn't fit ("+2 more" if only alarms or timers didn't).
     private static func moreText(_ hidden: [UpNextItem]) -> String {
@@ -105,26 +92,23 @@ struct UpNextWidgetView: View {
         return todos > 0 ? "+\(todos) to-do\(todos == 1 ? "" : "s")" : "+\(hidden.count) more"
     }
 
-    // Medium / large: the next alarm on top with Dismiss on its line,
-    // then as many rows as fit, and the ✦ (open Talk) button in the bottom-right corner.
+    // Medium / large: the next alarm on top with Dismiss on its line, then as many rows as fit,
+    // and the last line holds "+3 to-dos" and the Live Talk button. All lines are the same height.
     private var list: some View {
         GeometryReader { geometry in
             let layout = self.layout
-            // The alarm (if any) on top, then the rows. No titles: no divider, no "Up Next".
-            let top = layout.alarm != nil ? Self.alarmHeight + 6 : 0
-            // The bottom line holds "+3 to-dos" (when some don't fit) and the Live Talk button.
+            let lines = lineCount(height: geometry.size.height)
+            let line = geometry.size.height / CGFloat(lines)
+            // No titles: no divider, no "Up Next".
+            let rowLines = lines - (layout.alarm != nil ? 1 : 0)
             let showsTalk = AppSettings.widgetShowsTalkButton
-            let available = geometry.size.height - top
-            let allFit = rowsThatFit(layout.rows, height: available).count == layout.rows.count
-            let needsFooter = showsTalk || !allFit
-            let footer: CGFloat = needsFooter ? (showsTalk ? Self.footerHeight : Self.rowHeight) : 0
-            let shown = rowsThatFit(layout.rows, height: available - footer)
+            let needsFooter = showsTalk || layout.rows.count > rowLines
+            let shown = Array(layout.rows.prefix(rowLines - (needsFooter ? 1 : 0)))
             let hidden = Array(layout.rows.dropFirst(shown.count))
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 0) {
                 if let alarm = layout.alarm {
                     AlarmHeader(upcoming: alarm, now: entry.date)
-                        .frame(height: Self.alarmHeight)
-                        .padding(.bottom, 4)
+                        .frame(height: line)
                 }
                 if shown.isEmpty {
                     if layout.alarm == nil {
@@ -134,18 +118,17 @@ struct UpNextWidgetView: View {
                         Text("Nothing to do.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                            .frame(height: line)
                     }
-                    Spacer(minLength: 0)
                 } else {
                     // No gaps between rows: every point of a row opens its tab.
-                    VStack(alignment: .leading, spacing: 0) {
-                        ForEach(shown) { item in
-                            UpNextRow(item: item, now: entry.date, singleLine: true, tapPadding: 3)
-                                .transition(.opacity.combined(with: .move(edge: .trailing)))
-                        }
+                    ForEach(shown) { item in
+                        UpNextRow(item: item, now: entry.date, singleLine: true)
+                            .frame(height: line)
+                            .transition(.opacity.combined(with: .move(edge: .trailing)))
                     }
-                    Spacer(minLength: 0)
                 }
+                Spacer(minLength: 0)
                 if needsFooter {
                     // The last line: "+3 to-dos" on the left, the Live Talk button on the right.
                     HStack(alignment: .center) {
@@ -155,9 +138,9 @@ struct UpNextWidgetView: View {
                                 .foregroundStyle(.secondary)
                         }
                         Spacer(minLength: 0)
-                        if showsTalk { AskButton() }
+                        if showsTalk { AskButton(size: min(28, line - 2)) }
                     }
-                    .frame(height: footer)
+                    .frame(height: line)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -369,12 +352,13 @@ struct SmallAlarm: View {
 /// Opens Alarmie on the Talk tab. (Widgets can't show the system's type-a-request prompt,
 /// so the assistant is one tap away in the app instead.)
 private struct AskButton: View {
+    var size: CGFloat = 34
     var body: some View {
         Link(destination: DeepLink.talk.url) {
             Image(systemName: "waveform") // the Live Talk icon, as on the Talk tab
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: size * 0.45, weight: .semibold))
                 .foregroundStyle(.white)
-                .frame(width: 34, height: 34)
+                .frame(width: size, height: size)
                 .background(Circle().fill(Color.orange.gradient))
         }
         .accessibilityLabel("Open Talk")
@@ -423,6 +407,8 @@ private struct UpNextRow: View {
                 }
                 .padding(.leading, 8)
                 .padding(.vertical, tapPadding)
+                // One-line rows fill their whole line, so every point of it is tappable.
+                .frame(maxHeight: singleLine ? .infinity : nil)
                 .contentShape(Rectangle())
             }
             .foregroundStyle(.primary)

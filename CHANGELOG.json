@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.28.4",
+      "build": 70,
+      "date": "2026-11-15",
+      "title": "Even Widget Rows",
+      "notes": [
+        "Every line in the Up Next widget is now the same height, so to-dos are evenly spaced and the \"+X to-dos\" line and Talk button take no more room than a to-do."
+      ]
+    },
+    {
       "version": "1.28.3",
       "build": 69,
       "date": "2026-11-15",
