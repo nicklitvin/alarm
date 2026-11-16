@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.37.3",
+      "build": 90,
+      "date": "2026-11-16",
+      "title": "No More Storage Warning",
+      "notes": [
+        "Removed the storage warning from the Alarms tab and About."
+      ]
+    },
+    {
       "version": "1.37.2",
       "build": 89,
       "date": "2026-11-16",

@@ -69,15 +69,6 @@ struct AlarmListView: View {
             landscape(now: now)
         } else {
             List {
-                if !Backups.isSharedStorageAvailable {
-                    Section {
-                        PermissionBanner(
-                            title: "This Build Can't Reach Your Data",
-                            message: "It was signed without Alarmie's App Group, so your saved alarms, to-dos and notes don't show and widgets don't update. Nothing is deleted: a build with the same bundle ID and team as before brings them back.",
-                            showsSettingsButton: false
-                        )
-                    }
-                }
                 if !controller.isAuthorized {
                     Section { PermissionBanner() }
                 }

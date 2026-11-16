@@ -1,24 +1,10 @@
 import SwiftUI
 
-/// Settings → About & Updates → Your Data: whether the shared storage works, and every backup
+/// Settings → About & Updates → Your Data: every backup
 /// (one per day for two weeks) with a way to put it back.
 struct DataSection: View {
     var body: some View {
         Section {
-            if Backups.isSharedStorageAvailable {
-                Label("Saved and shared with widgets", systemImage: "checkmark.circle.fill")
-                    .foregroundStyle(.primary)
-                    .symbolRenderingMode(.multicolor)
-            } else {
-                VStack(alignment: .leading, spacing: 4) {
-                    Label("This build can't reach your data", systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
-                        .font(.body.weight(.semibold))
-                    Text("It was signed without Alarmie's App Group (group.\(Bundle.main.bundleIdentifier ?? "…")), so your saved alarms, to-dos and notes don't show and widgets don't update. Nothing is deleted: a build with the same bundle ID and team as before brings them back.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
             NavigationLink {
                 BackupsView()
             } label: {

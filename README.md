@@ -49,8 +49,7 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
    ```
    **Every build must use the same team and bundle ID as the copy on your phone.** Your data lives
    in the App Group `group.<bundle ID>`; a build with a different team or bundle ID (or without
-   the App Group) can't see it, opens empty, and its widgets stop updating. The app warns about
-   this in the Alarms tab and in Settings → About & Updates. To check a build:
+   the App Group) can't see it, opens empty, and its widgets stop updating. To check a build:
    `codesign -d --entitlements - Alarmie.app` must list `group.<bundle ID>` under
    `com.apple.security.application-groups` (the widget too).
 2. Generate the project and open it:
@@ -125,8 +124,6 @@ read too. To make sure an update can never lose it:
   otherwise open empty.
 - **Restore by hand**: Settings → About & Updates → Backups lists every backup ("3 alarms · 8 to-dos
   · 5 notes") and restores one (what you have is backed up first).
-- **Shared storage check**: if this copy can't reach the App Group (signed without it), the Alarms
-  tab and About say so. That's also why the widgets would stop matching the app.
 - **Notes: Recently Deleted**: deleted notes (and Delete All Notes) wait 30 days before they're
   removed for good, and can be recovered from Notes settings → Recently Deleted (`NotesTrash` in `App/Notes/Note.swift`).
 

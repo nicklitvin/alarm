@@ -21,10 +21,6 @@ enum Backups {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: AlarmStorage.appGroupIdentifier)
     }
 
-    /// False when this copy of the app was signed without its App Group: then the widgets can't see
-    /// what you save, and data saved by a properly signed copy doesn't show here.
-    static var isSharedStorageAvailable: Bool { sharedContainer != nil }
-
     /// At launch, before anything loads: puts a backup back if the storage is brand new.
     static func restoreIfNeeded() {
         if DataBackup.restoreIfUntouched(AlarmStorage.defaults, directories: directories) {
