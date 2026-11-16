@@ -6,3 +6,6 @@ build/
 web/node_modules/
 web/dist/
 web/*.tsbuildinfo
+
+# Your signing (team and bundle ID): never committed, never overwritten by updates
+Config/Signing.local.xcconfig

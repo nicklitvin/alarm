@@ -1,6 +1,16 @@
 {
   "releases": [
     {
+      "version": "1.37.2",
+      "build": 89,
+      "date": "2026-11-16",
+      "title": "Safer Builds",
+      "notes": [
+        "Fixes builds that couldn't reach your saved data, which also stopped the widgets from updating.",
+        "The warning about it is clearer, and no longer shows a Settings button that couldn't help."
+      ]
+    },
+    {
       "version": "1.37.1",
       "build": 88,
       "date": "2026-11-16",

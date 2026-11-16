@@ -42,9 +42,17 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 
 ## Getting started
 
-1. Open `project.yml` and set:
-   - `DEVELOPMENT_TEAM`: your Apple Developer Team ID (Xcode → Settings → Accounts)
-   - `APP_BUNDLE_ID`: something unique, e.g. `com.yourname.alarm`. The widget ID and App Group are derived from it.
+1. Create `Config/Signing.local.xcconfig` (ignored by git, so updates never touch it) with:
+   ```
+   DEVELOPMENT_TEAM = ABCDE12345          // your Apple Developer Team ID (Xcode → Settings → Accounts)
+   APP_BUNDLE_ID = com.yourname.alarm     // something unique; the widget ID and App Group follow it
+   ```
+   **Every build must use the same team and bundle ID as the copy on your phone.** Your data lives
+   in the App Group `group.<bundle ID>`; a build with a different team or bundle ID (or without
+   the App Group) can't see it, opens empty, and its widgets stop updating. The app warns about
+   this in the Alarms tab and in Settings → About & Updates. To check a build:
+   `codesign -d --entitlements - Alarmie.app` must list `group.<bundle ID>` under
+   `com.apple.security.application-groups` (the widget too).
 2. Generate the project and open it:
    ```sh
    brew install xcodegen

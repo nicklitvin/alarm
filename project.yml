@@ -1,5 +1,11 @@
 name: Alarm
 
+# Your team and bundle ID live in Config/Signing.local.xcconfig (not in this file), so pulling
+# updates never loses them. See Config/Signing.xcconfig.
+configFiles:
+  Debug: Config/Signing.xcconfig
+  Release: Config/Signing.xcconfig
+
 options:
   deploymentTarget:
     iOS: "26.0"
@@ -8,17 +14,15 @@ options:
 
 settings:
   base:
-    # ── Change these two before building on your device ─────────────────────
-    DEVELOPMENT_TEAM: ""                     # your Apple Developer Team ID
-    APP_BUNDLE_ID: com.example.alarm         # must be unique to you
-    # ────────────────────────────────────────────────────────────────────────
+    # DEVELOPMENT_TEAM and APP_BUNDLE_ID come from Config/Signing.local.xcconfig.
+    # The App Group (where your data lives, shared with the widgets) follows the bundle ID.
     APP_GROUP_ID: group.$(APP_BUNDLE_ID)
     CODE_SIGN_STYLE: Automatic
     SWIFT_VERSION: "5.0"
     # Version: bump both for every release and add a matching entry to CHANGELOG.json
     # (Tests/run.sh fails if they don't match).
-    MARKETING_VERSION: "1.37.1"
-    CURRENT_PROJECT_VERSION: "88"
+    MARKETING_VERSION: "1.37.2"
+    CURRENT_PROJECT_VERSION: "89"
     # iPhone and iPad; the Mac app is the iPad build running on the Mac (Mac Catalyst), which
     # keeps AlarmKit alarms, widgets and Talk without a separate codebase.
     TARGETED_DEVICE_FAMILY: "1,2"

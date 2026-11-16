@@ -1,0 +1,14 @@
+// Signing for Alarmie. Don't put your own values here: create Config/Signing.local.xcconfig
+// (it's ignored by git, so updates never overwrite or conflict with it) containing:
+//
+//     DEVELOPMENT_TEAM = ABCDE12345
+//     APP_BUNDLE_ID = com.yourname.alarm
+//
+// Every build must keep the SAME team and bundle ID as the copy already on your phone. The App
+// Group (group.<bundle ID>) holds your alarms, to-dos and notes and is shared with the widgets; a
+// build with a different team or bundle ID can't see it, and the app opens empty.
+
+DEVELOPMENT_TEAM =
+APP_BUNDLE_ID = com.example.alarm
+
+#include? "Signing.local.xcconfig"

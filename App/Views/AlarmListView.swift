@@ -72,8 +72,9 @@ struct AlarmListView: View {
                 if !Backups.isSharedStorageAvailable {
                     Section {
                         PermissionBanner(
-                            title: "Widgets Can't See Your Data",
-                            message: "This copy of Alarmie was installed without its App Group. Your data isn't deleted: a properly signed build shows it again. See Settings → About & Updates."
+                            title: "This Build Can't Reach Your Data",
+                            message: "It was signed without Alarmie's App Group, so your saved alarms, to-dos and notes don't show and widgets don't update. Nothing is deleted: a build with the same bundle ID and team as before brings them back.",
+                            showsSettingsButton: false
                         )
                     }
                 }
@@ -318,6 +319,8 @@ private struct PermissionBanner: View {
     @Environment(\.openURL) private var openURL
     var title = "Alarms Are Off"
     var message = "Allow alarms in Settings so they can ring, even in Silent mode."
+    /// Off when there's nothing to change in the Settings app.
+    var showsSettingsButton = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -327,10 +330,12 @@ private struct PermissionBanner: View {
             Text(message)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-            Button("Open Settings") {
-                if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+            if showsSettingsButton {
+                Button("Open Settings") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                }
+                .font(.subheadline.weight(.semibold))
             }
-            .font(.subheadline.weight(.semibold))
         }
         .padding(.vertical, 4)
     }

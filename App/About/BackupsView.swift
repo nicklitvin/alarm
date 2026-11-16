@@ -11,10 +11,10 @@ struct DataSection: View {
                     .symbolRenderingMode(.multicolor)
             } else {
                 VStack(alignment: .leading, spacing: 4) {
-                    Label("Shared storage isn't available", systemImage: "exclamationmark.triangle.fill")
+                    Label("This build can't reach your data", systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
                         .font(.body.weight(.semibold))
-                    Text("This copy of Alarmie was installed without its App Group, so widgets can't see what you save here and data saved by other copies doesn't show. Nothing is deleted: install a properly signed build to see it again.")
+                    Text("It was signed without Alarmie's App Group (group.\(Bundle.main.bundleIdentifier ?? "…")), so your saved alarms, to-dos and notes don't show and widgets don't update. Nothing is deleted: a build with the same bundle ID and team as before brings them back.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
