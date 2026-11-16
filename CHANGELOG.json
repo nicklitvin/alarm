@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.37.1",
+      "build": 88,
+      "date": "2026-11-16",
+      "title": "Recently Deleted in Settings",
+      "notes": [
+        "Recently Deleted moved from the Notes page to Notes settings."
+      ]
+    },
+    {
       "version": "1.37.0",
       "build": 87,
       "date": "2026-11-15",

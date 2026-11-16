@@ -1,14 +1,13 @@
 import SwiftUI
 
 /// Notes you deleted, kept for 30 days: recover them or delete them for good.
+/// Opened from Notes settings.
 struct RecentlyDeletedView: View {
-    @Environment(NotesController.self) private var controller
-    @Environment(\.dismiss) private var dismiss
+    @State private var controller = NotesController.shared
     @State private var chosen: Note?
     @State private var confirmDeleteAll = false
 
     var body: some View {
-        NavigationStack {
             List {
                 Section {
                     ForEach(controller.deletedNotes) { note in
@@ -40,7 +39,7 @@ struct RecentlyDeletedView: View {
             .safeAreaInset(edge: .bottom) {
                 if !controller.deletedNotes.isEmpty {
                     HStack(spacing: 10) {
-                        Button { withAnimation { controller.recoverAll() }; dismiss() } label: {
+                        Button { withAnimation { controller.recoverAll() } } label: {
                             Text("Recover All").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 8)
                         }
                         .buttonStyle(.borderedProminent)
@@ -72,8 +71,7 @@ struct RecentlyDeletedView: View {
             } message: {
                 Text("This can't be undone.")
             }
-        }
-        .tint(.orange)
+            .tint(.orange)
     }
 
     private func row(_ note: Note) -> some View {

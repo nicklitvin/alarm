@@ -6,7 +6,6 @@ struct NotesListView: View {
     @State private var query = ""
     /// The note open beside the list (iPad and the Mac).
     @State private var selection: UUID?
-    @State private var showRecentlyDeleted = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     private var visible: [Note] {
@@ -80,25 +79,6 @@ struct NotesListView: View {
                     }
                 }
             }
-
-            // Deleted notes wait here for 30 days.
-            if !controller.deletedNotes.isEmpty {
-                Section {
-                    Button { showRecentlyDeleted = true } label: {
-                        HStack {
-                            Label("Recently Deleted", systemImage: "trash")
-                            Spacer()
-                            Text("\(controller.deletedNotes.count)")
-                                .foregroundStyle(.secondary)
-                            Image(systemName: "chevron.right")
-                                .font(.footnote.weight(.semibold))
-                                .foregroundStyle(.tertiary)
-                        }
-                        .contentShape(Rectangle())
-                    }
-                    .foregroundStyle(.primary)
-                }
-            }
         }
         .listStyle(.insetGrouped)
         .listSectionSpacing(.compact)
@@ -116,9 +96,7 @@ struct NotesListView: View {
             }
             .allowsHitTesting(false)
         }
-        .sheet(isPresented: $showRecentlyDeleted) {
-            RecentlyDeletedView()
-        }
+
         .navigationTitle("Notes")
         .toolbar(.hidden, for: .navigationBar)
         .safeAreaInset(edge: .top, spacing: 0) {

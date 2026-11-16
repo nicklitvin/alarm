@@ -120,7 +120,7 @@ read too. To make sure an update can never lose it:
 - **Shared storage check**: if this copy can't reach the App Group (signed without it), the Alarms
   tab and About say so. That's also why the widgets would stop matching the app.
 - **Notes: Recently Deleted**: deleted notes (and Delete All Notes) wait 30 days before they're
-  removed for good, and can be recovered (`NotesTrash` in `App/Notes/Note.swift`).
+  removed for good, and can be recovered from Notes settings → Recently Deleted (`NotesTrash` in `App/Notes/Note.swift`).
 
 When building for TestFlight or the App Store, keep the same bundle ID, team and App Group
 (`group.<bundle ID>`), or the new build can't see the data saved by the old one.

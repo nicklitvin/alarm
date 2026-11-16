@@ -620,3 +620,4 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .widget.split { gap: 10px; }
 .split-buttons { display: flex; gap: 8px; }
 .split-buttons .split-icon { width: 34px; height: 34px; border-radius: 17px; font-size: 15px; }
+.text-btn.red { color: var(--red); }

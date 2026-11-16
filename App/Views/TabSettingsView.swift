@@ -436,6 +436,24 @@ private struct NotesSettingsSection: View {
         } footer: {
             Text("Pinned notes always stay on top.")
         }
+
+        // Deleted notes wait here for 30 days.
+        Section {
+            NavigationLink {
+                RecentlyDeletedView()
+            } label: {
+                HStack {
+                    Label("Recently Deleted", systemImage: "trash")
+                    Spacer()
+                    if !notes.deletedNotes.isEmpty {
+                        Text("\(notes.deletedNotes.count)")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        } footer: {
+            Text("Deleted notes can be recovered for 30 days.")
+        }
     }
 }
 

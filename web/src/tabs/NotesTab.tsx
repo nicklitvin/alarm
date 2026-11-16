@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { SwipeRow } from '../components/SwipeRow'
-import { Alert, BottomAction, Section, Sheet, TabHeader } from '../components/ui'
-import { firstLineCaret, checklistProgress, checklistReturn, lineBounds, lineKind, noteCopyText, notePreview, noteTitle, sortNotes, toggleItem, toggleList, autoBullet, uid, trashNote, trashDaysLeft, type ListStyle, type Note } from '../logic/model'
+import { Alert, BottomAction, Section, TabHeader } from '../components/ui'
+import { firstLineCaret, checklistProgress, checklistReturn, lineBounds, lineKind, noteCopyText, notePreview, noteTitle, sortNotes, toggleItem, toggleList, autoBullet, uid, trashNote, type ListStyle, type Note } from '../logic/model'
 import { useWide } from '../logic/layout'
 import { useStore } from '../logic/store'
 
@@ -47,8 +47,6 @@ export function NotesTab() {
   const q = query.trim().toLowerCase()
   // Deleted notes wait in Recently Deleted for 30 days.
   const live = data.notes.filter((n) => !n.deletedAt)
-  const deleted = data.notes.filter((n) => n.deletedAt).sort((a, b) => (b.deletedAt ?? 0) - (a.deletedAt ?? 0))
-  const [showTrash, setShowTrash] = useState(false)
   const visible = sortNotes(live, sort).filter((n) => !q || n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q))
 
   const openNote = openID ? data.notes.find((n) => n.id === openID) : undefined
@@ -97,31 +95,6 @@ export function NotesTab() {
       </div>
       {pinned.length > 0 && <Section header="Pinned">{pinned.map(row)}</Section>}
       {others.length > 0 && <Section header={pinned.length ? 'Notes' : undefined}>{others.map(row)}</Section>}
-      {deleted.length > 0 && (
-        <Section>
-          <button className="row tappable" style={{ width: '100%', textAlign: 'left' }} onClick={() => setShowTrash(true)}>
-            <span>🗑</span><span className="grow">Recently Deleted</span><span className="muted">{deleted.length} ›</span>
-          </button>
-        </Section>
-      )}
-      {showTrash && (
-        <Sheet title="Recently Deleted" onClose={() => setShowTrash(false)}>
-          <Section footer="Notes are removed for good 30 days after you delete them. Swipe right to recover, left to delete.">
-            {deleted.map((n) => (
-              <SwipeRow key={n.id}
-                leading={{ label: 'Recover', color: 'var(--orange)', onAction: () => setNotes((ns) => ns.map((x) => (x.id === n.id ? { ...x, deletedAt: undefined } : x))) }}
-                trailing={{ label: 'Delete', color: 'var(--red)', onAction: () => setNotes((ns) => ns.filter((x) => x.id !== n.id)) }}>
-                <div className="grow">
-                  <div className="ellipsis" style={{ fontWeight: 600 }}>{noteTitle(n)}</div>
-                  <div className="sub ellipsis">{trashDaysLeft(n, now)} days left <span style={{ color: 'var(--tertiary)' }}>{notePreview(n)}</span></div>
-                </div>
-                <button className="text-btn" onClick={(e) => { e.stopPropagation(); setNotes((ns) => ns.map((x) => (x.id === n.id ? { ...x, deletedAt: undefined } : x))) }}>Recover</button>
-              </SwipeRow>
-            ))}
-            {deleted.length === 0 && <div className="row muted">No recently deleted notes</div>}
-          </Section>
-        </Sheet>
-      )}
       {live.length === 0 && <div className="talk-empty" style={{ paddingTop: 80 }}><div className="big">🗒</div><h3>No Notes</h3></div>}
       {live.length > 0 && visible.length === 0 && <div className="talk-empty" style={{ paddingTop: 60 }}>No results for “{query}”</div>}
       <BottomAction label="New Note" onClick={newNote} />

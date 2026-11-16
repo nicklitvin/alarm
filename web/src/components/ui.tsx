@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import changelog from '../../../CHANGELOG.json'
 import {
-  applyQuickTime, cleanQuickTimes, compactDuration, dueDescription, newTimerChoices, dueSuggestions, leadTimeName, quickTimeLabel, timeOf, type NotesSort, type Settings,
+  applyQuickTime, cleanQuickTimes, compactDuration, dueDescription, newTimerChoices, dueSuggestions, leadTimeName, quickTimeLabel, timeOf, noteTitle, notePreview, trashDaysLeft, type NotesSort, type Settings,
 } from '../logic/model'
 import { useStore, type Tab } from '../logic/store'
 
@@ -392,14 +392,17 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
         </Section>
       )}
       {tab === 'notes' && (
-        <Section header="Sort By" footer="Pinned notes always stay on top.">
-          {(['edited', 'created', 'title'] as NotesSort[]).map((sort) => (
-            <button key={sort} className="row tappable" style={{ width: '100%', textAlign: 'left' }} onClick={() => set('notesSort', sort)}>
-              <span className="grow">{{ edited: 'Date Edited', created: 'Date Created', title: 'Title' }[sort]}</span>
-              {s.notesSort === sort && <span className="orange">✓</span>}
-            </button>
-          ))}
-        </Section>
+        <>
+          <Section header="Sort By" footer="Pinned notes always stay on top.">
+            {(['edited', 'created', 'title'] as NotesSort[]).map((sort) => (
+              <button key={sort} className="row tappable" style={{ width: '100%', textAlign: 'left' }} onClick={() => set('notesSort', sort)}>
+                <span className="grow">{{ edited: 'Date Edited', created: 'Date Created', title: 'Title' }[sort]}</span>
+                {s.notesSort === sort && <span className="orange">✓</span>}
+              </button>
+            ))}
+          </Section>
+          <RecentlyDeleted />
+        </>
       )}
       {tab === 'talk' && (
         <>
@@ -444,5 +447,32 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
         </button>
       </Section>
     </Sheet>
+  )
+}
+
+/** Notes settings → Recently Deleted: deleted notes wait 30 days; recover or delete them. */
+function RecentlyDeleted() {
+  const { data, update, now } = useStore()
+  const [open, setOpen] = useState(false)
+  const deleted = data.notes.filter((n) => n.deletedAt).sort((a, b) => (b.deletedAt ?? 0) - (a.deletedAt ?? 0))
+  const setDeleted = (id: string, recover: boolean) =>
+    update((d) => ({ ...d, notes: recover ? d.notes.map((n) => (n.id === id ? { ...n, deletedAt: undefined } : n)) : d.notes.filter((n) => n.id !== id) }))
+  return (
+    <Section footer="Deleted notes can be recovered for 30 days.">
+      <button className="row tappable" style={{ width: '100%', textAlign: 'left' }} onClick={() => setOpen(!open)}>
+        <span>🗑</span><span className="grow">Recently Deleted</span><span className="muted">{deleted.length || ''} {open ? '⌄' : '›'}</span>
+      </button>
+      {open && deleted.map((n) => (
+        <div className="row" key={n.id}>
+          <div className="grow" style={{ minWidth: 0 }}>
+            <div className="ellipsis" style={{ fontWeight: 600 }}>{noteTitle(n)}</div>
+            <div className="sub ellipsis">{trashDaysLeft(n, now)} days left <span style={{ color: 'var(--tertiary)' }}>{notePreview(n)}</span></div>
+          </div>
+          <button className="text-btn" onClick={() => setDeleted(n.id, true)}>Recover</button>
+          <button className="text-btn red" onClick={() => setDeleted(n.id, false)}>Delete</button>
+        </div>
+      ))}
+      {open && deleted.length === 0 && <div className="row muted">No recently deleted notes</div>}
+    </Section>
   )
 }
