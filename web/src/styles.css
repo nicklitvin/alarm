@@ -632,3 +632,10 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .timer-banner .tb-time.orange { color: var(--orange); }
 .timer-banner .tb-btn { width: 34px; height: 34px; border-radius: 17px; background: color-mix(in srgb, var(--orange) 15%, transparent); color: var(--orange); font-size: 13px; font-weight: 700; }
 .timer-banner .grow { flex: 1; min-width: 0; }
+
+/* Pictures in notes (preview): a chip on the picture's line; the pictures below the text. */
+.note-backdrop .img-line { position: relative; }
+.note-backdrop .img-token { color: transparent; }
+.note-backdrop .img-chip { position: absolute; left: 0; top: 0; font-size: 14px; font-weight: 600; color: var(--orange); background: color-mix(in srgb, var(--orange) 14%, transparent); padding: 1px 8px; border-radius: 6px; }
+.note-pictures { display: flex; flex-direction: column; gap: 10px; padding: 12px 20px 24px; }
+.note-pictures img { width: 100%; max-height: 420px; object-fit: contain; border-radius: 12px; background: var(--fill); }

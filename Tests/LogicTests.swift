@@ -466,6 +466,25 @@ check(NoteChecklist.appending("bread\neggs", to: "1. milk") == "1. milk\n2. brea
 check(NoteChecklist.firstLineCaret(in: "1. milk") == 3, "Return in the title: after the first number")
 check(NoteChecklist.toggleItem(in: "1. a", at: 0) == nil, "numbers aren't checkboxes")
 
+// Pictures in notes
+let picID = UUID(uuidString: "11111111-2222-3333-4444-555555555555")!
+let picToken = NoteImageText.token(picID)
+let pasteEnd = NoteImageText.inserting(picID, into: "Hello", at: 5)
+check(pasteEnd.text == "Hello\n\(picToken)\n" && pasteEnd.caret == (pasteEnd.text as NSString).length, "pasting at the end: picture on its own line, cursor below")
+let pasteMid = NoteImageText.inserting(picID, into: "ab", at: 1)
+check(pasteMid.text == "a\n\(picToken)\nb", "pasting mid-line splits the line around the picture")
+check(NoteImageText.inserting(picID, into: "", at: 0).text == "\(picToken)\n", "pasting into an empty note")
+let picNote = "a\n\(picToken)\nb"
+check(NoteImageText.images(in: picNote).map(\.id) == [picID] && NoteImageText.ids(in: picNote) == [picID], "finds the picture line")
+check(NoteImageText.images(in: "say [image:not-a-uuid] here").isEmpty, "only exact picture lines count")
+let tokenLen = (picToken as NSString).length
+let backspaceBelow = NoteImageText.expandedDeletion(NSRange(location: 2 + tokenLen, length: 1), in: picNote)
+check(backspaceBelow.map { (picNote as NSString).replacingCharacters(in: $0, with: "") } == "a\nb", "backspace on the line below removes the whole picture")
+check(NoteImageText.expandedDeletion(NSRange(location: 0, length: 1), in: picNote) == nil, "deleting other text is left alone")
+check(NoteImageText.imageLine(containing: 5, in: picNote) != nil && NoteImageText.imageLine(containing: 2, in: picNote) == nil, "the cursor is inside a picture line")
+check(NoteImageText.readable(picNote) == "a\n[Image]\nb", "previews and copying say [Image]")
+check(Note(title: "", body: "\(picToken)\nhi").displayTitle == "[Image]" && Note(title: "T", body: picNote).copyText == "T\n\na\n[Image]\nb", "titles and copied text never show the file ID")
+
 // Recently Deleted (notes)
 let trashNow = Date(timeIntervalSince1970: 1_800_000_000)
 var oldDeleted = Note(title: "Old"); oldDeleted.deletedAt = trashNow.addingTimeInterval(-31 * 86400)

@@ -413,10 +413,25 @@ export function applyQuickTime(date: number, minutes: number, now: number) {
 
 // MARK: - Notes
 
-export const noteTitle = (n: Note) => n.title.trim() || n.body.split('\n').find((l) => l.trim())?.trim() || 'New Note'
+export const noteTitle = (n: Note) => n.title.trim() || readableNote(n.body).split('\n').find((l) => l.trim())?.trim() || 'New Note'
+
+// Pictures in notes (NoteImageText in App/Notes/Note.swift): a line of its own, "[image:<id>]".
+const IMAGE_LINE = /^\[image:([A-Za-z0-9-]+)\]$/
+export const imageToken = (id: string) => `[image:${id}]`
+export const imageIdInLine = (line: string) => line.match(IMAGE_LINE)?.[1] ?? null
+export const noteImageIds = (body: string) => body.split('\n').map(imageIdInLine).filter((x): x is string => !!x)
+/** "[Image]" instead of the picture's ID, for previews and copying. */
+export const readableNote = (body: string) => body.split('\n').map((l) => (imageIdInLine(l) ? '[Image]' : l)).join('\n')
+/** Pasting a picture: on a line of its own, with the cursor on the line below. */
+export function insertImage(text: string, id: string, at: number): { text: string; caret: number } {
+  const before = at > 0 && text[at - 1] !== '\n' ? '\n' : ''
+  const after = at < text.length && text[at] === '\n' ? '' : '\n'
+  const out = text.slice(0, at) + before + imageToken(id) + after + text.slice(at)
+  return { text: out, caret: Math.min(out.length, at + before.length + imageToken(id).length + 1) }
+}
 
 export function notePreview(n: Note) {
-  const lines = n.body.split('\n').map((l) => (l.startsWith('☐ ') || l.startsWith('☑ ') ? l.slice(2) : l).trim()).filter(Boolean)
+  const lines = readableNote(n.body).split('\n').map((l) => (l.startsWith('☐ ') || l.startsWith('☑ ') ? l.slice(2) : l).trim()).filter(Boolean)
   if (!n.title.trim() && lines.length) lines.shift()
   return lines.join(' ')
 }
@@ -520,7 +535,7 @@ export function checklistProgress(body: string) {
   return kinds.length ? { done: kinds.filter((k) => k === 'checked').length, total: kinds.length } : null
 }
 
-export const noteCopyText = (n: Note) => [n.title.trim(), n.body.trim()].filter(Boolean).join('\n\n')
+export const noteCopyText = (n: Note) => [n.title.trim(), readableNote(n.body).trim()].filter(Boolean).join('\n\n')
 
 export function sortNotes(notes: Note[], sort: NotesSort) {
   return [...notes].sort((a, b) => {

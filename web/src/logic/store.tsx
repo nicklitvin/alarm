@@ -22,6 +22,8 @@ export interface AppData {
   notes: Note[]
   chat: ChatMessage[]
   settings: Settings
+  /** Pictures pasted into notes, by ID (small JPEG data URLs; the app saves files). */
+  noteImages?: Record<string, string>
 }
 
 const STORAGE_KEY = 'alarm-web-preview-v1'

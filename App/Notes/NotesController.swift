@@ -16,6 +16,8 @@ final class NotesController {
         let stored = NoteStorage.load()
         notes = NotesTrash.purged(stored)
         if notes.count != stored.count { NoteStorage.save(notes) }
+        // Pictures no note uses any more (Recently Deleted counts as used).
+        NoteImageStore.removeUnused(keeping: notes.reduce(into: Set<UUID>()) { $0.formUnion(NoteImageText.ids(in: $1.body)) })
         // An old "Manual" choice no longer exists: it falls back to Date Edited.
         sort = NotesSort(rawValue: AppSettings.store.string(forKey: AppSettings.notesSortKey) ?? "") ?? .edited
     }

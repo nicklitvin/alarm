@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { SwipeRow } from '../components/SwipeRow'
 import { Alert, BottomAction, Section, TabHeader } from '../components/ui'
-import { firstLineCaret, checklistProgress, checklistReturn, lineBounds, lineKind, noteCopyText, notePreview, noteTitle, sortNotes, toggleItem, toggleList, autoBullet, uid, trashNote, type ListStyle, type Note } from '../logic/model'
+import { firstLineCaret, checklistProgress, checklistReturn, lineBounds, lineKind, noteCopyText, notePreview, noteTitle, sortNotes, toggleItem, toggleList, autoBullet, uid, imageIdInLine, insertImage, noteImageIds, trashNote, type ListStyle, type Note } from '../logic/model'
 import { useWide } from '../logic/layout'
 import { useStore } from '../logic/store'
 
@@ -115,7 +115,7 @@ export function NotesTab() {
 
 function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
   const besideList = useWide()
-  const { update } = useStore()
+  const { data, update } = useStore()
   const { copied, copy } = useCopy()
   const [confirm, setConfirm] = useState<'clear' | 'delete' | null>(null)
   const [typing, setTyping] = useState(false)
@@ -195,11 +195,27 @@ function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
           <div className="note-backdrop" aria-hidden>
             {note.body.split('\n').map((line, i) => {
               const kind = lineKind(line)
+              // A picture line: its text stays (invisible) so wrapping matches; a chip sits on it.
+              if (imageIdInLine(line)) return <div key={i} className="img-line"><span className="img-token">{line}</span><span className="img-chip">🖼 Image</span></div>
               return <div key={i}>{kind === 'plain' || kind === 'bullet' ? (line || '\u200b')
                 : <><span className={`box ${kind}`}>{line[0]}</span> <span className={kind === 'checked' ? 'done' : ''}>{line.slice(2) || '\u200b'}</span></>}</div>
             })}
           </div>
           <textarea ref={body} placeholder="Start writing…" value={note.body} onChange={(e) => edit({ body: e.target.value })}
+            onPaste={(e) => {
+              // Pasting a picture: saved (small) and put on a line of its own.
+              const file = [...e.clipboardData.items].find((item) => item.type.startsWith('image/'))?.getAsFile()
+              if (!file) return
+              e.preventDefault()
+              const t = e.currentTarget
+              const at = t.selectionStart, end = t.selectionEnd
+              shrinkImage(file).then((url) => {
+                const id = uid()
+                const r = insertImage(t.value.slice(0, at) + t.value.slice(end), id, at)
+                update((d) => ({ ...d, noteImages: { ...(d.noteImages ?? {}), [id]: url } }))
+                setBody(r.text, r.caret)
+              })
+            }}
             onKeyDown={(e) => {
               const t = e.currentTarget
               if (t.selectionStart !== t.selectionEnd) return
@@ -218,6 +234,12 @@ function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
               if (toggled !== null) setBody(toggled, s + 2)
             }} />
         </div>
+        {/* The pictures themselves (the app shows them inline, on their lines). */}
+        {noteImageIds(note.body).length > 0 && (
+          <div className="note-pictures">
+            {noteImageIds(note.body).map((id) => data.noteImages?.[id] && <img key={id} src={data.noteImages[id]} alt="" />)}
+          </div>
+        )}
       </div>
       {/* Floating above the keyboard: one list button (numbered, bulleted or checklist), and while typing a checkmark that finishes. */}
       <div className="float-check-wrap">
@@ -238,4 +260,22 @@ function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
       </div>
     </>
   )
+}
+
+/** A pasted picture as a small JPEG data URL (at most 900 px), so it fits in the preview's storage. */
+function shrinkImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      const scale = Math.min(1, 900 / Math.max(img.width, img.height))
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.round(img.width * scale)
+      canvas.height = Math.round(img.height * scale)
+      canvas.getContext('2d')?.drawImage(img, 0, 0, canvas.width, canvas.height)
+      URL.revokeObjectURL(img.src)
+      resolve(canvas.toDataURL('image/jpeg', 0.8))
+    }
+    img.onerror = reject
+    img.src = URL.createObjectURL(file)
+  })
 }

@@ -11,7 +11,7 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 - **Dismiss in the app.** From 12 hours before an alarm (Alarm settings → Show Alarm: any number of hours from 1 to 24), a card at the top of the Alarms tab has a **Dismiss** button (the widgets offer it too). Once dismissed, the card goes away.
 - **Timers tab.** Your running timers, and a **Stopwatch** (button next to New Timer) with laps that keeps counting while the app is closed. **New Timer** opens a sheet with hour, minute and second wheels, three one-tap quick times (5, 10 and 15 min to start; change them in Timer settings, or turn on **Use Recent Times** to get your last three times instead), and a label. Timers ring through Silent mode and show a countdown on the lock screen and in the Dynamic Island, with Pause and Cancel buttons.
 - **To-Do tab.** Add a to-do and tap a suggested time ("In 1 hour", "Tonight", "Tomorrow morning", …) or pick a custom time and date. Under the deadline, three one-tap quick times (8 AM, 2 PM and 9 PM to start) can be changed in To-Do settings. Tap **New To-Do** to open a sheet like Add Alarm: title, details and an optional deadline, then **Add To-Do**. Edit any to-do right in the list, and tap 📅 for the deadline (your quick times, or any date and time). You get a notification at the deadline with **Mark as Done**, **Remind Me in 1 Hour** and **Remind Me Tomorrow** buttons. To-dos are one simple list: press and hold one and drag it to rearrange. New to-dos slot in by deadline. Completed ones sit in a compact list at the bottom.
-- **Notes tab.** Searchable notes. Inside a note: **Copy All**, **Clear** (removes the text, keeps the title) and **Delete**. Tap the checklist button to make a to-do list inside a note (tap a box to check it off), or the bullet button for a bulleted list (or type "- "). Return starts the next item. Pin notes to the top (swipe right) and sort by date edited, date created or title. The assistant can read them ("what's on my packing note?") and write to them ("add charger to my packing note").
+- **Notes tab.** Searchable notes. Inside a note: **Copy All**, **Clear** (removes the text, keeps the title) and **Delete**. The list button makes a numbered list, a bulleted list (or type "- ") or a checklist (tap a box to check it off); Return starts the next item. **Paste pictures** right into a note: each sits on a line of its own, full width, and Backspace on the line below removes it. Pin notes to the top (swipe right) and sort by date edited, date created or title. Deleted notes wait in Notes settings → Recently Deleted for 30 days.
 - **Widgets.**
   - **Up Next:** home screen (medium, large) and lock screen. Your next alarm sits on top with a **Dismiss** button from 12 hours before it rings (change it in Alarm settings → Show Alarm), followed by running timers and to-dos, most urgent first. Tap anything to open its tab, or tap a to-do's circle to check it off. The title shows how many to-dos you have, and the waveform button in the bottom-right corner (medium and large) opens Talk.
   - **Next Alarm:** home screen (small: the next alarm with a full-width **Dismiss** button) and lock screen (circular, rectangular, inline; zzz until the alarm is within the Show Alarm window). Tap it to open the Alarms tab.
@@ -82,6 +82,7 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 | To-Do tab and suggested times | `App/Todos/` |
 | Up Next widget (what's relevant now) | `Shared/UpNext.swift`, `Widget/UpNextWidget.swift` |
 | Notes tab | `App/Notes/` |
+| Pictures in notes: a hidden "[image:<id>]" line in the text (`NoteImageText`), the file in the App Group (`NoteImageStore`), drawn over its line by the editor | `App/Notes/Note.swift`, `App/Notes/NoteImageStore.swift`, `App/Notes/NoteBodyEditor.swift` |
 | Version check, What's New, patch notes | `App/About/`, `CHANGELOG.json` |
 | Siri and Shortcuts | `Shared/AssistantIntents.swift`, `App/Talk/AssistantShortcuts.swift` |
 | Lock screen widget | `Widget/NextAlarmWidget.swift` |
@@ -120,6 +121,8 @@ read too. To make sure an update can never lose it:
   otherwise open empty.
 - **Restore by hand**: Settings → About & Updates → Backups lists every backup ("3 alarms · 8 to-dos
   · 5 notes") and restores one (what you have is backed up first).
+- Backups hold the notes' text; pasted pictures are files in the App Group's `NoteImages` folder
+  (not in the backups). Pictures no note uses any more are removed at launch.
 - **Notes: Recently Deleted**: deleted notes (and Delete All Notes) wait 30 days before they're
   removed for good, and can be recovered from Notes settings → Recently Deleted (`NotesTrash` in `App/Notes/Note.swift`).
 

@@ -49,7 +49,7 @@ struct Note: Identifiable, Codable, Hashable, Sendable {
     var displayTitle: String {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty { return trimmed }
-        let firstLine = body.split(whereSeparator: \.isNewline).first.map(String.init)?
+        let firstLine = NoteImageText.readable(body).split(whereSeparator: \.isNewline).first.map(String.init)?
             .trimmingCharacters(in: .whitespaces) ?? ""
         return firstLine.isEmpty ? "New Note" : firstLine
     }
@@ -57,7 +57,7 @@ struct Note: Identifiable, Codable, Hashable, Sendable {
     /// Body text for the list, skipping a first line already used as the title.
     var preview: String {
         // Checklist boxes are left out; the list shows the checklist's progress instead.
-        var lines = body.split(whereSeparator: \.isNewline)
+        var lines = NoteImageText.readable(body).split(whereSeparator: \.isNewline)
             .map { line -> String in
                 let text = String(line)
                 let kind = NoteChecklist.kind(of: text)
@@ -72,7 +72,7 @@ struct Note: Identifiable, Codable, Hashable, Sendable {
     /// What "Copy All" puts on the clipboard.
     var copyText: String {
         let t = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let b = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        let b = NoteImageText.readable(body).trimmingCharacters(in: .whitespacesAndNewlines)
         if t.isEmpty { return b }
         if b.isEmpty { return t }
         return "\(t)\n\n\(b)"
@@ -107,6 +107,80 @@ enum NotesSort: String, CaseIterable, Identifiable, Sendable {
                 return order != .orderedSame ? order == .orderedAscending : a.updatedAt > b.updatedAt
             }
         }
+    }
+}
+
+/// Pictures in notes. A picture is saved as a file (`NoteImageStore`) and sits in the note's text as
+/// a line of its own, "[image:<UUID>]". The editor hides that line and draws the picture over it
+/// (like the round checkboxes over "☐"), so lists, Return and copying keep working on plain text.
+enum NoteImageText {
+    static func token(_ id: UUID) -> String { "[image:\(id.uuidString)]" }
+
+    private static let prefix = "[image:"
+
+    /// The picture on a line, if the line is exactly a picture token.
+    static func imageID(inLine line: String) -> UUID? {
+        guard line.hasPrefix(prefix), line.hasSuffix("]") else { return nil }
+        return UUID(uuidString: String(line.dropFirst(prefix.count).dropLast()))
+    }
+
+    /// Every picture line (range without its line break) and its picture.
+    static func images(in text: String) -> [(range: NSRange, id: UUID)] {
+        guard text.contains(prefix) else { return [] }
+        let ns = text as NSString
+        return NoteChecklist.lines(in: text).compactMap { line in
+            imageID(inLine: ns.substring(with: line.range)).map { (line.range, $0) }
+        }
+    }
+
+    static func ids(in text: String) -> Set<UUID> { Set(images(in: text).map(\.id)) }
+
+    /// Pasting a picture at `location`: it goes on a line of its own, and the cursor ends up on the
+    /// line below it, ready to keep writing.
+    static func inserting(_ id: UUID, into text: String, at location: Int) -> (text: String, caret: Int) {
+        let ns = text as NSString
+        let location = max(0, min(location, ns.length))
+        let before = location > 0 && ns.character(at: location - 1) != 10 ? "\n" : ""
+        let after = location < ns.length && ns.character(at: location) == 10 ? "" : "\n"
+        let insert = before + token(id) + after
+        let newText = ns.replacingCharacters(in: NSRange(location: location, length: 0), with: insert)
+        let caret = location + (before as NSString).length + (token(id) as NSString).length + 1
+        return (newText, min(caret, (newText as NSString).length))
+    }
+
+    /// Deleting next to or inside a picture removes the whole picture line (and one line break),
+    /// never just part of it. Nil when the deletion doesn't touch a picture.
+    static func expandedDeletion(_ range: NSRange, in text: String) -> NSRange? {
+        let ns = text as NSString
+        var result: NSRange?
+        for image in images(in: text) {
+            let line = image.range
+            let hasBreakAfter = NSMaxRange(line) < ns.length
+            // The line plus its line break (after it, or before it for the last line).
+            let whole = hasBreakAfter
+                ? NSRange(location: line.location, length: line.length + 1)
+                : NSRange(location: max(0, line.location - 1), length: line.length + (line.location > 0 ? 1 : 0))
+            let touchesLine = NSIntersectionRange(range, line).length > 0
+                || (range.length == 0 && range.location > line.location && range.location <= NSMaxRange(line))
+            // Backspace at the start of the line below deletes the break right after the picture.
+            let deletesBreakAfter = hasBreakAfter && NSIntersectionRange(range, NSRange(location: NSMaxRange(line), length: 1)).length > 0
+            guard touchesLine || deletesBreakAfter else { continue }
+            result = NSUnionRange(result ?? range, whole)
+        }
+        return result
+    }
+
+    /// The picture line the cursor is inside (typing there would break it), if any.
+    static func imageLine(containing location: Int, in text: String) -> NSRange? {
+        images(in: text).first { location > $0.range.location && location <= NSMaxRange($0.range) }?.range
+    }
+
+    /// For previews, copying and the assistant: "[Image]" instead of the file's ID.
+    static func readable(_ text: String) -> String {
+        guard text.contains(prefix) else { return text }
+        return text.components(separatedBy: "\n")
+            .map { imageID(inLine: $0) == nil ? $0 : "[Image]" }
+            .joined(separator: "\n")
     }
 }
 

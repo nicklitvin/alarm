@@ -520,7 +520,8 @@ struct ReadNoteTool: Tool {
             switch AssistantMatching.note(matching: arguments.note, in: notes) {
             case .found(let note):
                 TalkModel.shared.addEvent("Read note · \(note.displayTitle)", systemImage: "note.text", link: .note(note.id))
-                let body = note.body.count > 2_000 ? String(note.body.prefix(2_000)) + "…" : note.body
+                let text = NoteImageText.readable(note.body)
+                let body = text.count > 2_000 ? String(text.prefix(2_000)) + "…" : text
                 return "Note \"\(note.displayTitle)\":\n\(body)"
             case .none:
                 return "No note matches \"\(arguments.note)\". Notes: " + AssistantText.noteList(notes)

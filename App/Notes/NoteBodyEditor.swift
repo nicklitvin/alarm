@@ -19,10 +19,88 @@ final class NoteEditorCommands {
 /// characters stay in the text, invisible, so the note's text and copying are unchanged.
 final class ChecklistTextView: UITextView {
     private var circles: [UIImageView] = []
+    /// Pictures, drawn over their hidden "[image:…]" lines.
+    private var pictures: [UIImageView] = []
+    private var lastWidth: CGFloat = 0
+
+    /// Pasting a picture (the coordinator saves it and puts it in the text).
+    var onPasteImage: ((UIImage) -> Void)?
+    /// The width changed (rotation, Split View): pictures need new heights.
+    var onWidthChange: (() -> Void)?
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        if bounds.width != lastWidth {
+            lastWidth = bounds.width
+            onWidthChange?()
+        }
         updateCircles()
+        updatePictures()
+    }
+
+    // MARK: Pasting pictures
+
+    override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
+        if action == #selector(paste(_:)), UIPasteboard.general.hasImages { return true }
+        return super.canPerformAction(action, withSender: sender)
+    }
+
+    override func paste(_ sender: Any?) {
+        if UIPasteboard.general.hasImages, let image = UIPasteboard.general.image {
+            onPasteImage?(image)
+        } else {
+            super.paste(sender)
+        }
+    }
+
+    // MARK: Showing pictures
+
+    /// The width pictures are shown at: the text's width.
+    var pictureWidth: CGFloat { max(120, bounds.width - textContainerInset.left - textContainerInset.right) }
+
+    /// A picture's size in the note: the text's width, at most 420 pt tall.
+    static func pictureSize(for image: UIImage, width: CGFloat) -> CGSize {
+        guard image.size.width > 0, image.size.height > 0 else { return CGSize(width: width, height: 200) }
+        let height = width * image.size.height / image.size.width
+        return height <= 420 ? CGSize(width: width, height: height)
+            : CGSize(width: width * 420 / height, height: 420)
+    }
+
+    /// Puts each picture over its line (the line is as tall as the picture; see restyle).
+    func updatePictures() {
+        let lines = NoteImageText.images(in: text ?? "")
+        while pictures.count < lines.count {
+            let view = UIImageView()
+            view.contentMode = .scaleAspectFill
+            view.clipsToBounds = true
+            view.layer.cornerRadius = 12
+            view.layer.cornerCurve = .continuous
+            view.isUserInteractionEnabled = false
+            addSubview(view)
+            pictures.append(view)
+        }
+        for (index, view) in pictures.enumerated() {
+            guard index < lines.count,
+                  let image = NoteImageStore.image(lines[index].id),
+                  let top = lineTop(atOffset: lines[index].range.location) else {
+                view.isHidden = true
+                continue
+            }
+            view.image = image
+            let size = Self.pictureSize(for: image, width: pictureWidth)
+            view.frame = CGRect(x: textContainerInset.left, y: top + 4, width: size.width, height: size.height)
+            view.isHidden = false
+        }
+    }
+
+    /// The top (in this view's coordinates) of the line that starts at `offset`.
+    private func lineTop(atOffset offset: Int) -> CGFloat? {
+        guard let layout = textLayoutManager,
+              let content = layout.textContentManager,
+              let location = content.location(content.documentRange.location, offsetBy: offset) else { return nil }
+        layout.ensureLayout(for: NSTextRange(location: location))
+        guard let fragment = layout.textLayoutFragment(for: location) else { return nil }
+        return fragment.layoutFragmentFrame.minY + textContainerInset.top
     }
 
     /// Puts a circle (or a filled orange checkmark) over each checklist item's box.
@@ -99,6 +177,8 @@ struct NoteBodyEditor: UIViewRepresentable {
 
         context.coordinator.textView = view
         commands.coordinator = context.coordinator
+        view.onPasteImage = { [weak coordinator = context.coordinator] image in coordinator?.pasteImage(image) }
+        view.onWidthChange = { [weak coordinator = context.coordinator] in coordinator?.restyle() }
         view.text = text
         context.coordinator.restyle()
         return view
@@ -147,6 +227,30 @@ struct NoteBodyEditor: UIViewRepresentable {
         }
 
         func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText replacement: String) -> Bool {
+            let text = textView.text ?? ""
+            // A picture is deleted whole (its hidden "[image:…]" line), never a few characters of it.
+            if replacement.isEmpty, let expanded = NoteImageText.expandedDeletion(range, in: text), expanded != range {
+                replace(with: (text as NSString).replacingCharacters(in: expanded, with: ""), caret: expanded.location)
+                return false
+            }
+            // Typing on a picture's line goes on a line of its own, below it (or above, at its start).
+            if !replacement.isEmpty, range.length == 0,
+               let line = NoteImageText.images(in: text).first(where: { range.location >= $0.range.location && range.location <= NSMaxRange($0.range) })?.range {
+                let ns = text as NSString
+                if range.location == line.location {
+                    let insert = replacement == "\n" ? "\n" : replacement + "\n"
+                    replace(with: ns.replacingCharacters(in: NSRange(location: line.location, length: 0), with: insert),
+                            caret: line.location + (insert as NSString).length - 1)
+                } else if NSMaxRange(line) < ns.length {
+                    let at = NSMaxRange(line) + 1
+                    replace(with: ns.replacingCharacters(in: NSRange(location: at, length: 0), with: replacement),
+                            caret: at + (replacement as NSString).length)
+                } else {
+                    let newText = text + "\n" + (replacement == "\n" ? "" : replacement)
+                    replace(with: newText, caret: (newText as NSString).length)
+                }
+                return false
+            }
             guard range.length == 0 else { return true }
             if replacement == "\n", let result = NoteChecklist.handleReturn(in: textView.text, at: range.location) {
                 replace(with: result.text, caret: result.caret)
@@ -157,6 +261,16 @@ struct NoteBodyEditor: UIViewRepresentable {
                 return false
             }
             return true
+        }
+
+        /// Paste: the picture is saved and goes on a line of its own at the cursor.
+        func pasteImage(_ image: UIImage) {
+            guard let textView, let id = NoteImageStore.save(image) else { return }
+            var text = textView.text ?? ""
+            let selection = textView.selectedRange
+            if selection.length > 0 { text = (text as NSString).replacingCharacters(in: selection, with: "") }
+            let result = NoteImageText.inserting(id, into: text, at: selection.location)
+            replace(with: result.text, caret: result.caret)
         }
 
         func toggleList(_ style: NoteChecklist.ListStyle) {
@@ -256,6 +370,19 @@ struct NoteBodyEditor: UIViewRepresentable {
                                            .foregroundColor: UIColor.secondaryLabel],
                                           range: NSRange(location: line.range.location + NoteChecklist.prefixLength,
                                                          length: line.range.length - NoteChecklist.prefixLength))
+                }
+            }
+            // Picture lines: their "[image:…]" text is hidden and the line is as tall as the
+            // picture drawn over it.
+            if let checklistView = textView as? ChecklistTextView {
+                for picture in NoteImageText.images(in: text) {
+                    guard let image = NoteImageStore.image(picture.id) else { continue }
+                    let height = ChecklistTextView.pictureSize(for: image, width: checklistView.pictureWidth).height + 8
+                    let style = NSMutableParagraphStyle()
+                    style.minimumLineHeight = height
+                    style.maximumLineHeight = height
+                    storage.addAttributes([.foregroundColor: UIColor.clear, .font: UIFont.systemFont(ofSize: 2),
+                                           .paragraphStyle: style], range: picture.range)
                 }
             }
             storage.endEditing()

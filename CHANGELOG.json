@@ -1,6 +1,16 @@
 {
   "releases": [
     {
+      "version": "1.39.0",
+      "build": 92,
+      "date": "2026-11-17",
+      "title": "Pictures in Notes",
+      "notes": [
+        "Paste pictures into your notes. Each one sits on its own line at the full width of the note.",
+        "Backspace on the line below a picture removes it."
+      ]
+    },
+    {
       "version": "1.38.0",
       "build": 91,
       "date": "2026-11-17",
