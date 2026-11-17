@@ -27,6 +27,18 @@ final class AppNavigation {
     /// sheets (settings, editors) watch it and close, so the tab underneath shows.
     private(set) var linkOpenCount = 0
 
+    /// The last link opened and when: the same link arrives twice on a cold launch (from the scene
+    /// as it connects, then from SwiftUI's onOpenURL), and should only count once.
+    @ObservationIgnored private var lastOpened: (url: URL, date: Date)?
+
+    /// Opens a link (alarmapp://…) unless the same one was just opened.
+    func open(url: URL) {
+        guard let link = DeepLink(url: url) else { return }
+        if let last = lastOpened, last.url == url, Date().timeIntervalSince(last.date) < 2 { return }
+        lastOpened = (url, Date())
+        open(link)
+    }
+
     func open(_ link: DeepLink) {
         linkOpenCount += 1
         switch link {
@@ -101,7 +113,7 @@ struct RootView: View {
         .onOpenURL { url in
             // Taps on widgets: open exactly what was tapped. Other apps can open these links too
             // (alarmapp://livetalk starts Live Talk).
-            if let link = DeepLink(url: url) { navigation.open(link) }
+            navigation.open(url: url)
         }
         .task {
             updates.showWhatsNewIfUpdated()

@@ -23,12 +23,8 @@ A simple, clean iPhone alarm app built with SwiftUI and **AlarmKit**, so alarms 
 - **Siri and Shortcuts.** Ask the assistant through Siri ("Ask Alarmie"), Spotlight, Shortcuts and the Action button.
 - **Talk tab.** A private assistant that runs entirely on your iPhone using Apple's on-device model:
   - Tap the waveform for hands-free **Live Talk**: it listens, replies out loud and listens again. You can still type at any time.
-  - It can manage almost everything in the app:
-    - **Alarms:** create, change, turn on or off, delete ("wake me up at 6:45 on weekdays", "move my gym alarm to 7").
-    - **To-dos:** add with a deadline and details, reschedule, complete, delete ("remind me to call mom tomorrow at 6").
-    - **Notes:** read, create, add to, replace, rename, delete ("add eggs to my grocery note").
-    - **Timers:** start and cancel ("set a pasta timer for 9 minutes").
-    - **Settings:** wake word and spoken replies ("turn on the wake word and set it to Jarvis").
+  - Its only tools are **timers**: start, pause, resume and cancel ("set a pasta timer for 9 minutes", "pause my timer"). It can't see or change alarms, to-dos, notes, the stopwatch or settings, and otherwise just answers questions.
+  - Running timers show as notification-style cards at the top of the Talk screen, with pause/resume and cancel.
   - **Custom Instructions** (Talk settings): your own instructions, applied to every conversation and reply.
   - **Optional wake word**, off by default (Talk settings → Require Wake Word). When on, Live Talk ignores sentences that don't start with your wake word, e.g. "Hey Alarm, …". Say only the wake word and your next sentence counts. Typed messages always get a reply.
 

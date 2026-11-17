@@ -77,7 +77,6 @@ struct SetTimerTool: Tool {
         let label = arguments.label.trimmingCharacters(in: .whitespacesAndNewlines)
         do {
             let timer = try await TimerController.shared.start(duration: TimeInterval(seconds), label: label)
-            await TalkModel.shared.addEvent("Timer · \(timer.title) · \(TimeFormat.clock(timer.duration))", systemImage: "timer", link: .timers)
             return "Started a timer for \(TimeFormat.durationName(timer.duration))\(label.isEmpty ? "" : " called \(label)")."
         } catch {
             return "Couldn't start the timer: \(error.localizedDescription)"
@@ -123,13 +122,12 @@ struct ControlTimersTool: Tool {
             }
             return matches.map(\.title)
         }
-        let (verb, icon, none): (String, String, String) = switch action {
-        case .pause: ("Paused", "pause.circle", "No running timer matches.")
-        case .resume: ("Resumed", "play.circle", "No paused timer matches.")
-        case .cancel: ("Cancelled", "xmark.circle", "No matching timer.")
+        let (verb, none): (String, String) = switch action {
+        case .pause: ("Paused", "No running timer matches.")
+        case .resume: ("Resumed", "No paused timer matches.")
+        case .cancel: ("Cancelled", "No matching timer.")
         }
         guard !changed.isEmpty else { return none }
-        await TalkModel.shared.addEvent("\(verb) \(changed.joined(separator: ", "))", systemImage: icon, link: .timers)
         return "\(verb): \(changed.joined(separator: ", "))."
     }
 }

@@ -220,8 +220,8 @@ function TimerQuickTimesSection() {
   const range = (n: number) => Array.from({ length: n }, (_, i) => i)
   return (
     <>
-    {/* A pair: turning one on turns the other off, so New Timer always shows one of them. */}
-    <Section header="New Timer" footer="Three one-tap times in New Timer. Tap one to change it with the wheels.">
+    {/* One switch: your quick times when on, your last three times when off. */}
+    <Section header="New Timer" footer="Three one-tap times in New Timer. Tap one to change it with the wheels. When off, New Timer shows the last three times you used instead.">
       <div className="row"><span className="grow">Use Quick Times</span>
         <Switch label="Use quick times" on={!s.timerUsesRecentTimes} onChange={(v) => set({ timerUsesRecentTimes: !v })} /></div>
       {!s.timerUsesRecentTimes && (
@@ -244,10 +244,6 @@ function TimerQuickTimesSection() {
           )}
         </>
       )}
-    </Section>
-    <Section footer="Shows the last three times you used instead of your quick times.">
-      <div className="row"><span className="grow">Use Recent Times</span>
-        <Switch label="Use recent times" on={s.timerUsesRecentTimes} onChange={(v) => set({ timerUsesRecentTimes: v })} /></div>
     </Section>
     </>
   )

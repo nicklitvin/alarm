@@ -5,6 +5,7 @@ struct TalkView: View {
     @State private var model = TalkModel.shared
     @FocusState private var inputFocused: Bool
     @State private var confirmClear = false
+    @State private var timers = TimerController.shared
     /// The conversation's widest width (wider windows center it).
     private static let columnWidth: CGFloat = 760
 
@@ -32,10 +33,18 @@ struct TalkView: View {
             // No title on Talk: just the settings button, in the same spot as the other tabs.
             .safeAreaInset(edge: .top, spacing: 0) {
                 // Clear Conversation shares one pill with the settings button.
-                TabHeader(title: nil, tab: .talk, actions: [
-                    TabHeaderAction(systemImage: "eraser", label: "Clear Conversation",
-                                    isDisabled: model.messages.isEmpty) { confirmClear = true },
-                ])
+                VStack(spacing: 8) {
+                    TabHeader(title: nil, tab: .talk, actions: [
+                        TabHeaderAction(systemImage: "eraser", label: "Clear Conversation",
+                                        isDisabled: model.messages.isEmpty) { confirmClear = true },
+                    ])
+                    // Running timers, like notifications at the top of the screen.
+                    ActiveTimerBanners()
+                        .frame(maxWidth: Self.columnWidth)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, timers.timers.isEmpty ? 0 : 6)
+                }
+                .animation(.snappy, value: timers.timers.map(\.id))
             }
             // The message field sits on the outermost content view, which SwiftUI moves above the
             // keyboard reliably (nested insets inside the scroll view sometimes stayed behind it).
@@ -340,5 +349,79 @@ private struct AttachmentCard: View {
         .padding(.vertical, 8)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.primary.opacity(0.06)))
+    }
+}
+
+// MARK: - Running timers
+
+/// Each running, paused or finished timer as a card at the top of Talk, like a notification:
+/// its name and time left, with pause/resume and cancel. Tapping it opens the Timers tab.
+private struct ActiveTimerBanners: View {
+    @State private var controller = TimerController.shared
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            VStack(spacing: 8) {
+                ForEach(controller.timers) { timer in
+                    banner(timer, now: context.date)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
+        }
+    }
+
+    private func banner(_ timer: TimerItem, now: Date) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: timer.state == .ringing ? "bell.fill" : "timer")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(width: 38, height: 38)
+                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.orange.gradient))
+            VStack(alignment: .leading, spacing: 1) {
+                Text(timer.title)
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+                Group {
+                    switch timer.state {
+                    case .ringing: Text("Time's up")
+                    case .paused: Text("Paused · \(TimeFormat.clock(timer.remaining))")
+                    case .running: Text(TimeFormat.clock(timer.timeLeft(at: now)))
+                    }
+                }
+                .font(.subheadline)
+                .monospacedDigit()
+                .foregroundStyle(timer.state == .ringing ? Color.orange : Color.secondary)
+            }
+            Spacer(minLength: 0)
+            switch timer.state {
+            case .running:
+                bannerButton("pause.fill", label: "Pause") { controller.pause(timer.id) }
+            case .paused:
+                bannerButton("play.fill", label: "Resume") { controller.resume(timer.id) }
+            case .ringing:
+                EmptyView()
+            }
+            bannerButton(timer.state == .ringing ? "stop.fill" : "xmark", label: timer.state == .ringing ? "Stop" : "Cancel") {
+                controller.cancel(timer.id)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
+        .contentShape(Rectangle())
+        .onTapGesture { AppNavigation.shared.tab = .timers }
+    }
+
+    private func bannerButton(_ systemImage: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.orange)
+                .frame(width: 34, height: 34)
+                .background(Circle().fill(Color.orange.opacity(0.15)))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
     }
 }

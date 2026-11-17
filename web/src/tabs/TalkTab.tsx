@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Alert, TabHeader } from '../components/ui'
 import { respond } from '../logic/assistant'
-import { uid } from '../logic/model'
+import { clock, durationName, uid } from '../logic/model'
 import { useStore, type ChatMessage } from '../logic/store'
 
 /** Sends a message to the canned assistant and records the reply + attachment events. */
@@ -21,7 +21,7 @@ export function useAsk() {
 }
 
 export function TalkTab() {
-  const { data, open, update } = useStore()
+  const { data, open, update, now } = useStore()
   const ask = useAsk()
   const [confirmClear, setConfirmClear] = useState(false)
   const [draft, setDraft] = useState('')
@@ -51,6 +51,31 @@ export function TalkTab() {
       <TabHeader tab="talk" actions={[{ icon: '⌫', label: 'Clear Conversation', disabled: data.chat.length === 0, onClick: () => setConfirmClear(true) }]} />
       {confirmClear && <Alert title="Clear this conversation?" message="All messages are removed and the assistant starts fresh." action="Clear"
         onCancel={() => setConfirmClear(false)} onConfirm={() => { update((d) => ({ ...d, chat: [] })); setConfirmClear(false) }} />}
+      {/* Running timers, like notifications at the top of the screen. */}
+      {data.timers.length > 0 && (
+        <div className="timer-banners">
+          {data.timers.map((t) => {
+            const left = t.state === 'running' ? Math.max(0, (t.fireDate - now) / 1000) : t.remaining
+            const setTimer = (change: 'pause' | 'resume' | 'cancel') => update((d) => ({
+              ...d, timers: d.timers.flatMap((x) => x.id !== t.id ? [x] : change === 'cancel' ? []
+                : change === 'pause' ? [{ ...x, state: 'paused' as const, remaining: Math.max(0, (x.fireDate - Date.now()) / 1000) }]
+                : [{ ...x, state: 'running' as const, fireDate: Date.now() + x.remaining * 1000 }]),
+            }))
+            return (
+              <div className="timer-banner" key={t.id} onClick={() => open({ tab: 'timers' })}>
+                <span className="tb-icon">{t.state === 'ringing' ? '🔔' : '⏱'}</span>
+                <div className="grow">
+                  <div className="tb-title">{t.label || durationName(t.duration)}</div>
+                  <div className={`tb-time ${t.state === 'ringing' ? 'orange' : ''}`}>{t.state === 'ringing' ? "Time's up" : t.state === 'paused' ? `Paused · ${clock(left)}` : clock(left - 0.05)}</div>
+                </div>
+                {t.state === 'running' && <button className="tb-btn" aria-label="Pause" onClick={(e) => { e.stopPropagation(); setTimer('pause') }}>❚❚</button>}
+                {t.state === 'paused' && <button className="tb-btn" aria-label="Resume" onClick={(e) => { e.stopPropagation(); setTimer('resume') }}>▶</button>}
+                <button className="tb-btn" aria-label={t.state === 'ringing' ? 'Stop' : 'Cancel'} onClick={(e) => { e.stopPropagation(); setTimer('cancel') }}>{t.state === 'ringing' ? '■' : '✕'}</button>
+              </div>
+            )
+          })}
+        </div>
+      )}
       <div className="chat">
         {data.chat.length === 0 && !live && (
           <div className="talk-empty" style={{ paddingTop: 90 }}>

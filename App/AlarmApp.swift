@@ -23,6 +23,15 @@ struct AlarmApp: App {
 }
 
 final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+    /// Our scene delegate sees a widget's link as the window is created, before the first frame,
+    /// so the app opens straight on the right tab (instead of Alarms, then switching).
+    func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession,
+                     options: UIScene.ConnectionOptions) -> UISceneConfiguration {
+        let configuration = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)
+        configuration.delegateClass = LaunchLinkSceneDelegate.self
+        return configuration
+    }
+
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
@@ -97,5 +106,13 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         default:
             break
         }
+    }
+}
+
+/// Opens the link the app was launched with (a widget tap) before SwiftUI draws anything.
+final class LaunchLinkSceneDelegate: NSObject, UIWindowSceneDelegate {
+    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        guard let url = connectionOptions.urlContexts.first?.url else { return }
+        MainActor.assumeIsolated { AppNavigation.shared.open(url: url) }
     }
 }

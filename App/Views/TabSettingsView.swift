@@ -250,8 +250,7 @@ private struct TimerSettingsSection: View {
     private var times: [Int] { AppSettings.parseTimerQuickTimes(stored) }
 
     var body: some View {
-        // Two settings that work as a pair: turning one on turns the other off (and the other
-        // way round), so New Timer always shows one of them.
+        // One switch: your quick times when on, your last three times when off.
         Section {
             Toggle("Use Quick Times", isOn: Binding(get: { !useRecent }, set: { on in withAnimation { useRecent = !on } }))
             if !useRecent {
@@ -285,14 +284,7 @@ private struct TimerSettingsSection: View {
         } header: {
             Text("New Timer")
         } footer: {
-            // Shown even when it's off, so you know what it does.
-            Text("Three one-tap times in New Timer. Tap one to change it with the wheels.")
-        }
-
-        Section {
-            Toggle("Use Recent Times", isOn: Binding(get: { useRecent }, set: { on in withAnimation { useRecent = on } }))
-        } footer: {
-            Text("Shows the last three times you used instead of your quick times.")
+            Text("Three one-tap times in New Timer. Tap one to change it with the wheels. When off, New Timer shows the last three times you used instead.")
         }
     }
 

@@ -194,14 +194,9 @@ final class TalkModel {
             return session
         }
         let fresh = LanguageModelSession(
-            tools: [
-                ListItemsTool(),
-                CreateAlarmTool(), EditAlarmTool(),
-                CreateTodoTool(), EditTodoTool(),
-                ReadNoteTool(), WriteNoteTool(),
-                SetTimerTool(), ControlTimersTool(), StopwatchTool(),
-                UpdateSettingsTool(),
-            ],
+            // Timers only: the assistant can't read or change alarms, to-dos, notes, the stopwatch or
+            // settings. Running timers show as cards at the top of the Talk screen.
+            tools: [SetTimerTool(), ControlTimersTool()],
             instructions: Self.instructions()
         )
         session = fresh
@@ -213,26 +208,17 @@ final class TalkModel {
     private static func instructions() -> String {
         let now = Date().formatted(.dateTime.weekday(.wide).month(.wide).day().year().hour().minute())
         return """
-        You are a friendly, quick assistant inside Alarmie, the user's alarm clock app. You manage their \
-        alarms, to-dos, timers, stopwatch, notes and settings using your tools.
-        What each tab can do, all of which you can do too:
-        - Alarms: create, change time, days, label or sound, turn on or off, delete, and dismiss just the next ring (editAlarm).
-        - Timers: countdown timers that start, pause, resume and cancel (setTimer, controlTimers), and one \
-        stopwatch that counts up with start, pause, lap, reset and check (stopwatch).
-        - To-Do: add with an optional deadline, change, complete, reopen or delete (createTodo, editTodo).
-        - Notes: read, create, add to, replace, rename or delete; notes can hold checklists and bullets (readNote, writeNote).
+        You are a friendly, quick assistant inside Alarmie, the user's alarm clock app.
+        Your only tools are for countdown timers: start one (setTimer), and pause, resume or cancel \
+        timers (controlTimers). Running timers show at the top of the screen, so don't repeat their \
+        time left unless asked.
+        You can't see or change alarms, to-dos, notes, the stopwatch or settings. If asked, say \
+        briefly that you can only help with timers here and they can use that tab. Otherwise just \
+        answer the question.
         Reply in one or two short sentences of plain text with no markdown, lists or emoji, \
         because replies may be read aloud.
         Rules:
-        - Wake-up times and "wake me" requests are alarms (createAlarm). "Remind me to..." and tasks \
-        are to-dos (createTodo). Countdowns like "in 10 minutes" for cooking are timers (setTimer).
-        - "Stopwatch", "start timing" or "how long has it been" use the stopwatch tool, never setTimer: \
-        a stopwatch counts up and has no length.
-        - Alarm hours use the 24-hour clock: 7 PM is 19.
-        - To change or delete something, call editAlarm, editTodo or writeNote with how the user referred to it. \
-        To change an alarm's days use editAlarm with newDays, addDays or removeDays in plain words. \
-        If it is unclear what exists, call listItems first.
-        - When the user mentions a note or asks about its contents, call readNote and answer from it.
+        - Countdowns like "in 10 minutes" or "set a pasta timer" are timers (setTimer, in seconds).
         - Only say something was done if a tool's result confirms it. If a tool reports a problem, say so.
         The current date and time is \(now).
         """ + customInstructionsBlock()

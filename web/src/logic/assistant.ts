@@ -1,65 +1,14 @@
-// A canned stand-in for the app's on-device assistant, just enough to exercise the chat UI
-// (attachment cards, links into tabs). It is NOT the real model.
-import {
-  addRecent, alarmTitle, formatStopwatch, stopwatchElapsed, stopwatchIsReset, durationName, dueDescription, noteTitle, repeatSummary, timeString, uid, WEEKEND, WORKDAYS, type Alarm, type Weekday,
-} from './model'
+// A canned stand-in for the app's on-device assistant, just enough to exercise the chat UI.
+// It is NOT the real model. Like the app's assistant, it only has timer tools: it starts, pauses,
+// resumes and cancels countdown timers, and can't touch alarms, to-dos, notes, the stopwatch or
+// settings. Running timers show as cards at the top of Talk, so replies stay short.
+import { addRecent, durationName, uid } from './model'
 import type { AppData, ChatMessage } from './store'
 
-const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
-
-function parseDays(text: string): Weekday[] | null {
-  const t = text.toLowerCase()
-  if (/\b(every ?day|daily)\b/.test(t)) return [1, 2, 3, 4, 5, 6, 7]
-  if (/\bweekdays?\b|mon-fri|monday to friday/.test(t)) return WORKDAYS
-  if (/\bweekends?\b/.test(t)) return WEEKEND
-  const days = DAY_NAMES.flatMap((name, i) => (new RegExp(`\\b${name.slice(0, 3)}`).test(t) ? [(i + 1) as Weekday] : []))
-  return days.length ? days : null
-}
-
-function parseTime(text: string): { hour: number; minute: number } | null {
-  const m = text.toLowerCase().match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b/)
-  if (!m) return null
-  let hour = Number(m[1])
-  const minute = Number(m[2] ?? 0)
-  if (m[3] === 'pm' && hour < 12) hour += 12
-  if (m[3] === 'am' && hour === 12) hour = 0
-  if (hour > 23 || minute > 59) return null
-  return { hour, minute }
-}
-
-const event = (text: string, icon: string, link?: ChatMessage['link']): ChatMessage => ({ id: uid(), role: 'event', text, icon, link })
-
 export function respond(input: string, data: AppData, now: number): { data: AppData; reply: string; events: ChatMessage[] } {
-  const text = input.trim()
-  const lower = text.toLowerCase()
+  const lower = input.trim().toLowerCase()
 
-  // Stopwatch (counts up, never a timer): "start the stopwatch", "lap", "pause the stopwatch"
-  if (/stop ?watch|\blap\b|start timing/.test(lower)) {
-    const sw = data.stopwatch
-    const time = () => formatStopwatch(stopwatchElapsed(sw, now))
-    const tl = { tab: 'timers' as const }
-    if (/reset|clear/.test(lower)) {
-      if (stopwatchIsReset(sw)) return { data, reply: 'The stopwatch is already at zero.', events: [] }
-      return { data: { ...data, stopwatch: { accumulated: 0, laps: [] } }, reply: `Reset the stopwatch (it was at ${time()}).`, events: [event('Stopwatch reset', '↺', tl)] }
-    }
-    if (/\blap\b/.test(lower)) {
-      if (sw.startedAt === undefined) return { data, reply: "The stopwatch isn't running, so there's no lap to mark.", events: [] }
-      const total = stopwatchElapsed(sw, now), split = total - (sw.laps[sw.laps.length - 1] ?? 0), n = sw.laps.length + 1
-      return { data: { ...data, stopwatch: { ...sw, laps: [...sw.laps, total] } }, reply: `Lap ${n}: ${formatStopwatch(split)}.`, events: [event(`Lap ${n} · ${formatStopwatch(split)}`, '⚑', tl)] }
-    }
-    if (/pause|stop the|stop my|halt/.test(lower)) {
-      if (sw.startedAt === undefined) return { data, reply: "The stopwatch isn't running.", events: [] }
-      return { data: { ...data, stopwatch: { accumulated: stopwatchElapsed(sw, now), laps: sw.laps } }, reply: `Paused the stopwatch at ${time()}.`, events: [event(`Stopwatch paused · ${time()}`, '⏸', tl)] }
-    }
-    if (/how long|check|what.*time/.test(lower)) {
-      return { data, reply: stopwatchIsReset(sw) ? "The stopwatch hasn't started." : `The stopwatch is ${sw.startedAt !== undefined ? 'running' : 'paused'} at ${time()}.`, events: [] }
-    }
-    if (sw.startedAt !== undefined) return { data, reply: `The stopwatch is already running: ${time()}.`, events: [] }
-    const fresh = stopwatchIsReset(sw)
-    return { data: { ...data, stopwatch: { ...sw, startedAt: now } }, reply: fresh ? 'Started the stopwatch.' : `Resumed the stopwatch at ${time()}.`, events: [event(fresh ? 'Stopwatch started' : 'Stopwatch resumed', '⏱', tl)] }
-  }
-
-  // Timers: "set a pasta timer for 9 minutes"
+  // Start: "set a pasta timer for 9 minutes", "timer for 5 min"
   const dur = lower.match(/(\d+)\s*(hours?|hrs?|minutes?|mins?|seconds?|secs?)\b/)
   if (lower.includes('timer') && dur) {
     const n = Number(dur[1])
@@ -70,97 +19,33 @@ export function respond(input: string, data: AppData, now: number): { data: AppD
     return {
       data: { ...data, timers: [...data.timers, timer], recents: addRecent(data.recents, { duration: seconds, label: name }) },
       reply: `Started a timer for ${durationName(seconds)}${name ? ` called ${name}` : ''}.`,
-      events: [event(`Timer · ${name || durationName(seconds)} · ${durationName(seconds)}`, '⏱', { tab: 'timers' })],
+      events: [],
     }
   }
 
-  // Change an alarm's days or time: "change my gym alarm to weekdays"
-  if (/(change|move|set|make)\b.*\balarm\b/.test(lower) && data.alarms.length) {
-    const target = data.alarms.find((a) => a.label && lower.includes(a.label.toLowerCase())) ?? data.alarms[0]
-    const days = parseDays(lower.split(' to ').slice(1).join(' ') || lower)
-    const time = parseTime(lower.split(' to ').slice(1).join(' '))
-    if (days || time) {
-      const updated: Alarm = { ...target, ...(days ? { weekdays: days } : {}), ...(time ?? {}), isEnabled: true, skippedOccurrence: undefined }
-      return {
-        data: { ...data, alarms: data.alarms.map((a) => (a.id === target.id ? updated : a)) },
-        reply: `Done. ${alarmTitle(updated)} now rings at ${timeString(updated.hour, updated.minute)}, ${repeatSummary(updated).toLowerCase()}.`,
-        events: [event(`Alarm updated · ${timeString(updated.hour, updated.minute)} · ${repeatSummary(updated)}`, '⏰', { tab: 'alarms', id: updated.id })],
-      }
-    }
+  // Pause, resume or cancel: "pause my timer", "cancel the pasta timer", "cancel all timers"
+  const action = /\b(pause|stop)\b/.test(lower) && !/cancel/.test(lower) ? 'pause' : /\b(resume|continue|unpause)\b/.test(lower) ? 'resume' : /\b(cancel|delete|clear)\b/.test(lower) ? 'cancel' : null
+  if (action && lower.includes('timer')) {
+    const name = lower.match(/(?:the|my)\s+(\w+)\s+timer/)?.[1]
+    const matches = data.timers.filter((t) => !name || ['my', 'the', 'all'].includes(name) || t.label.toLowerCase().includes(name))
+      .filter((t) => action === 'pause' ? t.state === 'running' : action === 'resume' ? t.state === 'paused' : true)
+    if (!matches.length) return { data, reply: 'No matching timer.', events: [] }
+    const ids = new Set(matches.map((t) => t.id))
+    const timers = data.timers.flatMap((t) => {
+      if (!ids.has(t.id)) return [t]
+      if (action === 'cancel') return []
+      return action === 'pause'
+        ? [{ ...t, state: 'paused' as const, remaining: Math.max(0, (t.fireDate - now) / 1000) }]
+        : [{ ...t, state: 'running' as const, fireDate: now + t.remaining * 1000 }]
+    })
+    const verb = { pause: 'Paused', resume: 'Resumed', cancel: 'Cancelled' }[action]
+    return { data: { ...data, timers }, reply: `${verb} ${matches.length === 1 ? 'the timer' : `${matches.length} timers`}.`, events: [] }
   }
 
-  // New alarm: "wake me up at 6:45 on weekdays"
-  if (/wake me|\balarm\b/.test(lower)) {
-    const time = parseTime(lower)
-    if (time) {
-      const alarm: Alarm = { id: uid(), ...time, label: '', weekdays: parseDays(lower) ?? [], isEnabled: true }
-      return {
-        data: { ...data, alarms: [...data.alarms, alarm] },
-        reply: `Alarm set for ${timeString(alarm.hour, alarm.minute)}, ${repeatSummary(alarm).toLowerCase()}.`,
-        events: [event(`Alarm set · ${timeString(alarm.hour, alarm.minute)} · ${repeatSummary(alarm)}`, '⏰', { tab: 'alarms', id: alarm.id })],
-      }
-    }
+  // Everything else in the app is off limits for the assistant.
+  if (/\b(alarm|wake me|to-?dos?|remind|note|stop ?watch|settings?)\b/.test(lower)) {
+    return { data, reply: 'I can only help with timers here. Use that tab for the rest.', events: [] }
   }
 
-  // Notes: "add eggs to my grocery note", "what's on my packing note?"
-  const append = text.match(/add (.+) to (?:my |the )?(.+?) note/i)
-  const read = text.match(/what(?:'s| is) (?:on|in) (?:my |the )?(.+?) note/i)
-  const findNote = (q: string) => data.notes.find((n) => noteTitle(n).toLowerCase().includes(q.toLowerCase()))
-  if (append) {
-    const note = findNote(append[2])
-    if (!note) return { data, reply: `I couldn't find a note called “${append[2]}”.`, events: [] }
-    const body = note.body.trim() ? `${note.body.trim()}\n${append[1]}` : append[1]
-    return {
-      data: { ...data, notes: data.notes.map((n) => (n.id === note.id ? { ...n, body, updatedAt: now } : n)) },
-      reply: `Added “${append[1]}” to ${noteTitle(note)}.`,
-      events: [event(`Note updated · ${noteTitle(note)}`, '🗒', { tab: 'notes', id: note.id })],
-    }
-  }
-  if (read) {
-    const note = findNote(read[1])
-    if (!note) return { data, reply: `I couldn't find a note called “${read[1]}”.`, events: [] }
-    const items = note.body.split('\n').map((l) => l.trim()).filter(Boolean)
-    return { data, reply: `${noteTitle(note)}: ${items.join(', ')}.`, events: [event(`Read note · ${noteTitle(note)}`, '🗒', { tab: 'notes', id: note.id })] }
-  }
-
-  // To-dos: "remind me to call mom tomorrow at 6"
-  const todoMatch = text.match(/remind me to (.+)/i) ?? text.match(/add (?:a )?to-?do:? (.+)/i)
-  if (todoMatch) {
-    let title = todoMatch[1]
-    let due: number | undefined
-    const time = parseTime(title.replace(/\b(\d{1,2})(?::\d{2})?\s*(am|pm)?\b(?!.*\d)/, (m) => m))
-    const dayOffset = /tomorrow/i.test(title) ? 1 : /tonight|today/i.test(title) ? 0 : null
-    if (dayOffset !== null || time) {
-      const d = new Date(now)
-      d.setDate(d.getDate() + (dayOffset ?? 0))
-      let hour = time?.hour ?? (/tonight/i.test(title) ? 21 : 9)
-      if (time && hour < 12 && !/am/i.test(title) && (/tonight|evening/i.test(title) || hour < 7)) hour += 12
-      d.setHours(hour, time?.minute ?? 0, 0, 0)
-      if (dayOffset === null && d.getTime() <= now) d.setDate(d.getDate() + 1)
-      due = d.getTime()
-      title = title.replace(/\s*(tomorrow|tonight|today)\b/i, '').replace(/\s*(at\s*)?\d{1,2}(:\d{2})?\s*(am|pm)?\s*$/i, '').trim()
-    }
-    const todo = { id: uid(), title: title[0].toUpperCase() + title.slice(1), details: '', due, isDone: false, createdAt: now }
-    return {
-      data: { ...data, todos: [...data.todos, todo] },
-      reply: `Added “${todo.title}”${due ? `, due ${dueDescription(due, now)}` : ''}.`,
-      events: [event(`To-do added · ${todo.title}${due ? ` · ${dueDescription(due, now)}` : ''}`, '☑︎', { tab: 'todos', id: todo.id })],
-    }
-  }
-
-  // Settings: "turn off spoken replies"
-  if (/spoken replies|speak replies|read.*aloud/.test(lower)) {
-    const on = !/\boff\b|stop|don't/.test(lower)
-    return {
-      data: { ...data, settings: { ...data.settings, speakReplies: on } },
-      reply: `Spoken replies are now ${on ? 'on' : 'off'}.`,
-      events: [event(`Settings · spoken replies ${on ? 'on' : 'off'}`, '⚙︎')],
-    }
-  }
-
-  return {
-    data,
-    reply: 'This web preview only fakes a few requests. Try “set a pasta timer for 9 minutes”, “start the stopwatch”, “wake me up at 6:45 on weekdays”, “change my gym alarm to weekends”, “remind me to call mom tomorrow at 6” or “what’s on my packing note?”',
-    events: [],
-  }
+  return { data, reply: 'This web preview only fakes timers. Try “set a pasta timer for 9 minutes” or “pause my timer”.', events: [] }
 }

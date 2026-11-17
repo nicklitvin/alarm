@@ -1,6 +1,17 @@
 {
   "releases": [
     {
+      "version": "1.38.0",
+      "build": 91,
+      "date": "2026-11-17",
+      "title": "Timers in Talk",
+      "notes": [
+        "Tapping a widget opens Alarmie straight on the right tab, without showing Alarms first.",
+        "Timer settings have one switch: Use Quick Times. When it's off, New Timer shows your last three times.",
+        "Talk now only handles timers. Running timers show as cards at the top of the Talk screen, where you can pause or cancel them."
+      ]
+    },
+    {
       "version": "1.37.3",
       "build": 90,
       "date": "2026-11-16",
