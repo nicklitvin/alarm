@@ -241,9 +241,9 @@ function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
           </div>
         )}
       </div>
-      {/* Floating above the keyboard: one list button (numbered, bulleted or checklist), and while typing a checkmark that finishes. */}
+      {/* While writing: one list button (numbered, bulleted or checklist) and a checkmark that finishes. Just opening a note shows neither. */}
       <div className="float-check-wrap">
-        <div className="list-menu-anchor">
+        {typing && <div className="list-menu-anchor">
           {listMenu && (
             <div className="list-menu" role="menu">
               {([['numbers', 'Numbered List', '1.'], ['bullets', 'Bulleted List', '•'], ['checklist', 'Checklist', '◯']] as const).map(([style, label, icon]) => (
@@ -254,7 +254,7 @@ function NoteEditor({ note, onBack }: { note: Note; onBack: () => void }) {
             </div>
           )}
           <button className="float-list" aria-label="Lists" aria-expanded={listMenu} onMouseDown={(e) => e.preventDefault()} onClick={() => setListMenu(!listMenu)}>•≡</button>
-        </div>
+        </div>}
         {typing && <button className="float-check" aria-label="Done" onMouseDown={(e) => e.preventDefault()}
           onClick={() => (document.activeElement as HTMLElement | null)?.blur()}>✓</button>}
       </div>

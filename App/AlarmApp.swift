@@ -89,7 +89,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
 
         case TodoReminders.snoozeDayActionID:
             guard let id = (userInfo[TodoReminders.todoIDKey] as? String).flatMap(UUID.init(uuidString:)) else { return }
-            await TodoController.shared.snooze(id, by: 24 * 3600)
+            await TodoController.shared.snoozeToNextDay(id)
 
         case UNNotificationDefaultActionIdentifier:
             // Tapping opens the app: the alarm heads-up opens the Alarms tab, where the Dismiss

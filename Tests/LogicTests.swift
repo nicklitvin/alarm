@@ -466,6 +466,13 @@ check(NoteChecklist.appending("bread\neggs", to: "1. milk") == "1. milk\n2. brea
 check(NoteChecklist.firstLineCaret(in: "1. milk") == 3, "Return in the title: after the first number")
 check(NoteChecklist.toggleItem(in: "1. a", at: 0) == nil, "numbers aren't checkboxes")
 
+// "Remind Me Tomorrow": a day after the deadline, not after the tap.
+let snoozeDue = d(2026, 11, 17, 18, 0)
+check(TodoItem.dayLater(than: snoozeDue, now: d(2026, 11, 17, 20, 30)) == d(2026, 11, 18, 18, 0), "Remind Me Tomorrow: same time the next day after the deadline")
+check(TodoItem.dayLater(than: snoozeDue, now: d(2026, 11, 17, 17, 45)) == d(2026, 11, 18, 18, 0), "tapped on the early reminder: still a day after the deadline")
+check(TodoItem.dayLater(than: snoozeDue, now: d(2026, 11, 20, 9, 0)) == d(2026, 11, 20, 18, 0), "a deadline days ago: the next day at that time that's still ahead")
+check(TodoItem.dayLater(than: nil, now: d(2026, 11, 17, 9, 0)) == d(2026, 11, 18, 9, 0), "no deadline: a day from now")
+
 // Pictures in notes
 let picID = UUID(uuidString: "11111111-2222-3333-4444-555555555555")!
 let picToken = NoteImageText.token(picID)

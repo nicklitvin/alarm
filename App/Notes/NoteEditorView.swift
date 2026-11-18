@@ -71,10 +71,12 @@ struct NoteEditorView: View {
         // No side padding here: the body runs edge to edge so its scroll bar sits at the screen's
         // right edge; the text keeps its 20 pt margins inside it (textContainerInset).
         .padding(.top, 8)
-        // Floating above the keyboard: one list button (numbered, bulleted or checklist), and
-        // while typing a round checkmark that finishes.
+        // Floating above the keyboard while writing in the note: one list button (numbered,
+        // bulleted or checklist) and a round checkmark that finishes. Just opening a note shows
+        // neither.
         .overlay(alignment: .bottomTrailing) {
             HStack(spacing: 12) {
+                if bodyEditing {
                 Menu {
                     // Choosing the kind the lines already are turns them back into text.
                     Button("Numbered List", systemImage: "list.number") { makeList(.numbers) }
@@ -90,6 +92,8 @@ struct NoteEditorView: View {
                 }
                 .menuOrder(.fixed)
                 .accessibilityLabel("Lists")
+                .transition(.scale.combined(with: .opacity))
+                }
 
                 if isTyping {
                     Button {
@@ -111,6 +115,7 @@ struct NoteEditorView: View {
             .padding(.bottom, 20)
         }
         .animation(.snappy, value: isTyping)
+        .animation(.snappy, value: bodyEditing)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             // Copy All, Clear and Delete as plain icons.

@@ -1,6 +1,18 @@
 {
   "releases": [
     {
+      "version": "1.39.1",
+      "build": 93,
+      "date": "2026-11-18",
+      "title": "Timer and Widget Fixes",
+      "notes": [
+        "Your to-dos stay in the Up Next widget while a timer runs.",
+        "The timer in the Dynamic Island has even spacing on both sides and uses the same font as the app. Tapping it opens the Timers tab.",
+        "In notes, the list button only shows while you're writing.",
+        "Remind Me Tomorrow moves the reminder to a day after the deadline, not a day after you tap it."
+      ]
+    },
+    {
       "version": "1.39.0",
       "build": 92,
       "date": "2026-11-17",

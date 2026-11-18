@@ -505,8 +505,17 @@ private struct UpNextRow: View {
         case .alarmSoon(_, let date), .nextAlarm(_, let date):
             // The title already has the time: show how long until it rings.
             Text("in \(TimeFormat.countdown(from: now, to: date))")
-        case .timer:
-            subtitle
+        case .timer(let timer):
+            if timer.state == .running && timer.fireDate > now {
+                // A live countdown claims all the width it can; a fixed width keeps the row (and the
+                // rows under it) in place.
+                subtitle
+                    .monospacedDigit()
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: timer.fireDate.timeIntervalSince(now) >= 3600 ? 58 : 44, alignment: .trailing)
+            } else {
+                subtitle
+            }
         }
     }
 

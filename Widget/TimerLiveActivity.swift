@@ -13,37 +13,50 @@ struct TimerLiveActivity: Widget {
             TimerLockScreenView(context: context)
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
+                .widgetURL(context.link) // tapping opens the Timers tab
         } dynamicIsland: { context in
             DynamicIsland {
+                // The same fonts as the Timers tab (system font, light time), and the same 8 pt in
+                // from the island's edge on both sides.
                 DynamicIslandExpandedRegion(.leading) {
                     Label(context.displayTitle, systemImage: context.symbol)
-                        .font(.headline)
+                        .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.orange)
                         .lineLimit(1)
-                        .padding(.leading, 4)
+                        .padding(.leading, 8)
+                        .frame(maxHeight: .infinity)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     CountdownText(state: context.state)
-                        .font(.system(size: 30, weight: .semibold, design: .rounded))
+                        .font(.system(size: 30, weight: .light))
                         .monospacedDigit()
-                        .padding(.trailing, 4)
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: context.state.countdownWidth(perDigit: 17), alignment: .trailing)
+                        .padding(.trailing, 8)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     TimerButtons(context: context)
                         .padding(.top, 6)
+                        .padding(.horizontal, 8)
                 }
             } compactLeading: {
                 Image(systemName: context.symbol)
                     .foregroundStyle(.orange)
+                    .padding(.leading, 4)
             } compactTrailing: {
+                // Sized to the time, so the space either side of the island matches.
                 CountdownText(state: context.state)
+                    .font(.system(size: 15, weight: .medium))
                     .monospacedDigit()
+                    .multilineTextAlignment(.trailing)
                     .foregroundStyle(.orange)
-                    .frame(maxWidth: 56)
+                    .frame(width: context.state.countdownWidth(perDigit: 9), alignment: .trailing)
+                    .padding(.trailing, 4)
             } minimal: {
                 Image(systemName: context.symbol)
                     .foregroundStyle(.orange)
             }
+            .widgetURL(context.link) // tapping the island opens the Timers tab
             .keylineTint(.orange)
         }
     }
@@ -58,6 +71,23 @@ private extension ActivityViewContext where Attributes == AlarmAttributes<AlarmP
     }
 
     var symbol: String { isTimer ? "timer" : "alarm.fill" }
+
+    /// Where a tap goes: the Timers tab (or Alarms, for an alarm).
+    var link: URL { (isTimer ? DeepLink.timers : DeepLink.alarms).url }
+}
+
+private extension AlarmPresentationState {
+    /// A width that fits the countdown ("9:58", "48:10", "1:02:03"), so a live countdown (which
+    /// otherwise takes all the width it can) sits tight against its edge.
+    func countdownWidth(perDigit: CGFloat) -> CGFloat {
+        let left: TimeInterval = switch mode {
+        case .countdown(let countdown): countdown.fireDate.timeIntervalSinceNow
+        case .paused(let paused): paused.totalCountdownDuration - paused.previouslyElapsedDuration
+        default: 0
+        }
+        let characters: CGFloat = left >= 3600 ? 7 : left >= 600 ? 5 : 4
+        return characters * perDigit
+    }
 }
 
 private struct TimerLockScreenView: View {

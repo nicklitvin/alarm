@@ -418,8 +418,8 @@ function LiveActivity() {
         <div className="island-label">Expanded (touch and hold)</div>
         <div className="di expanded">
           <div className="di-exp-top">
-            <span className="orange" style={{ fontWeight: 600 }}>⏱ {timer.label || 'Timer'}</span>
-            <span className="tnum" style={{ fontSize: 30, fontWeight: 600 }}>{clock(left - 0.05)}</span>
+            <span className="orange" style={{ fontWeight: 600, fontSize: 15 }}>⏱ {timer.label || 'Timer'}</span>
+            <span className="tnum" style={{ fontSize: 30, fontWeight: 300 }}>{clock(left - 0.05)}</span>
           </div>
           <div className="di-exp-buttons">
             <button onClick={() => real && setTimer(real.id, (t) => (t.state === 'paused'

@@ -151,3 +151,15 @@ extension TimeFormat {
         }
     }
 }
+
+extension TodoItem {
+    /// "Remind Me Tomorrow": the same time one day after the deadline (not a day after you tap).
+    /// If that has passed too, the next day at that time that's still ahead. No deadline: a day from now.
+    static func dayLater(than due: Date?, now: Date, calendar: Calendar = .current) -> Date {
+        guard let due else { return now.addingTimeInterval(24 * 3600) }
+        func nextDay(_ date: Date) -> Date { calendar.date(byAdding: .day, value: 1, to: date) ?? date.addingTimeInterval(24 * 3600) }
+        var next = nextDay(due)
+        while next <= now { next = nextDay(next) }
+        return next
+    }
+}
