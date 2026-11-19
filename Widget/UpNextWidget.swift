@@ -120,6 +120,8 @@ struct UpNextWidgetView: View {
                             .frame(height: line)
                             .transition(.opacity.combined(with: .move(edge: .trailing)))
                     }
+                    // Quick, not floaty: a checked-off row slides away and the rest move up fast.
+                    .animation(.snappy(duration: 0.25), value: shown.map(\.id))
                     if layout.alarm == nil && shown.isEmpty {
                         Text("Nothing coming up")
                             .font(.subheadline)
@@ -434,6 +436,7 @@ private struct UpNextRow: View {
                     .font(prominent ? .title3 : .body)
                     .foregroundStyle(todo.isOverdue(at: now) ? Color.red : Color.orange)
                     .contentTransition(.symbolEffect(.replace))
+                    .animation(.snappy(duration: 0.15), value: todo.isDone)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(todo.isDone ? "Mark \(todo.title) as not done" : "Mark \(todo.title) as done")

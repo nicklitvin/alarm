@@ -51,10 +51,12 @@ final class TodoController {
         commit()
     }
 
+    /// Checks a to-do off (or back on). Returns as soon as it's saved and the widget is asked to
+    /// refresh: the reminders update in the background, so the widget's check shows right away.
     func toggle(_ id: UUID) async {
         guard let index = todos.firstIndex(where: { $0.id == id }) else { return }
         todos[index].setDone(!todos[index].isDone)
-        await commit().value
+        commit()
     }
 
     func setDone(_ done: Bool, for id: UUID) async {

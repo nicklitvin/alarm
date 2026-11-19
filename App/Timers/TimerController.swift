@@ -50,6 +50,7 @@ final class TimerController {
             case .pause: self.pause(id)
             case .resume: self.resume(id)
             case .cancel: self.cancel(id)
+            case .extend(let seconds): Task { await self.extend(id, by: seconds) }
             }
         }
 
@@ -77,7 +78,7 @@ final class TimerController {
     // MARK: - Actions
 
     @discardableResult
-    func start(duration: TimeInterval, label: String = "") async throws -> TimerItem {
+    func start(duration: TimeInterval, label: String = "", remember: Bool = true) async throws -> TimerItem {
         guard await AlarmKitScheduler.ensureAuthorized() else { throw TimerError.notAuthorized }
 
         let duration = max(1, duration.rounded())
@@ -106,9 +107,29 @@ final class TimerController {
             save()
             throw error
         }
-        recents = RecentTimer.adding(RecentTimer(duration: item.duration, label: item.label), to: recents)
-        RecentTimerStorage.save(recents)
+        if remember {
+            recents = RecentTimer.adding(RecentTimer(duration: item.duration, label: item.label), to: recents)
+            RecentTimerStorage.save(recents)
+        }
         return item
+    }
+
+    /// Adds time to a timer (+1, +5 or +15 minutes). A countdown can't be changed in place, so the
+    /// timer is replaced by one with the same name for what was left plus the extra time (a paused
+    /// one stays paused; a finished one starts again for just the extra time).
+    @discardableResult
+    func extend(_ id: UUID, by seconds: TimeInterval) async -> TimerItem? {
+        guard let timer = timers.first(where: { $0.id == id }) else { return nil }
+        let left: TimeInterval = switch timer.state {
+        case .running: max(0, timer.timeLeft(at: .now))
+        case .paused: timer.remaining
+        case .ringing: 0
+        }
+        let wasPaused = timer.state == .paused
+        cancel(id)
+        guard let replacement = try? await start(duration: left + seconds, label: timer.label, remember: false) else { return nil }
+        if wasPaused { pause(replacement.id) }
+        return replacement
     }
 
     func pause(_ id: UUID) {
@@ -271,6 +292,8 @@ private enum MacTimers {
         content.title = item.title
         content.body = "Time's up"
         content.sound = .default
+        content.categoryIdentifier = TimerExtendActions.categoryID
+        content.userInfo = [TimerExtendActions.timerIDKey: item.id.uuidString]
         content.interruptionLevel = .timeSensitive
         let seconds = max(1, item.fireDate.timeIntervalSinceNow)
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: seconds, repeats: false)
@@ -297,3 +320,19 @@ extension TimerController {
     }
 }
 #endif
+
+/// "+1 Minute", "+5 Minutes", "+15 Minutes" on a timer's "Time's up" notification (touch and hold,
+/// or the notification's Options on the Mac). Used where timers end with a notification.
+enum TimerExtendActions {
+    static let categoryID = "TIMER_DONE"
+    static let timerIDKey = "timerID"
+    static let minutesByAction = ["TIMER_EXTEND_1": 1, "TIMER_EXTEND_5": 5, "TIMER_EXTEND_15": 15]
+
+    static var category: UNNotificationCategory {
+        let actions = minutesByAction.sorted { $0.value < $1.value }.map { id, minutes in
+            UNNotificationAction(identifier: id, title: "+\(minutes) Minute\(minutes == 1 ? "" : "s")", options: [],
+                                 icon: UNNotificationActionIcon(systemImageName: "plus.circle"))
+        }
+        return UNNotificationCategory(identifier: categoryID, actions: actions, intentIdentifiers: [], options: [])
+    }
+}

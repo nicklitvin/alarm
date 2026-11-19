@@ -1,6 +1,16 @@
 {
   "releases": [
     {
+      "version": "1.40.0",
+      "build": 94,
+      "date": "2026-11-19",
+      "title": "Add Time to Timers",
+      "notes": [
+        "Touch and hold a running timer in the Dynamic Island to add 1, 5 or 15 minutes. On the Mac, the same choices are on the Time's up notification.",
+        "Checking off a to-do in the widget is quicker: the check shows right away and the row slides out faster."
+      ]
+    },
+    {
       "version": "1.39.1",
       "build": 93,
       "date": "2026-11-18",

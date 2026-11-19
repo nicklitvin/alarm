@@ -398,7 +398,7 @@ check(todoTitles(UpNext.items(alarms: [], todos: [withDue, noDue], timers: [], n
 check(todoTitles(UpNext.items(alarms: [], todos: [withDue, noDue], timers: [], now: unNow, options: .init(todosWithDeadline: false))) == ["No deadline"], "hide to-dos with a deadline")
 check(UpNext.items(alarms: [wakeAlarm], todos: [], timers: [], now: unNow, options: .init(alarms: false)).isEmpty, "hide alarms")
 var checkedOff = withDue; checkedOff.setDone(true, at: unNow)
-let lingering = UpNext.items(alarms: [], todos: [checkedOff, noDue], timers: [], now: unNow.addingTimeInterval(1))
+let lingering = UpNext.items(alarms: [], todos: [checkedOff, noDue], timers: [], now: unNow.addingTimeInterval(0.5))
 check(todoTitles(lingering) == ["Has deadline", "No deadline"], "just-completed to-do stays in its place for a moment")
 if case .todo(let t)? = lingering.first?.kind { check(t.isDone, "…shown as done (checkmark)") } else { check(false, "…shown as done (checkmark)") }
 check(todoTitles(UpNext.items(alarms: [], todos: [checkedOff, noDue], timers: [], now: unNow.addingTimeInterval(3))) == ["No deadline"], "then it leaves")

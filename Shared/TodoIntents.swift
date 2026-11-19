@@ -34,7 +34,8 @@ enum TodoIntentRunner {
         guard let index = todos.firstIndex(where: { $0.id == id }) else { return }
         todos[index].setDone(!todos[index].isDone)
         TodoStorage.save(todos)
-        await TodoReminders.update(todos[index])
+        // Refresh the widget first; the reminder can update after.
         WidgetCenter.shared.reloadTimelines(ofKind: TodoStorage.widgetKind)
+        await TodoReminders.update(todos[index])
     }
 }

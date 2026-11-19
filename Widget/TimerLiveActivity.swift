@@ -35,9 +35,12 @@ struct TimerLiveActivity: Widget {
                         .padding(.trailing, 8)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    TimerButtons(context: context)
-                        .padding(.top, 6)
-                        .padding(.horizontal, 8)
+                    VStack(spacing: 8) {
+                        ExtendButtons(context: context)
+                        TimerButtons(context: context)
+                    }
+                    .padding(.top, 6)
+                    .padding(.horizontal, 8)
                 }
             } compactLeading: {
                 Image(systemName: context.symbol)
@@ -123,6 +126,31 @@ private struct CountdownText: View {
             Text(TimeFormat.clock(paused.totalCountdownDuration - paused.previouslyElapsedDuration))
         default:
             Text("0:00")
+        }
+    }
+}
+
+/// Touch and hold the Dynamic Island: add 1, 5 or 15 minutes to the timer.
+private struct ExtendButtons: View {
+    let context: ActivityViewContext<AlarmAttributes<AlarmPayload>>
+
+    var body: some View {
+        if context.isTimer {
+            HStack(spacing: 8) {
+                ForEach([1, 5, 15], id: \.self) { minutes in
+                    Button(intent: ExtendTimerIntent(timerID: context.state.alarmID, minutes: minutes)) {
+                        Text("+\(minutes) min")
+                            .font(.subheadline.weight(.semibold))
+                            .monospacedDigit()
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 7)
+                            .background(Capsule().fill(Color.white.opacity(0.14)))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.white)
+                    .accessibilityLabel("Add \(minutes) minute\(minutes == 1 ? "" : "s")")
+                }
+            }
         }
     }
 }

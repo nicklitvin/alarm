@@ -42,7 +42,7 @@ enum UpNext {
 
     /// A to-do checked off this recently stays (shown checked) so the widget can show the check
     /// before the item goes away.
-    static let completedLinger: TimeInterval = 2
+    static let completedLinger: TimeInterval = 1
 
     static func items(alarms: [AlarmItem], todos: [TodoItem], timers: [TimerItem], now: Date,
                       options: Options = Options()) -> [UpNextItem] {

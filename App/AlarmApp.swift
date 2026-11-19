@@ -91,6 +91,11 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
             guard let id = (userInfo[TodoReminders.todoIDKey] as? String).flatMap(UUID.init(uuidString:)) else { return }
             await TodoController.shared.snoozeToNextDay(id)
 
+        case let action where TimerExtendActions.minutesByAction[action] != nil:
+            guard let id = (userInfo[TimerExtendActions.timerIDKey] as? String).flatMap(UUID.init(uuidString:)),
+                  let minutes = TimerExtendActions.minutesByAction[action] else { return }
+            await TimerController.shared.extend(id, by: TimeInterval(minutes * 60))
+
         case UNNotificationDefaultActionIdentifier:
             // Tapping opens the app: the alarm heads-up opens the Alarms tab, where the Dismiss
             // card is already showing; a to-do's opens that to-do.

@@ -23,7 +23,7 @@ enum NotificationScheduler {
             intentIdentifiers: [],
             options: []
         )
-        UNUserNotificationCenter.current().setNotificationCategories([category, TodoReminders.category])
+        UNUserNotificationCenter.current().setNotificationCategories([category, TodoReminders.category, TimerExtendActions.category])
     }
 
     /// Schedules all heads-ups. Returns whether notifications are allowed.

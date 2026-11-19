@@ -639,3 +639,4 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .note-backdrop .img-chip { position: absolute; left: 0; top: 0; font-size: 14px; font-weight: 600; color: var(--orange); background: color-mix(in srgb, var(--orange) 14%, transparent); padding: 1px 8px; border-radius: 6px; }
 .note-pictures { display: flex; flex-direction: column; gap: 10px; padding: 12px 20px 24px; }
 .note-pictures img { width: 100%; max-height: 420px; object-fit: contain; border-radius: 12px; background: var(--fill); }
+.di-exp-buttons.extend button { background: rgba(255, 255, 255, 0.14); color: #fff; }

@@ -421,6 +421,15 @@ function LiveActivity() {
             <span className="orange" style={{ fontWeight: 600, fontSize: 15 }}>⏱ {timer.label || 'Timer'}</span>
             <span className="tnum" style={{ fontSize: 30, fontWeight: 300 }}>{clock(left - 0.05)}</span>
           </div>
+          {/* Touch and hold: add 1, 5 or 15 minutes. */}
+          <div className="di-exp-buttons extend">
+            {[1, 5, 15].map((m) => (
+              <button key={m} onClick={() => real && setTimer(real.id, (t) => (t.state === 'paused'
+                ? { ...t, remaining: t.remaining + m * 60, duration: t.remaining + m * 60 }
+                : { ...t, state: 'running', fireDate: Math.max(Date.now(), t.state === 'running' ? t.fireDate : Date.now()) + m * 60_000,
+                    duration: Math.max(0, ((t.state === 'running' ? t.fireDate : Date.now()) - Date.now()) / 1000) + m * 60 }))}>+{m} min</button>
+            ))}
+          </div>
           <div className="di-exp-buttons">
             <button onClick={() => real && setTimer(real.id, (t) => (t.state === 'paused'
               ? { ...t, state: 'running', fireDate: Date.now() + t.remaining * 1000 }
