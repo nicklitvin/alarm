@@ -640,3 +640,17 @@ textarea.instructions { width: 100%; border: none; outline: none; resize: vertic
 .note-pictures { display: flex; flex-direction: column; gap: 10px; padding: 12px 20px 24px; }
 .note-pictures img { width: 100%; max-height: 420px; object-fit: contain; border-radius: 12px; background: var(--fill); }
 .di-exp-buttons.extend button { background: rgba(255, 255, 255, 0.14); color: #fff; }
+
+/* Mac quick launcher (preview): a draggable X above the Mac window. */
+.mac-desktop { position: relative; }
+.launcher { position: absolute; z-index: 150; width: 150px; height: 150px; cursor: grab; touch-action: none; user-select: none; }
+.launcher:active { cursor: grabbing; }
+.launcher-x { position: absolute; inset: 0; filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3)); }
+.launcher-x.spin { animation: launcher-spin 1.4s cubic-bezier(0.15, 0.85, 0.3, 1); }
+@keyframes launcher-spin { from { transform: rotate(0deg); } to { transform: rotate(720deg); } }
+.launcher-bar { position: absolute; left: 75px; top: 75px; width: 119px; height: 16px; margin: -8px 0 0 -59.5px; border-radius: 8px; background: rgba(255, 149, 0, 0.85); }
+.launcher-bar.a { transform: rotate(45deg); }
+.launcher-bar.b { transform: rotate(-45deg); }
+.launcher-lobe { position: absolute; width: 44px; height: 44px; border-radius: 22px; background: var(--orange); border: 2px solid rgba(255, 255, 255, 0.9); font-size: 18px; display: grid; place-items: center; cursor: pointer; }
+.launcher-hub { position: absolute; left: 55px; top: 55px; width: 40px; height: 40px; border-radius: 20px; background: rgba(30, 30, 30, 0.95); border: 3px solid var(--orange); cursor: pointer; }
+.launcher-hub::after { content: ''; position: absolute; left: 12px; top: 12px; width: 10px; height: 10px; border-radius: 5px; background: var(--orange); }

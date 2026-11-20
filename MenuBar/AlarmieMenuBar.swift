@@ -17,6 +17,16 @@ final class AlarmieMenuBar: NSObject {
     /// "3 to-dos open" (set by the app whenever to-dos change).
     @objc dynamic var todoText: String = "" { didSet { rebuildMenu() } }
 
+    /// The floating quick launcher (Settings → Mac → Show Quick Launcher).
+    @objc dynamic var showsLauncher: Bool = false {
+        didSet {
+            guard showsLauncher != launcher.isShown else { return }
+            DispatchQueue.main.async { self.showsLauncher ? self.launcher.show() : self.launcher.hide() }
+        }
+    }
+
+    private lazy var launcher = QuickLauncher { [weak self] url in self?.open(url) }
+
     override init() {
         super.init()
         DispatchQueue.main.async { self.install() }
@@ -75,6 +85,10 @@ final class AlarmieMenuBar: NSObject {
     /// Brings Alarmie to the front and opens the link (the app shows the tab, or starts Live Talk).
     @objc private func openLink(_ sender: NSMenuItem) {
         guard let url = sender.representedObject as? URL else { return }
+        open(url)
+    }
+
+    private func open(_ url: URL) {
         NSApp.activate(ignoringOtherApps: true)
         NSWorkspace.shared.open(url)
     }

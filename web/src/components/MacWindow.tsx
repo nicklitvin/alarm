@@ -8,10 +8,11 @@ import { TABS, TabScreen } from './Screens'
  *  wide layout, under the Mac's menu bar with Alarmie's ⏰ item. Shares your preview data with
  *  the iPhone. */
 export function MacWindow() {
-  const { tab, setTab } = useStore()
+  const { tab, setTab, data } = useStore()
   return (
     <div className="mac-desktop">
       <MenuBar />
+      {data.settings.macLauncher && <QuickLauncher />}
       <div className="mac-window">
         <nav className="mac-sidebar" aria-label="Tabs">
           <div className="mac-lights" aria-hidden><i /><i /><i /></div>
@@ -76,6 +77,52 @@ function MenuBar() {
       </svg>
       <span aria-hidden className="batt">▭</span><span aria-hidden>⌕</span>
       <span>{clock}</span>
+    </div>
+  )
+}
+
+/** Settings → Mac → Show Quick Launcher: an X floating above everything (like a fidget spinner).
+ *  Drag it anywhere; an arm opens its tab; the hub spins it. */
+function QuickLauncher() {
+  const { open } = useStore()
+  const [pos, setPos] = useState({ x: 24, y: 64 })
+  const [spinning, setSpinning] = useState(false)
+  // What was pressed is remembered at pointer-down: with the pointer captured, pointer-up's target is the launcher itself.
+  const drag = useRef<{ dx: number; dy: number; moved: boolean; target: HTMLElement | null } | null>(null)
+  const arms: [Tab, string, string, number, number][] = [
+    ['alarms', '⏰', 'Alarms', -1, -1], ['timers', '⏱', 'Timers', 1, -1], ['notes', '🗒', 'Notes', 1, 1], ['todos', '☑︎', 'To-Do', -1, 1],
+  ]
+  const onDown = (e: React.PointerEvent) => {
+    drag.current = { dx: e.clientX - pos.x, dy: e.clientY - pos.y, moved: false,
+      target: (e.target as HTMLElement).closest('[data-arm], [data-hub]') as HTMLElement | null }
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+  }
+  const onMove = (e: React.PointerEvent) => {
+    const d = drag.current
+    if (!d) return
+    const x = e.clientX - d.dx, y = e.clientY - d.dy
+    if (Math.abs(x - pos.x) + Math.abs(y - pos.y) > 3) d.moved = true
+    if (d.moved) setPos({ x, y })
+  }
+  const onUp = () => {
+    const d = drag.current
+    drag.current = null
+    if (!d || d.moved) return
+    const target = d.target
+    if (target?.dataset.arm) open({ tab: target.dataset.arm as Tab })
+    else if (target?.dataset.hub !== undefined) { setSpinning(false); requestAnimationFrame(() => setSpinning(true)) }
+  }
+  return (
+    <div className="launcher" style={{ left: pos.x, top: pos.y }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp}
+      title="Click an arm to open a tab, drag to move">
+      <div className={`launcher-x ${spinning ? 'spin' : ''}`} onAnimationEnd={() => setSpinning(false)}>
+        <span className="launcher-bar a" /><span className="launcher-bar b" />
+        {arms.map(([tab, glyph, label, dx, dy]) => (
+          <button key={tab} data-arm={tab} aria-label={`Open ${label}`} className="launcher-lobe"
+            style={{ left: 75 + dx * 42 - 22, top: 75 + dy * 42 - 22 }}>{glyph}</button>
+        ))}
+        <button data-hub aria-label="Spin" className="launcher-hub" />
+      </div>
     </div>
   )
 }

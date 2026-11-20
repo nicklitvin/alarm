@@ -1,6 +1,6 @@
 import Foundation
 
-/// The Mac app's menu bar item (next to the battery). Mac Catalyst can't use AppKit directly, so
+/// The Mac app's menu bar item (next to the battery) and the floating quick launcher. Mac Catalyst can't use AppKit directly, so
 /// the item lives in a small AppKit plugin (`MenuBar/AlarmieMenuBar.swift`, embedded in PlugIns)
 /// that this loads at launch and keeps up to date. Does nothing on iPhone and iPad.
 @MainActor
@@ -29,5 +29,6 @@ enum MenuBarBridge {
         let open = TodoController.shared.openTodos.count
         plugin.setValue(next, forKey: "nextAlarmText")
         plugin.setValue(open == 0 ? "No to-dos" : "\(open) to-do\(open == 1 ? "" : "s") open", forKey: "todoText")
+        plugin.setValue(AppSettings.macShowsLauncher, forKey: "showsLauncher")
     }
 }

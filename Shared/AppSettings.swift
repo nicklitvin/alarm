@@ -90,6 +90,10 @@ enum AppSettings {
     static let widgetShowsTimedTodosKey = "settings.widget.timedTodos"
     static let widgetShowsUntimedTodosKey = "settings.widget.untimedTodos"
     static var widgetShowsAlarms: Bool { bool(widgetShowsAlarmsKey, default: true) }
+
+    /// Mac: the floating quick launcher (an X above all windows that opens a tab).
+    static let macShowsLauncherKey = "settings.mac.launcher"
+    static var macShowsLauncher: Bool { bool(macShowsLauncherKey, default: false) }
     static var widgetShowsTimedTodos: Bool { bool(widgetShowsTimedTodosKey, default: true) }
     static var widgetShowsUntimedTodos: Bool { bool(widgetShowsUntimedTodosKey, default: true) }
     /// The Live Talk button in the corner of the medium and large Up Next widget (Talk settings).

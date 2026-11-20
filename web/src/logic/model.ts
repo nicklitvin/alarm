@@ -124,6 +124,8 @@ export interface Settings {
   widgetShowsAlarms: boolean
   widgetShowsTimedTodos: boolean
   widgetShowsUntimedTodos: boolean
+  /** Mac: the floating quick launcher (an X that opens a tab). */
+  macLauncher?: boolean
 }
 
 export const defaultSettings: Settings = {

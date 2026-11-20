@@ -3,6 +3,7 @@ import changelog from '../../../CHANGELOG.json'
 import {
   applyQuickTime, cleanQuickTimes, compactDuration, dueDescription, newTimerChoices, dueSuggestions, leadTimeName, quickTimeLabel, timeOf, noteTitle, notePreview, trashDaysLeft, type NotesSort, type Settings,
 } from '../logic/model'
+import { useWide } from '../logic/layout'
 import { useStore, type Tab } from '../logic/store'
 
 export const appVersion = changelog.releases[0]?.version ?? '?'
@@ -305,6 +306,7 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
   const [about, setAbout] = useState(false)
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false)
   const [pickingHours, setPickingHours] = useState(false)
+  const wide = useWide()
   const s = data.settings
   const set = <K extends keyof Settings>(key: K, value: Settings[K]) => update((d) => ({ ...d, settings: { ...d.settings, [key]: value } }))
 
@@ -437,6 +439,13 @@ function SettingsSheet({ tab, onClose }: { tab: Tab; onClose: () => void }) {
           </Section>
         )
       })()}
+      {/* Mac only (the Mac window in this preview). */}
+      {wide && (
+        <Section header="Mac" footer="A small X that floats above all your windows. Drag it anywhere; click an arm to open Alarms, Timers, To-Do or Notes, or click the middle to give it a spin.">
+          <div className="row"><span className="grow">Show Quick Launcher</span>
+            <Switch label="Show quick launcher" on={!!s.macLauncher} onChange={(v) => set('macLauncher', v)} /></div>
+        </Section>
+      )}
       <Section>
         <button className="row tappable" style={{ width: '100%', textAlign: 'left' }} onClick={() => setAbout(true)}>
           <span className="grow">ⓘ About & Updates</span><span className="muted">Version {appVersion} ›</span>

@@ -20,6 +20,10 @@ struct TabSettingsView: View {
                     DeleteAllSection(tab: tab)
                 }
 
+                #if targetEnvironment(macCatalyst)
+                MacLauncherSection()
+                #endif
+
                 Section {
                     NavigationLink {
                         AboutView()
@@ -494,3 +498,21 @@ private struct TalkSettingsSection: View {
         }
     }
 }
+
+#if targetEnvironment(macCatalyst)
+/// Mac: the floating quick launcher. In every tab's settings, since it isn't about one tab.
+private struct MacLauncherSection: View {
+    @AppStorage(AppSettings.macShowsLauncherKey, store: AppSettings.store) private var showsLauncher = false
+
+    var body: some View {
+        Section {
+            Toggle("Show Quick Launcher", isOn: $showsLauncher)
+        } header: {
+            Text("Mac")
+        } footer: {
+            Text("A small X that floats above all your windows. Drag it anywhere; click an arm to open Alarms, Timers, To-Do or Notes, or click the middle to give it a spin.")
+        }
+        .onChange(of: showsLauncher) { MenuBarBridge.update() }
+    }
+}
+#endif

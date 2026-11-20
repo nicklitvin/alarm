@@ -147,6 +147,10 @@ can't use AppKit, so the item is a small AppKit bundle (`MenuBar/AlarmieMenuBar.
 `AlarmieMenuBar`) embedded in the Mac build's PlugIns folder and loaded at launch by
 `App/Services/MenuBarBridge.swift`; its items open Alarmie's own `alarmapp://` links.
 
+**Quick launcher.** Settings → Mac → Show Quick Launcher puts a small X above every window (an
+`NSPanel` at the floating level, on all Spaces, in `MenuBar/QuickLauncher.swift`). Drag it anywhere
+(the spot is remembered); each arm opens Alarms, Timers, To-Do or Notes, and the hub spins it.
+
 **Alarms and timers on the Mac.** AlarmKit and ActivityKit don't build for Mac Catalyst, so that
 code is compiled out of the Mac build (`#if !targetEnvironment(macCatalyst)`). On the Mac,
 `AlarmKitScheduler` schedules each planned alarm (same `AlarmPlan`, including a dismissed ring) as a

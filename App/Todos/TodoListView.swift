@@ -49,7 +49,7 @@ struct TodoListView: View {
             }
             .sheet(item: $editingDue) { todo in
                 DueSheet(todo: todo)
-                    .presentationDetents([.height(290)])
+                    .presentationDetents([.height(todo.due == nil ? 290 : 350)])
                     .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $addingNew) {
@@ -193,12 +193,9 @@ struct TodoListView: View {
     }
 
     private func row(_ todo: TodoItem, now: Date) -> some View {
-        TodoRow(todo: todo, now: now, focus: $focus, onShowDue: {
+        TodoRow(todo: todo, now: now, focus: $focus) {
             focus = nil
             editingDue = todo
-        }) {
-            focus = nil
-            editing = todo
         }
         .listRowBackground(Color.clear)
         .listRowSeparator(.hidden)
@@ -218,26 +215,24 @@ struct TodoListView: View {
 // MARK: - Row
 
 /// A to-do you edit right in the list, like Reminders: a checkbox and its text. Tap the text to
-/// type; Return or tapping elsewhere finishes. While editing, the calendar button opens the
-/// deadline and details.
+/// type; Return or tapping elsewhere finishes. While editing, the calendar button opens just the
+/// deadline (the same small sheet as tapping the time).
 private struct TodoRow: View {
     @Environment(TodoController.self) private var controller
     let todo: TodoItem
     let now: Date
     var focus: FocusState<TodoField?>.Binding
     let onShowDue: () -> Void
-    let onShowDetails: () -> Void
 
     @State private var title: String
     @State private var details: String
 
     init(todo: TodoItem, now: Date, focus: FocusState<TodoField?>.Binding,
-         onShowDue: @escaping () -> Void, onShowDetails: @escaping () -> Void) {
+         onShowDue: @escaping () -> Void) {
         self.onShowDue = onShowDue
         self.todo = todo
         self.now = now
         self.focus = focus
-        self.onShowDetails = onShowDetails
         _title = State(initialValue: todo.title)
         _details = State(initialValue: todo.details)
     }
@@ -313,7 +308,7 @@ private struct TodoRow: View {
             if isEditing {
                 Button {
                     commit()
-                    onShowDetails()
+                    onShowDue()
                 } label: {
                     Image(systemName: "calendar")
                         .font(.title3)
@@ -321,7 +316,7 @@ private struct TodoRow: View {
                         .frame(height: 28) // level with the circle and the first line
                 }
                 .buttonStyle(.borderless)
-                .accessibilityLabel("Deadline and more")
+                .accessibilityLabel("Deadline")
                 .transition(.opacity)
             }
         }
@@ -419,6 +414,7 @@ private struct NewTodoSheet: View {
 /// Saves as you change it; swipe down to close.
 struct DueSheet: View {
     @Environment(TodoController.self) private var controller
+    @Environment(\.dismiss) private var dismiss
     let todo: TodoItem
     @State private var date: Date
 
@@ -433,6 +429,17 @@ struct DueSheet: View {
                 TimeOfDayChips(date: $date)
                     .padding(.vertical, 4)
                 DeadlineDateTimeRows(date: $date)
+            }
+            // Only when there is one to take off (this used to live in the full editor).
+            if controller.todos.first(where: { $0.id == todo.id })?.due != nil {
+                Section {
+                    Button("Remove Deadline") {
+                        guard var current = controller.todos.first(where: { $0.id == todo.id }) else { return }
+                        current.due = nil
+                        controller.update(current)
+                        dismiss()
+                    }
+                }
             }
         }
         .contentMargins(.top, 8, for: .scrollContent)

@@ -1,6 +1,16 @@
 {
   "releases": [
     {
+      "version": "1.41.0",
+      "build": 95,
+      "date": "2026-11-20",
+      "title": "Mac Quick Launcher",
+      "notes": [
+        "On the Mac, turn on Show Quick Launcher in Settings. A small X floats above all your windows: drag it anywhere, click an arm to open Alarms, Timers, To-Do or Notes, or click the middle to spin it.",
+        "The calendar button on a to-do now opens just its deadline, not the full to-do. You can remove the deadline there too."
+      ]
+    },
+    {
       "version": "1.40.0",
       "build": 94,
       "date": "2026-11-19",
